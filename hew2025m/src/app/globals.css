@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* === フォント定義 === */
+@font-face {
+  font-family: 'せのびゴシック';
+  src: url('/fonts/Senobi-Gothic-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* === カラー変数（プロジェクト統一） === */
 :root {
   --primary-color: #2FA3E3;
@@ -31,7 +40,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: "せのびゴシック", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: var(--text-color);
   line-height: 1.6;
   background-color: var(--background-color);
@@ -90,6 +99,7 @@ a {
   font-size: 28px;
   font-weight: bold;
   color: var(--primary-color);
+  font-family: "せのびゴシック", sans-serif;
 }
 
 .logo a {
@@ -120,6 +130,7 @@ a {
   font-weight: bold;
   margin-bottom: 20px;
   line-height: 1.2;
+  font-family: "せのびゴシック", sans-serif;
 }
 
 .hero-description {
@@ -244,6 +255,7 @@ a {
   font-weight: bold;
   margin-bottom: 10px;
   color: #333;
+  font-family: "せのびゴシック", sans-serif;
 }
 
 .section-header p {
@@ -313,6 +325,7 @@ a {
   font-weight: bold;
   margin-bottom: 10px;
   color: #333;
+  font-family: "せのびゴシック", sans-serif;
 }
 
 .category-card p {
@@ -375,6 +388,7 @@ a {
   font-weight: bold;
   margin-bottom: 10px;
   color: #333;
+  font-family: "せのびゴシック", sans-serif;
 }
 
 .item-price {
@@ -496,6 +510,7 @@ a {
   font-size: 36px;
   font-weight: bold;
   margin-bottom: 20px;
+  font-family: "せのびゴシック", sans-serif;
 }
 
 .cta-description {
@@ -807,6 +822,7 @@ a {
   border-bottom: 2px solid var(--primary-color);
   padding-bottom: 8px;
   display: inline-block;
+  font-family: "せのびゴシック", sans-serif;
 }
 
 .footer-logo {
@@ -816,6 +832,7 @@ a {
   text-decoration: none;
   display: inline-block;
   margin-bottom: 20px;
+  font-family: "せのびゴシック", sans-serif;
 }
 
 .footer-description {
