@@ -1,5 +1,7 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import Link from 'next/link';
+import { Fish, Search, MapPin, Users, ArrowRight, Circle, Bug, Package, Shirt, Ship } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -17,31 +19,31 @@ export default function Home() {
                 釣り人の集まる街「ツリマチ」で、もっと釣りを楽しもう。
               </p>
               <div className="hero-buttons">
-                <a href="/sell" className="hero-btn primary">
-                  <i className="fa-solid fa-fish"></i>
+                <Link href="/sell" className="hero-btn primary">
+                  <Fish size={20} />
                   釣り用品を出品
-                </a>
-                <a href="/search" className="hero-btn secondary">
-                  <i className="fa-solid fa-search"></i>
+                </Link>
+                <Link href="/search" className="hero-btn secondary">
+                  <Search size={20} />
                   用品を探す
-                </a>
+                </Link>
               </div>
             </div>
             <div className="hero-visual">
               <div className="hero-icon">
-                <i className="fa-solid fa-fish"></i>
+                <Fish size={60} />
               </div>
               <div className="floating-cards">
                 <div className="card card-1">
-                  <i className="fa-solid fa-fish"></i>
+                  <Fish size={20} />
                   <span>釣竿</span>
                 </div>
                 <div className="card card-2">
-                  <i className="fa-solid fa-circle"></i>
+                  <Circle size={20} />
                   <span>リール</span>
                 </div>
                 <div className="card card-3">
-                  <i className="fa-solid fa-bug"></i>
+                  <Bug size={20} />
                   <span>ルアー</span>
                 </div>
               </div>
@@ -58,7 +60,7 @@ export default function Home() {
           <div className="categories-grid">
             <div className="category-card">
               <div className="category-icon">
-                <i className="fa-solid fa-fish"></i>
+                <Fish size={60} />
               </div>
               <h4>ロッド・竿</h4>
               <p>海釣り・川釣り・ルアー竿</p>
@@ -66,7 +68,7 @@ export default function Home() {
             </div>
             <div className="category-card">
               <div className="category-icon">
-                <i className="fa-solid fa-circle"></i>
+                <Circle size={32} />
               </div>
               <h4>リール</h4>
               <p>スピニング・ベイト・電動リール</p>
@@ -74,7 +76,7 @@ export default function Home() {
             </div>
             <div className="category-card">
               <div className="category-icon">
-                <i className="fa-solid fa-bug"></i>
+                <Bug size={32} />
               </div>
               <h4>ルアー・仕掛け</h4>
               <p>ハードルアー・ワーム・針</p>
@@ -82,7 +84,7 @@ export default function Home() {
             </div>
             <div className="category-card">
               <div className="category-icon">
-                <i className="fa-solid fa-toolbox"></i>
+                <Package size={32} />
               </div>
               <h4>タックルボックス</h4>
               <p>道具箱・収納・ケース</p>
@@ -90,7 +92,7 @@ export default function Home() {
             </div>
             <div className="category-card">
               <div className="category-icon">
-                <i className="fa-solid fa-vest"></i>
+                <Shirt size={32} />
               </div>
               <h4>ウェア・装身具</h4>
               <p>ライフジャケット・帽子・サングラス</p>
@@ -98,7 +100,7 @@ export default function Home() {
             </div>
             <div className="category-card">
               <div className="category-icon">
-                <i className="fa-solid fa-ship"></i>
+                <Ship size={32} />
               </div>
               <h4>ボート・船外機</h4>
               <p>フィッシングボート・カヤック</p>
@@ -116,62 +118,62 @@ export default function Home() {
           <div className="items-grid">
             <div className="item-card">
               <div className="item-image-placeholder">
-                <i className="fa-solid fa-fish"></i>
+                <Fish size={60} />
               </div>
               <div className="item-info">
                 <h5 className="item-title">ダイワ製 海釣り用ロッド</h5>
                 <p className="item-price">¥18,000</p>
                 <p className="item-location">
-                  <i className="fa-solid fa-location-dot"></i>
+                  <MapPin size={16} />
                   湘南・江ノ島
                 </p>
               </div>
             </div>
             <div className="item-card">
               <div className="item-image-placeholder">
-                <i className="fa-solid fa-circle"></i>
+                <Circle size={40} />
               </div>
               <div className="item-info">
                 <h5 className="item-title">シマノ電動リール</h5>
                 <p className="item-price">¥45,000</p>
                 <p className="item-location">
-                  <i className="fa-solid fa-location-dot"></i>
+                  <MapPin size={16} />
                   横浜・本牧
                 </p>
               </div>
             </div>
             <div className="item-card">
               <div className="item-image-placeholder">
-                <i className="fa-solid fa-bug"></i>
+                <Bug size={40} />
               </div>
               <div className="item-info">
                 <h5 className="item-title">メガバス ルアーセット</h5>
                 <p className="item-price">¥12,500</p>
                 <p className="item-location">
-                  <i className="fa-solid fa-location-dot"></i>
+                  <MapPin size={16} />
                   多摩川・調布
                 </p>
               </div>
             </div>
             <div className="item-card">
               <div className="item-image-placeholder">
-                <i className="fa-solid fa-toolbox"></i>
+                <Package size={32} />
               </div>
               <div className="item-info">
                 <h5 className="item-title">タックルボックス一式</h5>
                 <p className="item-price">¥8,000</p>
                 <p className="item-location">
-                  <i className="fa-solid fa-location-dot"></i>
+                  <MapPin size={16} />
                   東京湾・船橋
                 </p>
               </div>
             </div>
           </div>
           <div className="section-footer">
-            <a href="/search" className="more-link">
+            <Link href="/search" className="more-link">
               すべての商品を見る
-              <i className="fa-solid fa-arrow-right"></i>
-            </a>
+              <ArrowRight size={20} />
+            </Link>
           </div>
         </section>
 
@@ -184,21 +186,21 @@ export default function Home() {
           <div className="features-grid">
             <div className="feature-card">
               <div className="feature-icon">
-                <i className="fa-solid fa-fish"></i>
+                <Fish size={60} />
               </div>
               <h4>釣り用品専門</h4>
               <p>釣り竿からルアーまで、釣り用品に特化した専門マーケット</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">
-                <i className="fa-solid fa-location-dot"></i>
+                <MapPin size={32} />
               </div>
               <h4>釣り場情報共有</h4>
               <p>地域の釣り場情報や釣果報告をシェア</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">
-                <i className="fa-solid fa-users"></i>
+                <Users size={32} />
               </div>
               <h4>釣り仲間と交流</h4>
               <p>近くの釣り人との情報交換やグループ釣行の企画</p>
@@ -214,14 +216,14 @@ export default function Home() {
               無料で簡単に始められます。あなたの釣り用品を必要な人に届けませんか？
             </p>
             <div className="cta-buttons">
-              <a href="/register" className="cta-btn primary">
-                <i className="fa-solid fa-fish"></i>
+              <Link href="/register" className="cta-btn primary">
+                <Fish size={60} />
                 釣り人として参加
-              </a>
-              <a href="/search" className="cta-btn secondary">
-                <i className="fa-solid fa-search"></i>
+              </Link>
+              <Link href="/search" className="cta-btn secondary">
+                <Search size={20} />
                 釣り用品を探す
-              </a>
+              </Link>
             </div>
           </div>
         </section>
