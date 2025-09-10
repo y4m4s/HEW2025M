@@ -1,0 +1,218 @@
+/* --- カルーセルスタイル --- */
+
+.carousel {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-height: 400px;
+    position: relative;
+}
+
+/* --- カルーセルボタン --- */
+.carousel-btn {
+    background: linear-gradient(135deg, #2FA3E3 0%, #1d7bb8 100%);
+    color: #fff;
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(47, 163, 227, 0.3);
+    z-index: 10;
+}
+
+.carousel-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(47, 163, 227, 0.4);
+}
+
+.carousel-btn:active {
+    transform: scale(0.95);
+}
+
+.carousel-prev {
+    order: -1;
+}
+
+.carousel-next {
+    order: 1;
+}
+
+/* --- メインカルーセルコンテナ --- */
+.carousel-main {
+    flex-grow: 1;
+    background-color: #fff;
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.carousel-main:hover {
+    border-color: #2FA3E3;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* --- カルーセルコンテナ --- */
+.carousel-container {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    overflow: hidden;
+}
+
+/* --- カルーセルスライド --- */
+.carousel-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: all 0.5s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.carousel-slide.active {
+    opacity: 1;
+}
+
+.carousel-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 14px;
+}
+
+/* --- カルーセルナビゲーションドット --- */
+.carousel-dots {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px 20px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+}
+
+.carousel-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.carousel-dot:hover {
+    background-color: rgba(255, 255, 255, 0.8);
+    transform: scale(1.2);
+}
+
+.carousel-dot.active {
+    background-color: #2FA3E3;
+    transform: scale(1.3);
+    box-shadow: 0 0 10px rgba(47, 163, 227, 0.5);
+}
+
+/* --- カルーセルカウンター --- */
+.carousel-counter {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+}
+
+/* --- 読み込み状態 --- */
+.carousel-slide.loading {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.carousel-slide.loading::after {
+    content: '📸';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 48px;
+    opacity: 0.3;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+}
+
+/* --- レスポンシブデザイン --- */
+@media (max-width: 768px) {
+    .carousel {
+        flex-direction: column;
+        min-height: 250px;
+    }
+
+    .carousel-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 16px;
+    }
+
+    .carousel-prev {
+        order: 0;
+        margin-bottom: 10px;
+    }
+
+    .carousel-next {
+        order: 2;
+        margin-top: 10px;
+    }
+
+    .carousel-main {
+        order: 1;
+        width: 100%;
+    }
+
+    .carousel-container {
+        height: 250px;
+    }
+}
+
+@media (max-width: 480px) {
+    .carousel-container {
+        height: 200px;
+    }
+
+    .carousel-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 14px;
+    }
+
+    .carousel-dots {
+        padding: 8px 15px;
+        gap: 10px;
+    }
+
+    .carousel-dot {
+        width: 10px;
+        height: 10px;
+    }
+}

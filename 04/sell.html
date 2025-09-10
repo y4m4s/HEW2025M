@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出品する - ツリマチ</title>
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/sell.css">
+    <link rel="stylesheet" href="css/header.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="css/footer.css">
+</head>
+
+<body>
+
+    <header class="site-header">
+        <div class="header-top">
+            <h1 class="logo"><a href="index.html">ツリマチ</a></h1>
+            <nav class="main-nav">
+                <a href="sell.html">出品する</a>
+                <a href="search.html">商品を探す</a>
+                <a href="community.html">コミュニティ</a>
+            </nav>
+            <div class="header-right">
+                <a href="notification.html" class="icon-btn" aria-label="通知">
+                    <i class="fa-regular fa-bell"></i>
+                </a>
+                <a href="message.html" class="icon-btn" aria-label="メッセージ">
+                    <i class="fa-regular fa-envelope"></i>
+                </a>
+                <a href="login.html" class="btn login-btn">ログイン</a>
+                <a href="register.html" class="btn signup-btn">新規登録</a>
+            </div>
+        </div>
+        <div class="header-bottom">
+            <form action="/search" method="get" class="search-form">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="search" placeholder="キーワードで検索" class="search-input">
+            </form>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <section class="listing-form-container">
+            <h2 class="form-title">出品する</h2>
+            <p class="form-subtitle">商品の情報を入力してください。</p>
+
+            <form class="listing-form">
+                <div class="form-group">
+                    <div class="image-upload-box">
+                        <p>商品画像をアップロード</p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="product-name" class="form-label">商品名</label>
+                    <input type="text" id="product-name" class="form-input" placeholder="商品名を入力してください。">
+                </div>
+
+                <div class="form-group">
+                    <label for="category" class="form-label">カテゴリ</label>
+                    <select id="category" class="form-select">
+                        <option value="" disabled selected>カテゴリを選択してください。</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">製品</label>
+                    <input type="text" id="product-name" class="form-input" placeholder="既存商品の情報があれば、こちらから入力してください。">
+                </div>
+
+                <div class="form-group">
+                    <label for="condition" class="form-label">商品の状態</label>
+                    <input type="text" id="condition" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label for="description" class="form-label">商品詳細</label>
+                    <input type="text" id="description" class="form-input" placeholder="商品の詳細を入力してください">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn">出品する</button>
+                </div>
+            </form>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,115 @@
+.site-header {
+    background-color: #ffffff;
+    padding: 15px 40px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header-left {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+/* .logo スタイルはcomponents.cssに移動済み */
+
+.main-nav {
+    margin: 0 45px;
+    display: flex;
+    justify-content: space-around;
+    gap: 50px;
+}
+
+.main-nav a {
+    text-decoration: none;
+    color: #333;
+    font-size: 16px;
+}
+
+.main-nav.active,
+.main-nav a:hover {
+    color: #007bff;
+    border-bottom: 2px solid #007bff;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.icon-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    background-color: #f1f3f5;
+    border-radius: 50%;
+    text-decoration: none;
+    color: #555;
+    font-size: 18px;
+}
+
+/* ヘッダー固有のボタンスタイル - components.cssのbtnクラスを継承 */
+
+.login-btn {
+    background-color: #ffffff;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    border-radius: 20px;
+    padding: 8px 20px;
+    font-size: 14px;
+}
+
+.login-btn:hover {
+    background-color: var(--primary-color);
+    color: #ffffff;
+}
+
+.signup-btn {
+    background: var(--gradient-primary);
+    color: #ffffff;
+    border-radius: 20px;
+    padding: 8px 20px;
+    font-size: 14px;
+    border: 2px solid transparent;
+}
+
+.header-bottom {
+    display: flex;
+    justify-content: center;
+}
+
+.search-form {
+    position: relative;
+    width: 60%;
+    max-width: 700px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #aaa;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 20px 12px 50px;
+    border-radius: 30px;
+    border: 1px solid #ced4da;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.search-input::placeholder {
+    color: #aaa;
+}
