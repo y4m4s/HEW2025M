@@ -1,11 +1,8 @@
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import { Camera, Fish } from 'lucide-react';
 
 export default function SellPage() {
   return (
     <div>
-      <Header />
       
       <div className="bg-gray-50 min-h-screen">
         <div className="container mx-auto px-5 py-8">
@@ -133,7 +130,6 @@ export default function SellPage() {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }

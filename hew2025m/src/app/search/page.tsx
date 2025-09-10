@@ -1,12 +1,8 @@
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import Link from 'next/link';
 import { Fish, MapPin } from 'lucide-react';
 
 export default function SearchPage() {
   return (
     <div>
-      <Header />
       
       <div className="bg-gray-50 min-h-screen">
         <div className="container mx-auto px-5 py-8">
@@ -120,7 +116,6 @@ export default function SearchPage() {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }

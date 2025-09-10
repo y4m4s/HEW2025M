@@ -1,12 +1,8 @@
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import Link from 'next/link';
-import { User, Fish, List } from 'lucide-react';
+import { User, Fish } from 'lucide-react';
 
 export default function ProfilePage() {
   return (
     <div>
-      <Header />
       
       <div className="bg-gray-50 min-h-screen">
         <div className="container mx-auto px-5 py-8">
@@ -112,7 +108,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }

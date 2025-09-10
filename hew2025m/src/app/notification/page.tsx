@@ -1,5 +1,3 @@
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import { Mail, DollarSign, Heart, Users, MessageCircle, Megaphone, Bell } from 'lucide-react';
 
 function getNotificationIcon(iconType: string) {
@@ -74,7 +72,6 @@ icon: 'megaphone'
 
   return (
     <div>
-      <Header />
       
       <div className="bg-gray-50 min-h-screen">
         <div className="container mx-auto px-5 py-8">
@@ -179,7 +176,6 @@ icon: 'megaphone'
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }

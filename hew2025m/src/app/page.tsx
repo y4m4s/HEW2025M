@@ -6,8 +6,7 @@ import { Fish, Search, MapPin, Users, ArrowRight, Circle, Bug, Package, Shirt, S
 export default function Home() {
   return (
     <div>
-      <Header />
-      
+
       <main className="container mx-auto max-w-6xl px-5">
         {/* ヒーローセクション */}
         <section className="hero-section">
@@ -229,7 +228,6 @@ export default function Home() {
         </section>
       </main>
 
-      <Footer />
     </div>
   );
 }

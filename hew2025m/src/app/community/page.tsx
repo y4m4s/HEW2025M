@@ -1,11 +1,8 @@
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import Link from 'next/link';
 
 export default function CommunityPage() {
   return (
     <div>
-      <Header />
       
       <div className="bg-gray-50 min-h-screen">
         <main className="flex max-w-7xl mx-auto px-5 py-8 gap-8">
@@ -73,7 +70,6 @@ export default function CommunityPage() {
         </main>
       </div>
 
-      <Footer />
     </div>
   );
 }
