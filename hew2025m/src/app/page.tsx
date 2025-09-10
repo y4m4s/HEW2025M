@@ -1,103 +1,233 @@
-import Image from "next/image";
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div>
+      <Header />
+      
+      <main className="container mx-auto max-w-6xl px-5">
+        {/* ヒーローセクション */}
+        <section className="hero-section">
+          <div className="hero-content">
+            <div className="hero-text">
+              <h2 className="hero-title">釣り人のための<br />マーケットプレイス</h2>
+              <p className="hero-description">
+                釣り用品の売買から釣り情報のシェア、マッチングまで。<br />
+                釣り人の集まる街「ツリマチ」で、もっと釣りを楽しもう。
+              </p>
+              <div className="hero-buttons">
+                <a href="/sell" className="hero-btn primary">
+                  <i className="fa-solid fa-fish"></i>
+                  釣り用品を出品
+                </a>
+                <a href="/search" className="hero-btn secondary">
+                  <i className="fa-solid fa-search"></i>
+                  用品を探す
+                </a>
+              </div>
+            </div>
+            <div className="hero-visual">
+              <div className="hero-icon">
+                <i className="fa-solid fa-fish"></i>
+              </div>
+              <div className="floating-cards">
+                <div className="card card-1">
+                  <i className="fa-solid fa-fish"></i>
+                  <span>釣竿</span>
+                </div>
+                <div className="card card-2">
+                  <i className="fa-solid fa-circle"></i>
+                  <span>リール</span>
+                </div>
+                <div className="card card-3">
+                  <i className="fa-solid fa-bug"></i>
+                  <span>ルアー</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+        {/* 人気カテゴリー */}
+        <section className="categories-section">
+          <div className="section-header">
+            <h3>釣り用品カテゴリー</h3>
+            <p>よく取引されている釣り用品をチェック</p>
+          </div>
+          <div className="categories-grid">
+            <div className="category-card">
+              <div className="category-icon">
+                <i className="fa-solid fa-fish"></i>
+              </div>
+              <h4>ロッド・竿</h4>
+              <p>海釣り・川釣り・ルアー竿</p>
+              <span className="item-count">1,234件</span>
+            </div>
+            <div className="category-card">
+              <div className="category-icon">
+                <i className="fa-solid fa-circle"></i>
+              </div>
+              <h4>リール</h4>
+              <p>スピニング・ベイト・電動リール</p>
+              <span className="item-count">856件</span>
+            </div>
+            <div className="category-card">
+              <div className="category-icon">
+                <i className="fa-solid fa-bug"></i>
+              </div>
+              <h4>ルアー・仕掛け</h4>
+              <p>ハードルアー・ワーム・針</p>
+              <span className="item-count">2,189件</span>
+            </div>
+            <div className="category-card">
+              <div className="category-icon">
+                <i className="fa-solid fa-toolbox"></i>
+              </div>
+              <h4>タックルボックス</h4>
+              <p>道具箱・収納・ケース</p>
+              <span className="item-count">423件</span>
+            </div>
+            <div className="category-card">
+              <div className="category-icon">
+                <i className="fa-solid fa-vest"></i>
+              </div>
+              <h4>ウェア・装身具</h4>
+              <p>ライフジャケット・帽子・サングラス</p>
+              <span className="item-count">678件</span>
+            </div>
+            <div className="category-card">
+              <div className="category-icon">
+                <i className="fa-solid fa-ship"></i>
+              </div>
+              <h4>ボート・船外機</h4>
+              <p>フィッシングボート・カヤック</p>
+              <span className="item-count">145件</span>
+            </div>
+          </div>
+        </section>
+
+        {/* 最新の出品 */}
+        <section className="recent-items-section">
+          <div className="section-header">
+            <h3>最新の出品釣り用品</h3>
+            <p>新しく出品された注目の釣り用品</p>
+          </div>
+          <div className="items-grid">
+            <div className="item-card">
+              <div className="item-image-placeholder">
+                <i className="fa-solid fa-fish"></i>
+              </div>
+              <div className="item-info">
+                <h5 className="item-title">ダイワ製 海釣り用ロッド</h5>
+                <p className="item-price">¥18,000</p>
+                <p className="item-location">
+                  <i className="fa-solid fa-location-dot"></i>
+                  湘南・江ノ島
+                </p>
+              </div>
+            </div>
+            <div className="item-card">
+              <div className="item-image-placeholder">
+                <i className="fa-solid fa-circle"></i>
+              </div>
+              <div className="item-info">
+                <h5 className="item-title">シマノ電動リール</h5>
+                <p className="item-price">¥45,000</p>
+                <p className="item-location">
+                  <i className="fa-solid fa-location-dot"></i>
+                  横浜・本牧
+                </p>
+              </div>
+            </div>
+            <div className="item-card">
+              <div className="item-image-placeholder">
+                <i className="fa-solid fa-bug"></i>
+              </div>
+              <div className="item-info">
+                <h5 className="item-title">メガバス ルアーセット</h5>
+                <p className="item-price">¥12,500</p>
+                <p className="item-location">
+                  <i className="fa-solid fa-location-dot"></i>
+                  多摩川・調布
+                </p>
+              </div>
+            </div>
+            <div className="item-card">
+              <div className="item-image-placeholder">
+                <i className="fa-solid fa-toolbox"></i>
+              </div>
+              <div className="item-info">
+                <h5 className="item-title">タックルボックス一式</h5>
+                <p className="item-price">¥8,000</p>
+                <p className="item-location">
+                  <i className="fa-solid fa-location-dot"></i>
+                  東京湾・船橋
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="section-footer">
+            <a href="/search" className="more-link">
+              すべての商品を見る
+              <i className="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+        </section>
+
+        {/* 特徴セクション */}
+        <section className="features-section">
+          <div className="section-header">
+            <h3>釣り人のためのコミュニティ</h3>
+            <p>釣り用品の取引から情報交換まで</p>
+          </div>
+          <div className="features-grid">
+            <div className="feature-card">
+              <div className="feature-icon">
+                <i className="fa-solid fa-fish"></i>
+              </div>
+              <h4>釣り用品専門</h4>
+              <p>釣り竿からルアーまで、釣り用品に特化した専門マーケット</p>
+            </div>
+            <div className="feature-card">
+              <div className="feature-icon">
+                <i className="fa-solid fa-location-dot"></i>
+              </div>
+              <h4>釣り場情報共有</h4>
+              <p>地域の釣り場情報や釣果報告をシェア</p>
+            </div>
+            <div className="feature-card">
+              <div className="feature-icon">
+                <i className="fa-solid fa-users"></i>
+              </div>
+              <h4>釣り仲間と交流</h4>
+              <p>近くの釣り人との情報交換やグループ釣行の企画</p>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA セクション */}
+        <section className="cta-section">
+          <div className="cta-content">
+            <h3 className="cta-title">釣り人のコミュニティに参加しよう</h3>
+            <p className="cta-description">
+              無料で簡単に始められます。あなたの釣り用品を必要な人に届けませんか？
+            </p>
+            <div className="cta-buttons">
+              <a href="/register" className="cta-btn primary">
+                <i className="fa-solid fa-fish"></i>
+                釣り人として参加
+              </a>
+              <a href="/search" className="cta-btn secondary">
+                <i className="fa-solid fa-search"></i>
+                釣り用品を探す
+              </a>
+            </div>
+          </div>
+        </section>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+      <Footer />
     </div>
   );
 }
