@@ -1,9 +1,45 @@
 "use client";
 
 import Link from 'next/link';
+import ProductCard, { Product } from '@/components/ProductCard';
 import { Fish, Search, MapPin, Users, ArrowRight, Circle, Bug, Package, Shirt, Ship } from 'lucide-react';
 
 export default function Home() {
+  const featuredProducts: Product[] = [
+    {
+      id: 1,
+      name: 'ダイワ製 海釣り用ロッド',
+      price: 18000,
+      location: '湘南・江ノ島',
+      condition: '良好',
+      postedDate: '2日前'
+    },
+    {
+      id: 2,
+      name: 'シマノ電動リール',
+      price: 45000,
+      location: '横浜・本牧',
+      condition: '未使用に近い',
+      postedDate: '1日前'
+    },
+    {
+      id: 3,
+      name: 'メガバス ルアーセット',
+      price: 12500,
+      location: '多摩川・調布',
+      condition: '良好',
+      postedDate: '3日前'
+    },
+    {
+      id: 4,
+      name: 'タックルボックス一式',
+      price: 8000,
+      location: '東京湾・船橋',
+      condition: '新品',
+      postedDate: '1日前'
+    }
+  ];
+
   return (
     <div>
       <style jsx global>{`
@@ -121,58 +157,9 @@ export default function Home() {
             <p className="text-base text-gray-600">新しく出品された注目の釣り用品</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
-            <div className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-              <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-4xl text-gray-400">
-                <Fish size={60} />
-              </div>
-              <div className="p-5">
-                <h5 className="text-lg font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ダイワ製 海釣り用ロッド</h5>
-                <p className="text-xl font-bold text-[#2FA3E3] mb-3">¥18,000</p>
-                <p className="flex items-center gap-1 text-gray-600 text-sm">
-                  <MapPin size={16} />
-                  湘南・江ノ島
-                </p>
-              </div>
-            </div>
-            <div className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-              <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-4xl text-gray-400">
-                <Circle size={40} />
-              </div>
-              <div className="p-5">
-                <h5 className="text-lg font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>シマノ電動リール</h5>
-                <p className="text-xl font-bold text-[#2FA3E3] mb-3">¥45,000</p>
-                <p className="flex items-center gap-1 text-gray-600 text-sm">
-                  <MapPin size={16} />
-                  横浜・本牧
-                </p>
-              </div>
-            </div>
-            <div className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-              <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-4xl text-gray-400">
-                <Bug size={40} />
-              </div>
-              <div className="p-5">
-                <h5 className="text-lg font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>メガバス ルアーセット</h5>
-                <p className="text-xl font-bold text-[#2FA3E3] mb-3">¥12,500</p>
-                <p className="flex items-center gap-1 text-gray-600 text-sm">
-                  <MapPin size={16} />
-                  多摩川・調布
-                </p>
-              </div>
-            </div>
-            <div className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-              <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-4xl text-gray-400">
-                <Package size={32} />
-              </div>
-              <div className="p-5">
-                <h5 className="text-lg font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>タックルボックス一式</h5>
-                <p className="text-xl font-bold text-[#2FA3E3] mb-3">¥8,000</p>
-                <p className="flex items-center gap-1 text-gray-600 text-sm">
-                  <MapPin size={16} />
-                  東京湾・船橋
-                </p>
-              </div>
-            </div>
+            {featuredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} variant="featured" />
+            ))}
           </div>
           <div className="text-center">
             <Link href="/search" className="inline-flex items-center gap-3 py-4 px-8 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] text-white rounded-full font-bold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">

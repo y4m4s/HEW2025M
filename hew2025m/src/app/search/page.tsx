@@ -1,6 +1,15 @@
+import ProductCard, { Product } from '@/components/ProductCard';
 import { Fish, MapPin } from 'lucide-react';
 
 export default function SearchPage() {
+  const searchResults: Product[] = Array.from({ length: 8 }, (_, i) => ({
+    id: i + 1,
+    name: '釣り竿セット - 初心者向け',
+    price: 3500,
+    location: '東京都',
+    condition: '良好',
+    postedDate: '2日前'
+  }));
   return (
     <div>
       
@@ -70,29 +79,8 @@ export default function SearchPage() {
 
             {/* 商品一覧 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {Array.from({ length: 8 }, (_, i) => (
-                <div key={i} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg hover:transform hover:-translate-y-1 transition-all duration-300">
-                  <div className="h-48 bg-gray-200 flex items-center justify-center text-4xl text-gray-400">
-                    <Fish size={48} />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">
-                      釣り竿セット - 初心者向け
-                    </h3>
-                    <p className="text-xl font-bold text-[#2FA3E3] mb-2">¥3,500</p>
-                    <div className="flex items-center gap-1 text-sm text-gray-500 mb-2">
-                      <MapPin size={16} /> <span>東京都</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                        良好
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        2日前
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              {searchResults.map((product) => (
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
 

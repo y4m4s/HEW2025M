@@ -1,6 +1,52 @@
 import Link from 'next/link';
+import PostCard, { Post } from '@/components/PostCard';
 
 export default function CommunityPage() {
+  const samplePosts: Post[] = [
+    {
+      id: 1,
+      title: '東京湾で大型スズキゲット！',
+      excerpt: '朝マズメの時間帯に70cmのスズキを釣り上げました。ルアーはメガバス製のミノーを使用。潮の流れが良くて...',
+      fishName: 'スズキ',
+      fishSize: '70cm',
+      fishWeight: '3.2kg',
+      location: '東京湾・豊洲',
+      author: '海釣り太郎',
+      date: '2024年12月15日',
+      likes: 24,
+      comments: 8,
+      category: 'sea'
+    },
+    {
+      id: 2,
+      title: '多摩川でバスの数釣り成功',
+      excerpt: 'ワームを使って数釣りを楽しんできました。30cmクラスのバスを5匹キャッチ。今日のポイントは浅場の...',
+      fishName: 'ブラックバス',
+      fishSize: '30cm',
+      fishCount: '5匹',
+      location: '多摩川・調布',
+      author: 'バス釣り花子',
+      date: '2024年12月14日',
+      likes: 18,
+      comments: 12,
+      category: 'river'
+    },
+    {
+      id: 3,
+      title: '湘南でマダイの良型！',
+      excerpt: '船釣りで念願のマダイをゲット。50cmオーバーの良型で引きが強くて楽しかったです。エサはアミエビを...',
+      fishName: 'マダイ',
+      fishSize: '52cm',
+      fishWeight: '2.8kg',
+      location: '湘南・江ノ島沖',
+      author: '船釣り次郎',
+      date: '2024年12月13日',
+      likes: 35,
+      comments: 15,
+      category: 'sea',
+      isLiked: true
+    }
+  ];
   return (
     <div>
       
@@ -14,9 +60,7 @@ export default function CommunityPage() {
                   投稿する
                 </Link>
               </div>
-              <div className="bg-white rounded-lg shadow-md p-8 mb-6 min-h-48 flex items-center justify-center text-gray-500">
-                投稿内容
-              </div>
+              <PostCard post={samplePosts[0]} variant="compact" />
             </section>
 
             <section className="mb-12">
@@ -27,12 +71,8 @@ export default function CommunityPage() {
                 </Link>
               </div>
               <div className="space-y-6">
-                <div className="bg-white rounded-lg shadow-md p-6 min-h-32 flex items-center justify-center text-gray-500">
-                  投稿内容
-                </div>
-                <div className="bg-white rounded-lg shadow-md p-6 min-h-32 flex items-center justify-center text-gray-500">
-                  投稿内容
-                </div>
+                <PostCard post={samplePosts[1]} variant="simple" />
+                <PostCard post={samplePosts[2]} variant="simple" />
               </div>
               <div className="text-center mt-8">
                 <Link href="/postList" className="text-[#2FA3E3] font-medium hover:text-[#1d7bb8] transition-colors duration-300">
