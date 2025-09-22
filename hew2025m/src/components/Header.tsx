@@ -39,9 +39,9 @@ export default function Header() {
           <div className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-600">
             <Search size={16} />
           </div>
-          <input 
-            type="search" 
-            placeholder="キーワードで検索" 
+          <input
+            type="search"
+            placeholder="キーワードで検索"
             className="w-full py-4 px-5 pl-12 border-2 border-gray-200 rounded-full text-base outline-none transition-colors duration-300 focus:border-[#2FA3E3] placeholder:text-gray-400"
           />
         </form>

@@ -1,47 +1,53 @@
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+"use client";
+
 import Link from 'next/link';
 import { Fish, Search, MapPin, Users, ArrowRight, Circle, Bug, Package, Shirt, Ship } from 'lucide-react';
 
 export default function Home() {
   return (
     <div>
+      <style jsx global>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+      `}</style>
 
       <main className="container mx-auto max-w-6xl px-5">
         {/* ヒーローセクション */}
-        <section className="hero-section">
-          <div className="hero-content">
-            <div className="hero-text">
-              <h2 className="hero-title">釣り人のための<br />マーケットプレイス</h2>
-              <p className="hero-description">
+        <section className="py-20 px-4 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] text-white mb-16 rounded-b-[50px]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-10">
+            <div>
+              <h2 className="text-4xl lg:text-5xl font-bold mb-5 leading-tight" style={{fontFamily: "せのびゴシック, sans-serif"}}>釣り人のための<br />マーケットプレイス</h2>
+              <p className="text-lg mb-10 opacity-90 leading-relaxed p-4">
                 釣り用品の売買から釣り情報のシェア、マッチングまで。<br />
                 釣り人の集まる街「ツリマチ」で、もっと釣りを楽しもう。
               </p>
-              <div className="hero-buttons">
-                <Link href="/sell" className="hero-btn primary">
+              <div className="flex gap-5 flex-wrap">
+                <Link href="/sell" className="inline-flex items-center gap-3 py-4 px-8 bg-white text-[#2FA3E3] rounded-full text-base font-bold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl">
                   <Fish size={20} />
                   釣り用品を出品
                 </Link>
-                <Link href="/search" className="hero-btn secondary">
+                <Link href="/search" className="inline-flex items-center gap-3 py-4 px-8 bg-transparent text-white border-2 border-white rounded-full text-base font-bold transition-all duration-300 hover:bg-white hover:text-[#2FA3E3]">
                   <Search size={20} />
                   用品を探す
                 </Link>
               </div>
             </div>
-            <div className="hero-visual">
-              <div className="hero-icon">
+            <div className="relative flex justify-center items-center">
+              <div className="w-36 h-36 bg-white/20 rounded-full flex items-center justify-center text-6xl text-white relative z-10">
                 <Fish size={60} />
               </div>
-              <div className="floating-cards">
-                <div className="card card-1">
+              <div className="absolute w-full h-full hidden lg:block">
+                <div className="absolute top-[20%] right-[10%] bg-white text-[#2FA3E3] py-4 px-5 rounded-2xl shadow-lg flex items-center gap-3 font-bold animate-[float_3s_ease-in-out_infinite]">
                   <Fish size={20} />
                   <span>釣竿</span>
                 </div>
-                <div className="card card-2">
+                <div className="absolute bottom-[30%] left-[5%] bg-white text-[#2FA3E3] py-4 px-5 rounded-2xl shadow-lg flex items-center gap-3 font-bold animate-[float_3s_ease-in-out_infinite] [animation-delay:1s]">
                   <Circle size={20} />
                   <span>リール</span>
                 </div>
-                <div className="card card-3">
+                <div className="absolute top-[60%] right-[20%] bg-white text-[#2FA3E3] py-4 px-5 rounded-2xl shadow-lg flex items-center gap-3 font-bold animate-[float_3s_ease-in-out_infinite] [animation-delay:2s]">
                   <Bug size={20} />
                   <span>ルアー</span>
                 </div>
@@ -51,125 +57,125 @@ export default function Home() {
         </section>
 
         {/* 人気カテゴリー */}
-        <section className="categories-section">
-          <div className="section-header">
-            <h3>釣り用品カテゴリー</h3>
-            <p>よく取引されている釣り用品をチェック</p>
+        <section className="py-16 mb-16">
+          <div className="text-center mb-10">
+            <h3 className="text-3xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>釣り用品カテゴリー</h3>
+            <p className="text-base text-gray-600">よく取引されている釣り用品をチェック</p>
           </div>
-          <div className="categories-grid">
-            <div className="category-card">
-              <div className="category-icon">
-                <Fish size={60} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="bg-white p-8 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+              <div className="w-20 h-20 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-5 text-white">
+                <Fish size={32} />
               </div>
-              <h4>ロッド・竿</h4>
-              <p>海釣り・川釣り・ルアー竿</p>
-              <span className="item-count">1,234件</span>
+              <h4 className="text-xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ロッド・竿</h4>
+              <p className="text-gray-600 mb-4">海釣り・川釣り・ルアー竿</p>
+              <span className="inline-block bg-blue-50 text-[#2FA3E3] py-1 px-4 rounded-full text-sm font-bold">1,234件</span>
             </div>
-            <div className="category-card">
-              <div className="category-icon">
+            <div className="bg-white p-8 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+              <div className="w-20 h-20 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-5 text-white">
                 <Circle size={32} />
               </div>
-              <h4>リール</h4>
-              <p>スピニング・ベイト・電動リール</p>
-              <span className="item-count">856件</span>
+              <h4 className="text-xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>リール</h4>
+              <p className="text-gray-600 mb-4">スピニング・ベイト・電動リール</p>
+              <span className="inline-block bg-blue-50 text-[#2FA3E3] py-1 px-4 rounded-full text-sm font-bold">856件</span>
             </div>
-            <div className="category-card">
-              <div className="category-icon">
+            <div className="bg-white p-8 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+              <div className="w-20 h-20 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-5 text-white">
                 <Bug size={32} />
               </div>
-              <h4>ルアー・仕掛け</h4>
-              <p>ハードルアー・ワーム・針</p>
-              <span className="item-count">2,189件</span>
+              <h4 className="text-xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ルアー・仕掛け</h4>
+              <p className="text-gray-600 mb-4">ハードルアー・ワーム・針</p>
+              <span className="inline-block bg-blue-50 text-[#2FA3E3] py-1 px-4 rounded-full text-sm font-bold">2,189件</span>
             </div>
-            <div className="category-card">
-              <div className="category-icon">
+            <div className="bg-white p-8 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+              <div className="w-20 h-20 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-5 text-white">
                 <Package size={32} />
               </div>
-              <h4>タックルボックス</h4>
-              <p>道具箱・収納・ケース</p>
-              <span className="item-count">423件</span>
+              <h4 className="text-xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>タックルボックス</h4>
+              <p className="text-gray-600 mb-4">道具箱・収納・ケース</p>
+              <span className="inline-block bg-blue-50 text-[#2FA3E3] py-1 px-4 rounded-full text-sm font-bold">423件</span>
             </div>
-            <div className="category-card">
-              <div className="category-icon">
+            <div className="bg-white p-8 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+              <div className="w-20 h-20 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-5 text-white">
                 <Shirt size={32} />
               </div>
-              <h4>ウェア・装身具</h4>
-              <p>ライフジャケット・帽子・サングラス</p>
-              <span className="item-count">678件</span>
+              <h4 className="text-xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ウェア・装身具</h4>
+              <p className="text-gray-600 mb-4">ライフジャケット・帽子・サングラス</p>
+              <span className="inline-block bg-blue-50 text-[#2FA3E3] py-1 px-4 rounded-full text-sm font-bold">678件</span>
             </div>
-            <div className="category-card">
-              <div className="category-icon">
+            <div className="bg-white p-8 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+              <div className="w-20 h-20 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-5 text-white">
                 <Ship size={32} />
               </div>
-              <h4>ボート・船外機</h4>
-              <p>フィッシングボート・カヤック</p>
-              <span className="item-count">145件</span>
+              <h4 className="text-xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ボート・船外機</h4>
+              <p className="text-gray-600 mb-4">フィッシングボート・カヤック</p>
+              <span className="inline-block bg-blue-50 text-[#2FA3E3] py-1 px-4 rounded-full text-sm font-bold">145件</span>
             </div>
           </div>
         </section>
 
         {/* 最新の出品 */}
-        <section className="recent-items-section">
-          <div className="section-header">
-            <h3>最新の出品釣り用品</h3>
-            <p>新しく出品された注目の釣り用品</p>
+        <section className="py-16 mb-16">
+          <div className="text-center mb-10">
+            <h3 className="text-3xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>最新の出品釣り用品</h3>
+            <p className="text-base text-gray-600">新しく出品された注目の釣り用品</p>
           </div>
-          <div className="items-grid">
-            <div className="item-card">
-              <div className="item-image-placeholder">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+            <div className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+              <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-4xl text-gray-400">
                 <Fish size={60} />
               </div>
-              <div className="item-info">
-                <h5 className="item-title">ダイワ製 海釣り用ロッド</h5>
-                <p className="item-price">¥18,000</p>
-                <p className="item-location">
+              <div className="p-5">
+                <h5 className="text-lg font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ダイワ製 海釣り用ロッド</h5>
+                <p className="text-xl font-bold text-[#2FA3E3] mb-3">¥18,000</p>
+                <p className="flex items-center gap-1 text-gray-600 text-sm">
                   <MapPin size={16} />
                   湘南・江ノ島
                 </p>
               </div>
             </div>
-            <div className="item-card">
-              <div className="item-image-placeholder">
+            <div className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+              <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-4xl text-gray-400">
                 <Circle size={40} />
               </div>
-              <div className="item-info">
-                <h5 className="item-title">シマノ電動リール</h5>
-                <p className="item-price">¥45,000</p>
-                <p className="item-location">
+              <div className="p-5">
+                <h5 className="text-lg font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>シマノ電動リール</h5>
+                <p className="text-xl font-bold text-[#2FA3E3] mb-3">¥45,000</p>
+                <p className="flex items-center gap-1 text-gray-600 text-sm">
                   <MapPin size={16} />
                   横浜・本牧
                 </p>
               </div>
             </div>
-            <div className="item-card">
-              <div className="item-image-placeholder">
+            <div className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+              <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-4xl text-gray-400">
                 <Bug size={40} />
               </div>
-              <div className="item-info">
-                <h5 className="item-title">メガバス ルアーセット</h5>
-                <p className="item-price">¥12,500</p>
-                <p className="item-location">
+              <div className="p-5">
+                <h5 className="text-lg font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>メガバス ルアーセット</h5>
+                <p className="text-xl font-bold text-[#2FA3E3] mb-3">¥12,500</p>
+                <p className="flex items-center gap-1 text-gray-600 text-sm">
                   <MapPin size={16} />
                   多摩川・調布
                 </p>
               </div>
             </div>
-            <div className="item-card">
-              <div className="item-image-placeholder">
+            <div className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+              <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-4xl text-gray-400">
                 <Package size={32} />
               </div>
-              <div className="item-info">
-                <h5 className="item-title">タックルボックス一式</h5>
-                <p className="item-price">¥8,000</p>
-                <p className="item-location">
+              <div className="p-5">
+                <h5 className="text-lg font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>タックルボックス一式</h5>
+                <p className="text-xl font-bold text-[#2FA3E3] mb-3">¥8,000</p>
+                <p className="flex items-center gap-1 text-gray-600 text-sm">
                   <MapPin size={16} />
                   東京湾・船橋
                 </p>
               </div>
             </div>
           </div>
-          <div className="section-footer">
-            <Link href="/search" className="more-link">
+          <div className="text-center">
+            <Link href="/search" className="inline-flex items-center gap-3 py-4 px-8 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] text-white rounded-full font-bold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
               すべての商品を見る
               <ArrowRight size={20} />
             </Link>
@@ -177,49 +183,49 @@ export default function Home() {
         </section>
 
         {/* 特徴セクション */}
-        <section className="features-section">
-          <div className="section-header">
-            <h3>釣り人のためのコミュニティ</h3>
-            <p>釣り用品の取引から情報交換まで</p>
+        <section className="py-16 bg-white rounded-3xl mb-16 shadow-sm">
+          <div className="text-center mb-10">
+            <h3 className="text-3xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>釣り人のためのコミュニティ</h3>
+            <p className="text-base text-gray-600">釣り用品の取引から情報交換まで</p>
           </div>
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon">
-                <Fish size={60} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            <div className="text-center py-8 px-5">
+              <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
+                <Fish size={32} />
               </div>
-              <h4>釣り用品専門</h4>
-              <p>釣り竿からルアーまで、釣り用品に特化した専門マーケット</p>
+              <h4 className="text-xl font-bold mb-4 text-gray-800">釣り用品専門</h4>
+              <p className="text-gray-600 leading-relaxed">釣り竿からルアーまで、釣り用品に特化した専門マーケット</p>
             </div>
-            <div className="feature-card">
-              <div className="feature-icon">
+            <div className="text-center py-8 px-5">
+              <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
                 <MapPin size={32} />
               </div>
-              <h4>釣り場情報共有</h4>
-              <p>地域の釣り場情報や釣果報告をシェア</p>
+              <h4 className="text-xl font-bold mb-4 text-gray-800">釣り場情報共有</h4>
+              <p className="text-gray-600 leading-relaxed">地域の釣り場情報や釣果報告をシェア</p>
             </div>
-            <div className="feature-card">
-              <div className="feature-icon">
+            <div className="text-center py-8 px-5">
+              <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
                 <Users size={32} />
               </div>
-              <h4>釣り仲間と交流</h4>
-              <p>近くの釣り人との情報交換やグループ釣行の企画</p>
+              <h4 className="text-xl font-bold mb-4 text-gray-800">釣り仲間と交流</h4>
+              <p className="text-gray-600 leading-relaxed">近くの釣り人との情報交換やグループ釣行の企画</p>
             </div>
           </div>
         </section>
 
         {/* CTA セクション */}
-        <section className="cta-section">
-          <div className="cta-content">
-            <h3 className="cta-title">釣り人のコミュニティに参加しよう</h3>
-            <p className="cta-description">
+        <section className="bg-gradient-to-r from-gray-700 to-gray-600 text-white py-20 rounded-3xl text-center mb-10 relative overflow-hidden before:absolute before:top-[-50%] before:left-[-50%] before:w-[200%] before:h-[200%] before:bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,transparent_70%)] before:animate-[spin_20s_linear_infinite]">
+          <div className="relative z-10">
+            <h3 className="text-3xl lg:text-4xl font-bold mb-5" style={{fontFamily: "せのびゴシック, sans-serif"}}>釣り人のコミュニティに参加しよう</h3>
+            <p className="text-lg mb-10 opacity-90">
               無料で簡単に始められます。あなたの釣り用品を必要な人に届けませんか？
             </p>
-            <div className="cta-buttons">
-              <Link href="/register" className="cta-btn primary">
-                <Fish size={60} />
+            <div className="flex gap-5 justify-center flex-wrap">
+              <Link href="/register" className="inline-flex items-center gap-3 py-5 px-9 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] text-white rounded-full text-base font-bold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl">
+                <Fish size={20} />
                 釣り人として参加
               </Link>
-              <Link href="/search" className="cta-btn secondary">
+              <Link href="/search" className="inline-flex items-center gap-3 py-5 px-9 bg-transparent text-white border-2 border-white rounded-full text-base font-bold transition-all duration-300 hover:bg-white hover:text-gray-700">
                 <Search size={20} />
                 釣り用品を探す
               </Link>
