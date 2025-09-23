@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Upload, MapPin } from 'lucide-react';
+import Button from '@/components/Button';
 
 export default function Post() {
   const [title, setTitle] = useState('');
@@ -94,12 +95,14 @@ export default function Post() {
             </div>
 
             <div className="pt-6">
-              <button
+              <Button
                 type="submit"
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+                variant="primary"
+                size="lg"
+                className="w-full"
               >
                 投稿する
-              </button>
+              </Button>
             </div>
           </form>
         </div>

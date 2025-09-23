@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Button from '@/components/Button';
 
 export default function LoginPage() {
   return (
@@ -39,12 +40,14 @@ export default function LoginPage() {
               />
             </div>
 
-            <button 
-              type="submit" 
-              className="w-full p-4 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] text-white border-none rounded-lg text-base font-bold cursor-pointer transition-all duration-300 mt-2.5 relative overflow-hidden hover:transform hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#2FA3E3]/30 active:transform active:translate-y-0"
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              className="w-full mt-2.5"
             >
               ログイン
-            </button>
+            </Button>
           </form>
 
           <div className="text-center mt-5">
@@ -60,12 +63,14 @@ export default function LoginPage() {
             コチラから登録をお願いします
           </span>
           <span className="mx-4 text-xl text-[#2FA3E3] font-bold transition-transform duration-300">→</span>
-          <Link 
-            href="/register" 
-            className="bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] text-white border-none px-6 py-3 rounded-full text-sm font-bold cursor-pointer transition-all duration-300 whitespace-nowrap relative overflow-hidden hover:transform hover:-translate-y-0.5 hover:shadow-md hover:shadow-[#2FA3E3]/30"
+          <Button
+            href="/register"
+            variant="primary"
+            size="sm"
+            className="whitespace-nowrap rounded-full"
           >
             新規登録
-          </Link>
+          </Button>
         </div>
       </div>
 

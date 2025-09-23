@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Button from '@/components/Button';
 import { MapPin, Navigation, Plus, Minus, ExternalLink, User, Image } from 'lucide-react';
 
 export default function Map() {
@@ -50,10 +51,9 @@ export default function Map() {
                     <div className="text-sm font-medium">田中太郎</div>
                   </div>
 
-                  <button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded flex items-center justify-center gap-2 transition-colors">
-                    <ExternalLink size={16} />
+                  <Button variant="primary" size="md" className="w-full" icon={<ExternalLink size={16} />}>
                     投稿詳細を見る
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -66,16 +66,15 @@ export default function Map() {
                 マップ
               </h3>
               <div className="flex gap-2">
-                <button className="flex items-center gap-2 px-3 py-1.5 bg-white border rounded hover:bg-gray-50 transition-colors text-sm">
-                  <Navigation size={14} />
+                <Button variant="outline" size="sm" className="bg-white border text-sm" icon={<Navigation size={14} />}>
                   現在地
-                </button>
-                <button className="w-8 h-8 bg-white border rounded hover:bg-gray-50 transition-colors flex items-center justify-center">
+                </Button>
+                <Button variant="outline" size="sm" className="w-8 h-8 p-0 bg-white border">
                   <Plus size={14} />
-                </button>
-                <button className="w-8 h-8 bg-white border rounded hover:bg-gray-50 transition-colors flex items-center justify-center">
+                </Button>
+                <Button variant="outline" size="sm" className="w-8 h-8 p-0 bg-white border">
                   <Minus size={14} />
-                </button>
+                </Button>
               </div>
             </div>
 

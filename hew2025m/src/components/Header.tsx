@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Bell, Mail, Search } from 'lucide-react';
+import Button from '@/components/Button';
 
 export default function Header() {
   return (
@@ -26,12 +27,12 @@ export default function Header() {
           <Link href="/message" className="flex justify-center items-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 text-lg transition-all duration-300 hover:bg-gray-200 hover:text-[#2FA3E3]" aria-label="メッセージ">
             <Mail size={18} />
           </Link>
-          <Link href="/login" className="inline-flex items-center justify-center py-2.5 px-5 rounded-full text-sm font-medium no-underline cursor-pointer border-none transition-all duration-300 gap-2 bg-transparent text-[#2FA3E3] border border-[#2FA3E3] hover:bg-[#2FA3E3] hover:text-white">
+          <Button href="/login" variant="outline" size="sm" className="rounded-full">
             ログイン
-          </Link>
-          <Link href="/register" className="inline-flex items-center justify-center py-2.5 px-5 rounded-full text-sm font-medium no-underline cursor-pointer border-none transition-all duration-300 gap-2 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] text-white hover:bg-[#1d7bb8]">
+          </Button>
+          <Button href="/register" variant="primary" size="sm" className="rounded-full">
             新規登録
-          </Link>
+          </Button>
         </div>
       </div>
       <div className="flex justify-center">

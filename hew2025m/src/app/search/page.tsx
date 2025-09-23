@@ -1,4 +1,5 @@
 import ProductCard, { Product } from '@/components/ProductCard';
+import Button from '@/components/Button';
 import { Fish, MapPin } from 'lucide-react';
 
 export default function SearchPage() {
@@ -56,9 +57,9 @@ export default function SearchPage() {
                   </select>
                 </div>
                 <div className="flex items-end">
-                  <button className="w-full bg-[#2FA3E3] text-white py-3 rounded-lg hover:bg-[#1d7bb8] transition-colors duration-300">
+                  <Button variant="primary" size="md" className="w-full">
                     検索
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -87,17 +88,17 @@ export default function SearchPage() {
             {/* ページネーション */}
             <div className="flex justify-center mt-12">
               <div className="flex items-center gap-2">
-                <button className="px-4 py-2 text-gray-500 hover:text-[#2FA3E3] transition-colors duration-300">
+                <Button variant="ghost" size="md" className="text-gray-500 hover:text-[#2FA3E3]">
                   ← 前へ
-                </button>
-                <button className="px-4 py-2 bg-[#2FA3E3] text-white rounded-lg">1</button>
-                <button className="px-4 py-2 text-gray-600 hover:text-[#2FA3E3] transition-colors duration-300">2</button>
-                <button className="px-4 py-2 text-gray-600 hover:text-[#2FA3E3] transition-colors duration-300">3</button>
+                </Button>
+                <Button variant="primary" size="md">1</Button>
+                <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">2</Button>
+                <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">3</Button>
                 <span className="px-2 text-gray-500">...</span>
-                <button className="px-4 py-2 text-gray-600 hover:text-[#2FA3E3] transition-colors duration-300">10</button>
-                <button className="px-4 py-2 text-gray-500 hover:text-[#2FA3E3] transition-colors duration-300">
+                <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">10</Button>
+                <Button variant="ghost" size="md" className="text-gray-500 hover:text-[#2FA3E3]">
                   次へ →
-                </button>
+                </Button>
               </div>
             </div>
           </div>

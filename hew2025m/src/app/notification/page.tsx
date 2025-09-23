@@ -1,4 +1,5 @@
 import { Mail, DollarSign, Heart, Users, MessageCircle, Megaphone, Bell } from 'lucide-react';
+import Button from '@/components/Button';
 
 function getNotificationIcon(iconType: string) {
   switch (iconType) {
@@ -80,26 +81,26 @@ icon: 'megaphone'
               <h1 className="text-4xl font-bold text-gray-800" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
                 通知
               </h1>
-              <button className="text-[#2FA3E3] hover:text-[#1d7bb8] font-medium transition-colors duration-300">
+              <Button variant="ghost" size="md" className="text-[#2FA3E3] hover:text-[#1d7bb8]">
                 すべて既読にする
-              </button>
+              </Button>
             </div>
 
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="p-4 bg-gray-50 border-b border-gray-200">
                 <div className="flex gap-4">
-                  <button className="px-4 py-2 bg-[#2FA3E3] text-white rounded-lg font-medium">
+                  <Button variant="primary" size="md">
                     すべて
-                  </button>
-                  <button className="px-4 py-2 text-gray-600 hover:text-[#2FA3E3] transition-colors duration-300">
+                  </Button>
+                  <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">
                     未読のみ
-                  </button>
-                  <button className="px-4 py-2 text-gray-600 hover:text-[#2FA3E3] transition-colors duration-300">
+                  </Button>
+                  <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">
                     メッセージ
-                  </button>
-                  <button className="px-4 py-2 text-gray-600 hover:text-[#2FA3E3] transition-colors duration-300">
+                  </Button>
+                  <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">
                     取引
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -158,15 +159,15 @@ icon: 'megaphone'
                 <div className="p-6 bg-gray-50 border-t border-gray-200">
                   <div className="flex justify-center">
                     <div className="flex items-center gap-2">
-                      <button className="px-4 py-2 text-gray-500 hover:text-[#2FA3E3] transition-colors duration-300">
+                      <Button variant="ghost" size="md" className="text-gray-500 hover:text-[#2FA3E3]">
                         ← 前へ
-                      </button>
-                      <button className="px-4 py-2 bg-[#2FA3E3] text-white rounded-lg">1</button>
-                      <button className="px-4 py-2 text-gray-600 hover:text-[#2FA3E3] transition-colors duration-300">2</button>
-                      <button className="px-4 py-2 text-gray-600 hover:text-[#2FA3E3] transition-colors duration-300">3</button>
-                      <button className="px-4 py-2 text-gray-500 hover:text-[#2FA3E3] transition-colors duration-300">
+                      </Button>
+                      <Button variant="primary" size="md">1</Button>
+                      <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">2</Button>
+                      <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">3</Button>
+                      <Button variant="ghost" size="md" className="text-gray-500 hover:text-[#2FA3E3]">
                         次へ →
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>

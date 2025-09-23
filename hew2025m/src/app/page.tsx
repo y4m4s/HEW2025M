@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import ProductCard, { Product } from '@/components/ProductCard';
+import Button from '@/components/Button';
 import { Fish, Search, MapPin, Users, ArrowRight, Circle, Bug, Package, Shirt, Ship } from 'lucide-react';
 
 export default function Home() {
@@ -60,14 +61,12 @@ export default function Home() {
                 釣り人の集まる街「ツリマチ」で、もっと釣りを楽しもう。
               </p>
               <div className="flex gap-5 flex-wrap">
-                <Link href="/sell" className="inline-flex items-center gap-3 py-4 px-8 bg-white text-[#2FA3E3] rounded-full text-base font-bold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl">
-                  <Fish size={20} />
+                <Button href="/sell" variant="primary" size="lg" className="bg-white text-[#2FA3E3] hover:shadow-xl" icon={<Fish size={20} />}>
                   釣り用品を出品
-                </Link>
-                <Link href="/search" className="inline-flex items-center gap-3 py-4 px-8 bg-transparent text-white border-2 border-white rounded-full text-base font-bold transition-all duration-300 hover:bg-white hover:text-[#2FA3E3]">
-                  <Search size={20} />
+                </Button>
+                <Button href="/search" variant="outline" size="lg" className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-[#2FA3E3]" icon={<Search size={20} />}>
                   用品を探す
-                </Link>
+                </Button>
               </div>
             </div>
             <div className="relative flex justify-center items-center">
@@ -162,10 +161,9 @@ export default function Home() {
             ))}
           </div>
           <div className="text-center">
-            <Link href="/search" className="inline-flex items-center gap-3 py-4 px-8 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] text-white rounded-full font-bold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
+            <Button href="/search" variant="primary" size="lg" icon={<ArrowRight size={20} />}>
               すべての商品を見る
-              <ArrowRight size={20} />
-            </Link>
+            </Button>
           </div>
         </section>
 
@@ -208,14 +206,12 @@ export default function Home() {
               無料で簡単に始められます。あなたの釣り用品を必要な人に届けませんか？
             </p>
             <div className="flex gap-5 justify-center flex-wrap">
-              <Link href="/register" className="inline-flex items-center gap-3 py-5 px-9 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] text-white rounded-full text-base font-bold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl">
-                <Fish size={20} />
+              <Button href="/register" variant="primary" size="lg" className="py-5 px-9" icon={<Fish size={20} />}>
                 釣り人として参加
-              </Link>
-              <Link href="/search" className="inline-flex items-center gap-3 py-5 px-9 bg-transparent text-white border-2 border-white rounded-full text-base font-bold transition-all duration-300 hover:bg-white hover:text-gray-700">
-                <Search size={20} />
+              </Button>
+              <Button href="/search" variant="outline" size="lg" className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-gray-700 py-5 px-9" icon={<Search size={20} />}>
                 釣り用品を探す
-              </Link>
+              </Button>
             </div>
           </div>
         </section>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import PostCard, { Post } from '@/components/PostCard';
+import Button from '@/components/Button';
 import { Fish, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function PostList() {
@@ -119,29 +120,28 @@ export default function PostList() {
               <p className="text-gray-600">みんなの釣果や釣り場情報をチェック</p>
             </div>
 
-            <a
+            <Button
               href="/post"
-              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors"
+              variant="primary"
+              size="md"
+              icon={<Plus size={18} />}
             >
-              <Plus size={18} />
               新規投稿
-            </a>
+            </Button>
           </div>
 
           <div className="flex justify-between items-center mb-8">
             <div className="flex gap-2">
               {filterTabs.map((tab) => (
-                <button
+                <Button
                   key={tab.key}
                   onClick={() => setActiveFilter(tab.key)}
-                  className={`px-4 py-2 rounded transition-colors ${
-                    activeFilter === tab.key
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                  }`}
+                  variant={activeFilter === tab.key ? 'primary' : 'ghost'}
+                  size="sm"
+                  className={activeFilter === tab.key ? '' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}
                 >
                   {tab.label}
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -164,26 +164,31 @@ export default function PostList() {
           </div>
 
           <div className="flex justify-center items-center gap-4">
-            <button
+            <Button
               disabled
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-400 rounded cursor-not-allowed"
+              variant="ghost"
+              size="md"
+              className="bg-gray-100 text-gray-400 cursor-not-allowed"
+              icon={<ChevronLeft size={16} />}
             >
-              <ChevronLeft size={16} />
               前へ
-            </button>
+            </Button>
 
             <div className="flex gap-2">
-              <button className="w-8 h-8 bg-blue-500 text-white rounded">1</button>
-              <button className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded">2</button>
-              <button className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded">3</button>
+              <Button variant="primary" size="sm" className="w-8 h-8 p-0">1</Button>
+              <Button variant="ghost" size="sm" className="w-8 h-8 p-0 bg-gray-100 hover:bg-gray-200">2</Button>
+              <Button variant="ghost" size="sm" className="w-8 h-8 p-0 bg-gray-100 hover:bg-gray-200">3</Button>
               <span className="px-2">...</span>
-              <button className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded">10</button>
+              <Button variant="ghost" size="sm" className="w-8 h-8 p-0 bg-gray-100 hover:bg-gray-200">10</Button>
             </div>
 
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors">
+            <Button
+              variant="primary"
+              size="md"
+              icon={<ChevronRight size={16} />}
+            >
               次へ
-              <ChevronRight size={16} />
-            </button>
+            </Button>
           </div>
         </main>
       </div>

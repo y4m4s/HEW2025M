@@ -1,4 +1,5 @@
 import { Camera, Fish } from 'lucide-react';
+import Button from '@/components/Button';
 
 export default function SellPage() {
   return (
@@ -24,9 +25,9 @@ export default function SellPage() {
                       <Camera size={64} />
                     </div>
                     <p className="text-gray-500 mb-4">画像をドラッグ&ドロップまたはクリックして選択</p>
-                    <button type="button" className="bg-[#2FA3E3] text-white px-6 py-3 rounded-lg hover:bg-[#1d7bb8] transition-colors duration-300">
+                    <Button type="button" variant="primary" size="md">
                       画像を選択
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -116,13 +117,15 @@ export default function SellPage() {
 
                 {/* 出品ボタン */}
                 <div className="text-center pt-6">
-                  <button 
+                  <Button
                     type="submit"
-                    className="bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] text-white px-12 py-4 rounded-full text-xl font-bold hover:shadow-lg hover:transform hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2 justify-center"
+                    variant="primary"
+                    size="lg"
+                    className="px-12 text-xl"
+                    icon={<Fish size={24} />}
                   >
-                    <Fish size={24} />
                     商品を出品する
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
