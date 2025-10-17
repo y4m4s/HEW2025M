@@ -9,6 +9,7 @@ export interface IPost {
   authorId: string;
   authorName: string;
   tags: string[];
+  location: string;
   likes: number;
   comments: Array<{
     userId: string;
@@ -33,7 +34,7 @@ const PostSchema = new Schema<IPost>(
       type: String,
       required: [true, '投稿内容は必須です'],
       trim: true,
-      maxlength: [5000, '投稿内容は5000文字以内で入力してください'],
+      maxlength: [140, '投稿内容は140文字以内で入力してください'],
     },
     category: {
       type: String,
@@ -54,6 +55,10 @@ const PostSchema = new Schema<IPost>(
     tags: {
       type: [String],
       default: [],
+    },
+    location: {
+      type: String,
+      default: '',
     },
     likes: {
       type: Number,
