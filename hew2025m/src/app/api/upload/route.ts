@@ -8,10 +8,19 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
+    const authorId = formData.get('authorId') as string;
+    const timestamp = formData.get('timestamp') as string;
 
     if (files.length === 0) {
       return NextResponse.json(
         { error: 'ファイルが選択されていません' },
+        { status: 400 }
+      );
+    }
+
+    if (!authorId || !timestamp) {
+      return NextResponse.json(
+        { error: 'authorIdとtimestampが必要です' },
         { status: 400 }
       );
     }
@@ -22,35 +31,64 @@ export async function POST(request: NextRequest) {
       await mkdir(uploadDir, { recursive: true });
     }
 
-    const uploadedFiles: string[] = [];
+    // タイムスタンプをYYYYMMDD-HHMMSS形式に変換
+    const date = new Date(timestamp);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const dateTimeStr = `${year}${month}${day}-${hours}${minutes}${seconds}`;
 
-    for (const file of files) {
+    const uploadedFiles: Array<{
+      url: string;
+      originalName: string;
+      mimeType: string;
+      size: number;
+      uniqueId: string;
+      order: number;
+    }> = [];
+
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index];
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      // ファイル名の生成（タイムスタンプ + ランダム文字列）
-      const timestamp = Date.now();
-      const randomString = Math.random().toString(36).substring(2, 15);
+      // ファイル名の生成（YYYYMMDD-HHMMSS-USERID-(順番)）
+      const order = index + 1;
+      const uniqueId = `${dateTimeStr}-${authorId}-(${order})`;
       const fileExtension = path.extname(file.name);
-      const fileName = `${timestamp}-${randomString}${fileExtension}`;
+      const fileName = `${uniqueId}${fileExtension}`;
       const filePath = path.join(uploadDir, fileName);
+
+      let finalUrl = `/uploads/posts/${fileName}`;
 
       // 画像の場合は最適化
       if (file.type.startsWith('image/')) {
+        const optimizedFileName = `${uniqueId}.jpg`;
         await sharp(buffer)
           .resize(1200, 1200, {
             fit: 'inside',
             withoutEnlargement: true,
           })
           .jpeg({ quality: 85 })
-          .toFile(filePath.replace(fileExtension, '.jpg'));
+          .toFile(path.join(uploadDir, optimizedFileName));
 
-        uploadedFiles.push(`/uploads/posts/${fileName.replace(fileExtension, '.jpg')}`);
+        finalUrl = `/uploads/posts/${optimizedFileName}`;
       } else {
         // 動画や他のファイルはそのまま保存
         await writeFile(filePath, buffer);
-        uploadedFiles.push(`/uploads/posts/${fileName}`);
       }
+
+      uploadedFiles.push({
+        url: finalUrl,
+        originalName: file.name,
+        mimeType: file.type,
+        size: file.size,
+        uniqueId,
+        order,
+      });
     }
 
     return NextResponse.json({

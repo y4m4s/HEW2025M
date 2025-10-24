@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     await dbConnect();
 
     const body = await request.json();
-    const { title, content, category, images, authorId, authorName, tags, location } = body;
+    const { title, content, category, media, authorId, authorName, tags, location } = body;
 
     // バリデーション
     if (!title || !content || !authorId || !authorName) {
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       title,
       content,
       category: category || '一般',
-      images: images || [],
+      media: media || [],
       authorId,
       authorName,
       tags: tags || [],
