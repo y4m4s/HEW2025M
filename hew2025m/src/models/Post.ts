@@ -1,11 +1,22 @@
 import mongoose, { Schema, Model } from 'mongoose';
 
+// メディアファイルの型定義
+export interface IMediaFile {
+  url: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  uniqueId: string;
+  order: number; // 表示順序（1から始まる）
+  uploadedAt: Date;
+}
+
 // 投稿の型定義
 export interface IPost {
   title: string;
   content: string;
   category: string;
-  images: string[];
+  media: IMediaFile[]; // メディア情報（順番、メタデータ含む）
   authorId: string;
   authorName: string;
   tags: string[];
@@ -40,8 +51,41 @@ const PostSchema = new Schema<IPost>(
       type: String,
       required: [true, 'カテゴリーは必須です'],
     },
-    images: {
-      type: [String],
+    media: {
+      type: [
+        {
+          url: {
+            type: String,
+            required: true,
+          },
+          originalName: {
+            type: String,
+            required: true,
+          },
+          mimeType: {
+            type: String,
+            required: true,
+          },
+          size: {
+            type: Number,
+            required: true,
+          },
+          uniqueId: {
+            type: String,
+            required: true,
+            unique: true,
+          },
+          order: {
+            type: Number,
+            required: true,
+            min: 1,
+          },
+          uploadedAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
       default: [],
     },
     authorId: {
@@ -97,6 +141,7 @@ PostSchema.index({ authorId: 1 });
 PostSchema.index({ category: 1 });
 PostSchema.index({ tags: 1 });
 PostSchema.index({ createdAt: -1 });
+PostSchema.index({ 'media.uniqueId': 1 });
 
 // モデルのエクスポート（既存のモデルがあればそれを使用）
 const Post: Model<IPost> =

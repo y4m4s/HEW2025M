@@ -79,7 +79,18 @@ export default function Post() {
     setUploadProgress('投稿を準備中...');
 
     try {
-      let uploadedImageUrls: string[] = [];
+      // 投稿作成日時とユーザーIDを生成
+      const timestamp = new Date().toISOString();
+      const authorId = 'user-' + Date.now(); // TODO: 実際のユーザーIDに置き換え
+
+      let uploadedMedia: Array<{
+        url: string;
+        originalName: string;
+        mimeType: string;
+        size: number;
+        uniqueId: string;
+        order: number;
+      }> = [];
 
       // ファイルがある場合はアップロード
       if (selectedFiles.length > 0) {
@@ -88,6 +99,8 @@ export default function Post() {
         selectedFiles.forEach((file) => {
           formData.append('files', file);
         });
+        formData.append('authorId', authorId);
+        formData.append('timestamp', timestamp);
 
         const uploadResponse = await fetch('/api/upload', {
           method: 'POST',
@@ -99,7 +112,7 @@ export default function Post() {
         }
 
         const uploadData = await uploadResponse.json();
-        uploadedImageUrls = uploadData.files;
+        uploadedMedia = uploadData.files;
       }
 
       // 投稿を作成
@@ -113,8 +126,8 @@ export default function Post() {
           title,
           content,
           category: '一般',
-          images: uploadedImageUrls,
-          authorId: 'user-' + Date.now(), // TODO: 実際のユーザーIDに置き換え
+          media: uploadedMedia,
+          authorId,
           authorName: 'テストユーザー', // TODO: 実際のユーザー名に置き換え
           tags: location ? [location] : [],
           location,
