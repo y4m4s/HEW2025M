@@ -1,10 +1,10 @@
 'use client';
-
+import Map from "@/components/Map";
 import { useState } from 'react';
 import Button from '@/components/Button';
 import { MapPin, Navigation, Plus, Minus, ExternalLink, User, Image } from 'lucide-react';
 
-export default function Map() {
+export default function MapPage() {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [showLocationDetails, setShowLocationDetails] = useState(false);
 
@@ -79,11 +79,8 @@ export default function Map() {
             </div>
 
             <div className="relative flex-1">
-              <div
-                className="h-80 bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
-                onClick={handleMapClick}
-              >
-                <p className="text-gray-600">ここにAPIで地図を表示</p>
+              <div className="h-80">
+                <Map />
               </div>
             </div>
 
