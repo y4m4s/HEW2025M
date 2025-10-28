@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { Upload, MapPin, X } from 'lucide-react';
 import Button from '@/components/Button';
 import { useRouter } from 'next/navigation';
+import MapModal, { LocationData } from '@/components/MapModal';
 
 export default function Post() {
   const router = useRouter();
@@ -12,6 +13,8 @@ export default function Post() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [location, setLocation] = useState('');
+  const [locationData, setLocationData] = useState<LocationData | null>(null);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,6 +71,18 @@ export default function Post() {
       fileInputRef.current.files = dt.files;
       fileInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
     }
+  };
+
+  // 位置情報選択の処理
+  const handleSelectLocation = (data: LocationData) => {
+    setLocationData(data);
+    setLocation(data.address);
+  };
+
+  // 位置情報のクリア
+  const handleClearLocation = () => {
+    setLocationData(null);
+    setLocation('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -131,6 +146,7 @@ export default function Post() {
           authorName: 'テストユーザー', // TODO: 実際のユーザー名に置き換え
           tags: location ? [location] : [],
           location,
+          locationData: locationData || undefined,
         }),
       });
 
@@ -255,19 +271,61 @@ export default function Post() {
             </div>
 
             <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 <MapPin size={16} className="inline mr-1" />
                 位置情報（任意）
               </label>
-              <input
-                type="text"
-                id="location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                placeholder="位置情報を入力してください。"
-                disabled={isSubmitting}
-              />
+
+              {!locationData ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={() => setIsMapModalOpen(true)}
+                  disabled={isSubmitting}
+                  icon={<MapPin size={16} />}
+                  className="w-full"
+                >
+                  位置情報を追加する
+                </Button>
+              ) : (
+                <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-5">
+                  {/* ヘッダー */}
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-2">
+                      <MapPin size={20} className="text-blue-600" />
+                      <h4 className="font-semibold text-gray-800">選択中の位置情報</h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleClearLocation}
+                      disabled={isSubmitting}
+                      className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                      title="位置情報をクリア"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+
+                  {/* 住所 */}
+                  <div className="bg-white rounded-lg p-4 mb-3">
+                    <div className="text-xs text-gray-600 mb-1">住所</div>
+                    <div className="font-medium text-gray-900">{locationData.address}</div>
+                  </div>
+
+                  {/* 変更ボタン */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsMapModalOpen(true)}
+                    disabled={isSubmitting}
+                    className="w-full bg-white hover:bg-gray-50"
+                  >
+                    位置を変更する
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* 進行状況表示 */}
@@ -291,6 +349,14 @@ export default function Post() {
           </form>
         </div>
       </main>
+
+      {/* マップモーダル */}
+      <MapModal
+        isOpen={isMapModalOpen}
+        onClose={() => setIsMapModalOpen(false)}
+        onSelectLocation={handleSelectLocation}
+        initialLocation={locationData || undefined}
+      />
     </div>
   );
 }
