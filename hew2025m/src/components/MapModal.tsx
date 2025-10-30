@@ -208,7 +208,7 @@ const MapModal: React.FC<MapModalProps> = ({
             >
               現在地を取得
             </Button>
-            <div className="flex gap-15">
+            <div className="flex gap-3">
               <Button variant="outline" size="md" onClick={onClose}>
                 キャンセル
               </Button>
