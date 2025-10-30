@@ -90,6 +90,16 @@ export default function Post() {
 
     if (isSubmitting) return;
 
+    // 文字数チェック
+    if (title.length > 50) {
+      alert('件名は50文字以内で入力してください');
+      return;
+    }
+    if (content.length > 140) {
+      alert('本文は140文字以内で入力してください');
+      return;
+    }
+
     setIsSubmitting(true);
     setUploadProgress('投稿を準備中...');
 
@@ -188,11 +198,21 @@ export default function Post() {
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 outline-none transition-colors ${
+                  title.length > 50
+                    ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                    : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                }`}
                 placeholder="件名を入力してください。"
                 required
                 disabled={isSubmitting}
               />
+              <div className={`text-right text-sm mt-1 ${title.length > 50 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                {title.length}/50文字
+                {title.length > 50 && (
+                  <span className="ml-2">({title.length - 50}文字超過)</span>
+                )}
+              </div>
             </div>
 
             <div>
@@ -204,14 +224,20 @@ export default function Post() {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={5}
-                maxLength={140}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors resize-none"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 outline-none transition-colors resize-none ${
+                  content.length > 140
+                    ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                    : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                }`}
                 placeholder="本文を140字以内で入力してください。"
                 required
                 disabled={isSubmitting}
               />
-              <div className="text-right text-sm text-gray-500 mt-1">
+              <div className={`text-right text-sm mt-1 ${content.length > 140 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
                 {content.length}/140文字
+                {content.length > 140 && (
+                  <span className="ml-2">({content.length - 140}文字超過)</span>
+                )}
               </div>
             </div>
 

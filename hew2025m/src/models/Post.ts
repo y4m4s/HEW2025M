@@ -47,7 +47,7 @@ const PostSchema = new Schema<IPost>(
       type: String,
       required: [true, 'タイトルは必須です'],
       trim: true,
-      maxlength: [100, 'タイトルは100文字以内で入力してください'],
+      maxlength: [50, 'タイトルは50文字以内で入力してください'],
     },
     content: {
       type: String,
