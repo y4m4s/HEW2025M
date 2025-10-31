@@ -1,16 +1,147 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import ProductCard, { Product } from '@/components/ProductCard';
 import Button from '@/components/Button';
 import { Fish, MapPin } from 'lucide-react';
 
 export default function SearchPage() {
-  const searchResults: Product[] = Array.from({ length: 8 }, (_, i) => ({
-    id: i + 1,
-    name: '釣り竿セット - 初心者向け',
-    price: 3500,
-    location: '東京都',
-    condition: '良好',
-    postedDate: '2日前'
-  }));
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // フィルター状態
+  const [category, setCategory] = useState('');
+  const [priceRange, setPriceRange] = useState('');
+  const [condition, setCondition] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
+
+  useEffect(() => {
+    fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, condition]);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = new URLSearchParams();
+      if (category) params.append('category', category);
+      if (condition) params.append('condition', condition);
+      params.append('status', 'available'); // 販売中のみ表示
+
+      const response = await fetch(`/api/products?${params}`);
+      if (!response.ok) {
+        throw new Error('商品の取得に失敗しました');
+      }
+
+      const data = await response.json();
+
+      // データベースのデータをProduct型に変換
+      const formattedProducts: Product[] = data.products.map((product: {
+        _id: string;
+        title: string;
+        price: number;
+        condition: string;
+        images?: string[];
+        sellerName?: string;
+        createdAt: string;
+      }) => ({
+        id: parseInt(product._id.slice(-6), 16), // IDを数値に変換
+        name: product.title,
+        price: product.price,
+        location: product.sellerName || '出品者未設定',
+        condition: formatCondition(product.condition),
+        postedDate: formatDate(product.createdAt),
+        imageUrl: product.images?.[0]
+      }));
+
+      // フィルタリング（価格帯）
+      let filtered = formattedProducts;
+      if (priceRange) {
+        filtered = filterByPrice(filtered, priceRange);
+      }
+
+      // ソート
+      filtered = sortProducts(filtered, sortBy);
+
+      setProducts(filtered);
+    } catch (err) {
+      console.error('商品取得エラー:', err);
+      setError(err instanceof Error ? err.message : '商品の取得に失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 状態を日本語に変換
+  const formatCondition = (cond: string): string => {
+    const conditionMap: Record<string, string> = {
+      'new': '新品・未使用',
+      'like-new': '未使用に近い',
+      'good': '目立った傷汚れなし',
+      'fair': 'やや傷や汚れあり',
+      'poor': '傷や汚れあり'
+    };
+    return conditionMap[cond] || cond;
+  };
+
+  // 日付をフォーマット
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return '今日';
+    } else if (diffDays === 1) {
+      return '昨日';
+    } else if (diffDays < 7) {
+      return `${diffDays}日前`;
+    } else {
+      return date.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+  };
+
+  // 価格帯でフィルタリング
+  const filterByPrice = (items: Product[], range: string): Product[] => {
+    if (!range) return items;
+
+    if (range === '0-1000') {
+      return items.filter(p => p.price <= 1000);
+    } else if (range === '1000-5000') {
+      return items.filter(p => p.price > 1000 && p.price <= 5000);
+    } else if (range === '5000-10000') {
+      return items.filter(p => p.price > 5000 && p.price <= 10000);
+    } else if (range === '10000-') {
+      return items.filter(p => p.price > 10000);
+    }
+    return items;
+  };
+
+  // ソート
+  const sortProducts = (items: Product[], sort: string): Product[] => {
+    const sorted = [...items];
+
+    if (sort === 'price-low') {
+      sorted.sort((a, b) => a.price - b.price);
+    } else if (sort === 'price-high') {
+      sorted.sort((a, b) => b.price - a.price);
+    }
+    // 'newest' と 'popular' はAPIでソート済み
+
+    return sorted;
+  };
+
+  const handleSearch = () => {
+    fetchProducts();
+  };
   return (
     <div>
       
@@ -29,7 +160,11 @@ export default function SearchPage() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリー</label>
-                  <select className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none">
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none"
+                  >
                     <option value="">すべて</option>
                     <option value="rod">釣り竿</option>
                     <option value="reel">リール</option>
@@ -39,7 +174,11 @@ export default function SearchPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">価格帯</label>
-                  <select className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none">
+                  <select
+                    value={priceRange}
+                    onChange={(e) => setPriceRange(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none"
+                  >
                     <option value="">指定なし</option>
                     <option value="0-1000">〜1,000円</option>
                     <option value="1000-5000">1,000〜5,000円</option>
@@ -49,7 +188,11 @@ export default function SearchPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">状態</label>
-                  <select className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none">
+                  <select
+                    value={condition}
+                    onChange={(e) => setCondition(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none"
+                  >
                     <option value="">すべて</option>
                     <option value="new">新品・未使用</option>
                     <option value="like-new">未使用に近い</option>
@@ -57,7 +200,12 @@ export default function SearchPage() {
                   </select>
                 </div>
                 <div className="flex items-end">
-                  <Button variant="primary" size="md" className="w-full">
+                  <Button
+                    variant="primary"
+                    size="md"
+                    className="w-full"
+                    onClick={handleSearch}
+                  >
                     検索
                   </Button>
                 </div>
@@ -66,10 +214,17 @@ export default function SearchPage() {
 
             {/* 並び替え */}
             <div className="flex justify-between items-center mb-6">
-              <p className="text-gray-600">検索結果: 24件</p>
+              <p className="text-gray-600">検索結果: {products.length}件</p>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600">並び替え:</span>
-                <select className="p-2 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none">
+                <select
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    setProducts(sortProducts(products, e.target.value));
+                  }}
+                  className="p-2 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none"
+                >
                   <option value="newest">新着順</option>
                   <option value="price-low">価格の安い順</option>
                   <option value="price-high">価格の高い順</option>
@@ -79,11 +234,30 @@ export default function SearchPage() {
             </div>
 
             {/* 商品一覧 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {searchResults.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            {loading ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2FA3E3]"></div>
+              </div>
+            ) : error ? (
+              <div className="text-center py-20">
+                <p className="text-red-600 mb-4">{error}</p>
+                <Button onClick={fetchProducts} variant="primary" size="md">
+                  再読み込み
+                </Button>
+              </div>
+            ) : products.length === 0 ? (
+              <div className="text-center py-20">
+                <Fish className="mx-auto text-gray-400 mb-4" size={64} />
+                <p className="text-gray-600 text-lg mb-2">商品が見つかりませんでした</p>
+                <p className="text-gray-500 text-sm">条件を変えて検索してみてください</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
 
             {/* ページネーション */}
             <div className="flex justify-center mt-12">
