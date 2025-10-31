@@ -11,6 +11,8 @@ export interface IProduct {
   sellerId: string;
   sellerName: string;
   status: 'available' | 'sold' | 'reserved';
+  shippingPayer: 'seller' | 'buyer'; // 配送料の負担
+  shippingDays: '1-2' | '2-3' | '4-7'; // 発送までの日数
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,13 +24,13 @@ const ProductSchema = new Schema<IProduct>(
       type: String,
       required: [true, '商品名は必須です'],
       trim: true,
-      maxlength: [100, '商品名は100文字以内で入力してください'],
+      maxlength: [50, '商品名は50文字以内で入力してください'],
     },
     description: {
       type: String,
       required: [true, '商品説明は必須です'],
       trim: true,
-      maxlength: [2000, '商品説明は2000文字以内で入力してください'],
+      maxlength: [300, '商品説明は300文字以内で入力してください'],
     },
     price: {
       type: Number,
@@ -60,6 +62,16 @@ const ProductSchema = new Schema<IProduct>(
       type: String,
       enum: ['available', 'sold', 'reserved'],
       default: 'available',
+    },
+    shippingPayer: {
+      type: String,
+      enum: ['seller', 'buyer'],
+      required: [true, '配送料の負担は必須です'],
+    },
+    shippingDays: {
+      type: String,
+      enum: ['1-2', '2-3', '4-7'],
+      required: [true, '発送までの日数は必須です'],
     },
   },
   {

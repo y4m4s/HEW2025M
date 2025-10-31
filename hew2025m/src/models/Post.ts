@@ -11,6 +11,13 @@ export interface IMediaFile {
   uploadedAt: Date;
 }
 
+// 位置情報の型定義
+export interface ILocationData {
+  lat: number;
+  lng: number;
+  address: string;
+}
+
 // 投稿の型定義
 export interface IPost {
   title: string;
@@ -20,7 +27,8 @@ export interface IPost {
   authorId: string;
   authorName: string;
   tags: string[];
-  location: string;
+  location: string; // 住所または位置の文字列表現（後方互換性）
+  locationData?: ILocationData; // 詳細な位置情報（緯度経度含む）
   likes: number;
   comments: Array<{
     userId: string;
@@ -39,7 +47,7 @@ const PostSchema = new Schema<IPost>(
       type: String,
       required: [true, 'タイトルは必須です'],
       trim: true,
-      maxlength: [100, 'タイトルは100文字以内で入力してください'],
+      maxlength: [50, 'タイトルは50文字以内で入力してください'],
     },
     content: {
       type: String,
@@ -103,6 +111,23 @@ const PostSchema = new Schema<IPost>(
     location: {
       type: String,
       default: '',
+    },
+    locationData: {
+      type: {
+        lat: {
+          type: Number,
+          required: true,
+        },
+        lng: {
+          type: Number,
+          required: true,
+        },
+        address: {
+          type: String,
+          required: true,
+        },
+      },
+      required: false,
     },
     likes: {
       type: Number,
