@@ -1,7 +1,8 @@
+import Link from 'next/link';
 import { Fish, MapPin } from 'lucide-react';
 
 export interface Product {
-  id: number;
+  id: string;
   name: string;
   price: number;
   location: string;
@@ -39,32 +40,35 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
 
   if (variant === 'featured') {
     return (
-      <div className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-        <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-4xl text-gray-400">
-          {product.imageUrl ? (
-            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-          ) : (
-            <Fish size={60} />
-          )}
+      <Link href={`/sellDetail/${product.id}`}>
+        <div className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer">
+          <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-4xl text-gray-400">
+            {product.imageUrl ? (
+              <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+            ) : (
+              <Fish size={60} />
+            )}
+          </div>
+          <div className="p-5">
+            <h5 className="text-lg font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>
+              {product.name}
+            </h5>
+            <p className="text-xl font-bold text-[#2FA3E3] mb-3">
+              {formatPrice(product.price)}
+            </p>
+            <p className="flex items-center gap-1 text-gray-600 text-sm">
+              <MapPin size={16} />
+              {product.location}
+            </p>
+          </div>
         </div>
-        <div className="p-5">
-          <h5 className="text-lg font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>
-            {product.name}
-          </h5>
-          <p className="text-xl font-bold text-[#2FA3E3] mb-3">
-            {formatPrice(product.price)}
-          </p>
-          <p className="flex items-center gap-1 text-gray-600 text-sm">
-            <MapPin size={16} />
-            {product.location}
-          </p>
-        </div>
-      </div>
+      </Link>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg hover:transform hover:-translate-y-1 transition-all duration-300">
+    <Link href={`/sellDetail/${product.id}`}>
+      <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg hover:transform hover:-translate-y-1 transition-all duration-300 cursor-pointer">
       <div className="h-48 bg-gray-200 flex items-center justify-center text-4xl text-gray-400">
         {product.imageUrl ? (
           <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
@@ -92,5 +96,6 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
         </div>
       </div>
     </div>
+    </Link>
   );
 }

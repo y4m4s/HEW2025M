@@ -48,7 +48,7 @@ export default function SearchPage() {
         sellerName?: string;
         createdAt: string;
       }) => ({
-        id: parseInt(product._id.slice(-6), 16), // IDを数値に変換
+        id: product._id, // ObjectIDをそのまま使用
         name: product.title,
         price: product.price,
         location: product.sellerName || '出品者未設定',
