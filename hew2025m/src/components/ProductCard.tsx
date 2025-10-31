@@ -26,13 +26,13 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
       case '新品・未使用':
       case '新品':
         return 'bg-blue-100 text-blue-800';
-      case '未使用に近い':
-        return 'bg-green-100 text-green-800';
       case '目立った傷汚れなし':
       case '良好':
         return 'bg-green-100 text-green-800';
       case 'やや傷や汚れあり':
         return 'bg-yellow-100 text-yellow-800';
+      case '傷や汚れあり':
+        return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }

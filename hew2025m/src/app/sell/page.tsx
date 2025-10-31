@@ -5,18 +5,18 @@ import { Camera, Fish, X } from 'lucide-react';
 import Button from '@/components/Button';
 import { useRouter } from 'next/navigation';
 
-// カテゴリの定義
+// カテゴリの定義（表示名とDB保存用の値のマッピング）
 const CATEGORIES = [
-  'ロッド/竿',
-  'リール',
-  'ルアー',
-  'ライン/糸',
-  'ハリ/針',
-  '餌',
-  'ウェア',
-  'セット用品',
-  'サービス',
-  'その他',
+  { label: 'ロッド/竿', value: 'rod' },
+  { label: 'リール', value: 'reel' },
+  { label: 'ルアー', value: 'lure' },
+  { label: 'ライン/糸', value: 'line' },
+  { label: 'ハリ/針', value: 'hook' },
+  { label: '餌', value: 'bait' },
+  { label: 'ウェア', value: 'wear' },
+  { label: 'セット用品', value: 'set' },
+  { label: 'サービス', value: 'service' },
+  { label: 'その他', value: 'other' },
 ] as const;
 
 export default function SellPage() {
@@ -300,8 +300,8 @@ export default function SellPage() {
                     >
                       <option value="">選択してください</option>
                       {CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
+                        <option key={cat.value} value={cat.value}>
+                          {cat.label}
                         </option>
                       ))}
                     </select>
@@ -317,7 +317,6 @@ export default function SellPage() {
                     >
                       <option value="">選択してください</option>
                       <option value="new">新品・未使用</option>
-                      <option value="like-new">未使用に近い</option>
                       <option value="good">目立った傷や汚れなし</option>
                       <option value="fair">やや傷や汚れあり</option>
                       <option value="poor">傷や汚れあり</option>
