@@ -1,25 +1,36 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import ProductCard, { Product } from '@/components/ProductCard';
 import Button from '@/components/Button';
 import { Fish, MapPin } from 'lucide-react';
 
 export default function SearchPage() {
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // フィルター状態
+  // フィルター状態（URLパラメータから初期値を取得）
   const [category, setCategory] = useState('');
   const [priceRange, setPriceRange] = useState('');
   const [condition, setCondition] = useState('');
   const [sortBy, setSortBy] = useState('newest');
 
+  // URLパラメータから初期値を設定
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setCategory(categoryParam);
+    }
+  }, [searchParams]);
+
+  // フィルター変更時にデータ取得
   useEffect(() => {
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, condition]);
+  }, [category, condition, priceRange]);
 
   const fetchProducts = async () => {
     try {
@@ -79,7 +90,6 @@ export default function SearchPage() {
   const formatCondition = (cond: string): string => {
     const conditionMap: Record<string, string> = {
       'new': '新品・未使用',
-      'like-new': '未使用に近い',
       'good': '目立った傷汚れなし',
       'fair': 'やや傷や汚れあり',
       'poor': '傷や汚れあり'
@@ -139,9 +149,6 @@ export default function SearchPage() {
     return sorted;
   };
 
-  const handleSearch = () => {
-    fetchProducts();
-  };
   return (
     <div>
       
@@ -157,7 +164,7 @@ export default function SearchPage() {
 
             {/* 検索フィルター */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリー</label>
                   <select
@@ -166,10 +173,16 @@ export default function SearchPage() {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none"
                   >
                     <option value="">すべて</option>
-                    <option value="rod">釣り竿</option>
+                    <option value="rod">ロッド/竿</option>
                     <option value="reel">リール</option>
                     <option value="lure">ルアー</option>
-                    <option value="line">ライン</option>
+                    <option value="line">ライン/糸</option>
+                    <option value="hook">ハリ/針</option>
+                    <option value="bait">餌</option>
+                    <option value="wear">ウェア</option>
+                    <option value="set">セット用品</option>
+                    <option value="service">サービス</option>
+                    <option value="other">その他</option>
                   </select>
                 </div>
                 <div>
@@ -195,19 +208,10 @@ export default function SearchPage() {
                   >
                     <option value="">すべて</option>
                     <option value="new">新品・未使用</option>
-                    <option value="like-new">未使用に近い</option>
                     <option value="good">目立った傷汚れなし</option>
+                    <option value="fair">やや傷や汚れあり</option>
+                    <option value="poor">傷や汚れあり</option>
                   </select>
-                </div>
-                <div className="flex items-end">
-                  <Button
-                    variant="primary"
-                    size="md"
-                    className="w-full"
-                    onClick={handleSearch}
-                  >
-                    検索
-                  </Button>
                 </div>
               </div>
             </div>

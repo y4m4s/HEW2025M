@@ -11,7 +11,7 @@ interface ProductDetail {
   description: string;
   price: number;
   category: string;
-  condition: 'new' | 'like-new' | 'good' | 'fair' | 'poor';
+  condition: 'new' | 'good' | 'fair' | 'poor';
   images: string[];
   sellerId: string;
   sellerName: string;
@@ -73,7 +73,6 @@ export default function SellDetailPage() {
   const getConditionLabel = (condition: string): string => {
     const conditionMap: Record<string, string> = {
       'new': '新品・未使用',
-      'like-new': '未使用に近い',
       'good': '目立った傷汚れなし',
       'fair': 'やや傷や汚れあり',
       'poor': '傷や汚れあり'
@@ -92,10 +91,16 @@ export default function SellDetailPage() {
 
   const getCategoryLabel = (category: string): string => {
     const categoryMap: Record<string, string> = {
-      'rod': '釣り竿',
+      'rod': 'ロッド/竿',
       'reel': 'リール',
       'lure': 'ルアー',
-      'line': 'ライン'
+      'line': 'ライン/糸',
+      'hook': 'ハリ/針',
+      'bait': '餌',
+      'wear': 'ウェア',
+      'set': 'セット用品',
+      'service': 'サービス',
+      'other': 'その他'
     };
     return categoryMap[category] || category;
   };
