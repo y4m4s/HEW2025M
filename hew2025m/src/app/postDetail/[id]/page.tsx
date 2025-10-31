@@ -17,11 +17,10 @@ interface PostDetail {
   authorId: string;
   authorName: string;
   tags?: string[];
-  location?: string;
-  locationData?: {
+  address?: string;
+  location?: {
     lat: number;
     lng: number;
-    address: string;
   };
   likes?: number;
   comments?: Array<{
@@ -188,10 +187,10 @@ export default function PostDetailPage() {
             )}
 
             {/* 場所 */}
-            {post.location && (
+            {post.address && (
               <div className="flex items-center gap-2 text-gray-600 mb-6">
                 <MapPin size={20} />
-                <span>{post.location}</span>
+                <span>{post.address}</span>
               </div>
             )}
 

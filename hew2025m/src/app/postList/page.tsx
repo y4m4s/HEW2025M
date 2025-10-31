@@ -35,7 +35,7 @@ export default function PostList() {
         title: string;
         content: string;
         tags?: string[];
-        location?: string;
+        address?: string;
         authorName: string;
         createdAt: string;
         likes?: number;
@@ -49,7 +49,7 @@ export default function PostList() {
         fishSize: extractFishSize(post.tags),
         fishWeight: extractFishWeight(post.tags),
         fishCount: extractFishCount(post.tags),
-        location: post.location || '場所未設定',
+        location: post.address || '場所未設定',
         author: post.authorName,
         date: formatDate(post.createdAt),
         likes: post.likes || 0,
