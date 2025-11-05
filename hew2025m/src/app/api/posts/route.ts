@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
 
-// 投稿一覧を取得
+// 投稿一覧を取得 (GET handler)
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
-
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
     const authorId = searchParams.get('authorId');
-
     let query = {};
     if (category) {
       query = { category };
@@ -18,11 +16,9 @@ export async function GET(request: NextRequest) {
     if (authorId) {
       query = { ...query, authorId };
     }
-
     const posts = await Post.find(query)
       .sort({ createdAt: -1 })
       .limit(50);
-
     return NextResponse.json({
       success: true,
       posts,
@@ -36,11 +32,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// 新規投稿を作成
+// 新規投稿を作成 (POST handler)
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
-
     const body = await request.json();
     const { title, content, category, media, authorId, authorName, tags, location, locationData } = body;
 
@@ -51,7 +46,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
     if (content.length > 140) {
       return NextResponse.json(
         { error: '本文は140文字以内で入力してください' },
@@ -59,8 +53,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 投稿を作成
-    const post = await Post.create({
+    // Somente incluir locationData se estiver completo
+    const postData: any = {
       title,
       content,
       category: category || '一般',
@@ -69,17 +63,23 @@ export async function POST(request: NextRequest) {
       authorName,
       tags: tags || [],
       location: location || '',
-      locationData: locationData || undefined,
       likes: 0,
       comments: [],
-    });
+    };
+    if (
+      locationData &&
+      typeof locationData.lat === 'number' &&
+      typeof locationData.lng === 'number' &&
+      typeof locationData.address === 'string' && locationData.address.trim() !== ''
+    ) {
+      postData.locationData = locationData;
+    }
+
+    // 投稿を作成
+    const post = await Post.create(postData);
 
     return NextResponse.json(
-      {
-        success: true,
-        post,
-        message: '投稿が作成されました',
-      },
+      { success: true, post, message: '投稿が作成されました' },
       { status: 201 }
     );
   } catch (error) {

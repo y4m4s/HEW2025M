@@ -6,6 +6,7 @@ import Button from '@/components/Button';
 import { useRouter } from 'next/navigation';
 import MapModal, { LocationData } from '@/components/MapModal';
 
+
 export default function Post() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
