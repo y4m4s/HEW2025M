@@ -1,13 +1,12 @@
 import mongoose, { Schema, Model } from 'mongoose';
 
-// メディアファイルの型定義
 export interface IMediaFile {
   url: string;
   originalName: string;
   mimeType: string;
   size: number;
   uniqueId: string;
-  order: number; // 表示順序（1から始まる）
+  order: number;
   uploadedAt: Date;
 }
 
@@ -17,12 +16,11 @@ export interface ILocation {
   lng: number;
 }
 
-// 投稿の型定義
 export interface IPost {
   title: string;
   content: string;
   category: string;
-  media: IMediaFile[]; // メディア情報（順番、メタデータ含む）
+  media: IMediaFile[];
   authorId: string;
   authorName: string;
   tags: string[];
@@ -39,58 +37,21 @@ export interface IPost {
   updatedAt: Date;
 }
 
-// Mongooseスキーマ定義
 const PostSchema = new Schema<IPost>(
   {
-    title: {
-      type: String,
-      required: [true, 'タイトルは必須です'],
-      trim: true,
-      maxlength: [50, 'タイトルは50文字以内で入力してください'],
-    },
-    content: {
-      type: String,
-      required: [true, '投稿内容は必須です'],
-      trim: true,
-      maxlength: [140, '投稿内容は140文字以内で入力してください'],
-    },
-    category: {
-      type: String,
-      required: [true, 'カテゴリーは必須です'],
-    },
+    title: { type: String, required: true, trim: true, maxlength: 50 },
+    content: { type: String, required: true, trim: true, maxlength: 140 },
+    category: { type: String, required: true },
     media: {
       type: [
         {
-          url: {
-            type: String,
-            required: true,
-          },
-          originalName: {
-            type: String,
-            required: true,
-          },
-          mimeType: {
-            type: String,
-            required: true,
-          },
-          size: {
-            type: Number,
-            required: true,
-          },
-          uniqueId: {
-            type: String,
-            required: true,
-            unique: true,
-          },
-          order: {
-            type: Number,
-            required: true,
-            min: 1,
-          },
-          uploadedAt: {
-            type: Date,
-            default: Date.now,
-          },
+          url: { type: String, required: true },
+          originalName: { type: String, required: true },
+          mimeType: { type: String, required: true },
+          size: { type: Number, required: true },
+          uniqueId: { type: String, required: true, unique: true },
+          order: { type: Number, required: true, min: 1 },
+          uploadedAt: { type: Date, default: Date.now },
         },
       ],
       default: [],
@@ -124,46 +85,26 @@ const PostSchema = new Schema<IPost>(
       },
       required: false,
     },
-    likes: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
+    likes: { type: Number, default: 0, min: 0 },
     comments: [
       {
-        userId: {
-          type: String,
-          required: true,
-        },
-        userName: {
-          type: String,
-          required: true,
-        },
-        content: {
-          type: String,
-          required: true,
-          maxlength: [500, 'コメントは500文字以内で入力してください'],
-        },
-        createdAt: {
-          type: Date,
-          default: Date.now,
-        },
+        userId: { type: String, required: true },
+        userName: { type: String, required: true },
+        content: { type: String, required: true, maxlength: 500 },
+        createdAt: { type: Date, default: Date.now },
       },
     ],
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// インデックス設定
+// Indexes
 PostSchema.index({ authorId: 1 });
 PostSchema.index({ category: 1 });
 PostSchema.index({ tags: 1 });
 PostSchema.index({ createdAt: -1 });
 PostSchema.index({ 'media.uniqueId': 1 });
 
-// モデルのエクスポート（既存のモデルがあればそれを使用）
 const Post: Model<IPost> =
   mongoose.models.Post || mongoose.model<IPost>('Post', PostSchema);
 

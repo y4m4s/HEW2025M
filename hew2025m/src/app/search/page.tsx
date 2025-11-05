@@ -214,7 +214,6 @@ export default function SearchPage() {
                   </select>
                 </div>
               </div>
-            </div>
 
             {/* 並び替え */}
             <div className="flex justify-between items-center mb-6">
@@ -235,7 +234,6 @@ export default function SearchPage() {
                   <option value="popular">人気順</option>
                 </select>
               </div>
-            </div>
 
             {/* 商品一覧 */}
             {loading ? (
@@ -263,26 +261,56 @@ export default function SearchPage() {
               </div>
             )}
 
-            {/* ページネーション */}
-            <div className="flex justify-center mt-12">
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="md" className="text-gray-500 hover:text-[#2FA3E3]">
-                  ← 前へ
-                </Button>
-                <Button variant="primary" size="md">1</Button>
-                <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">2</Button>
-                <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">3</Button>
-                <span className="px-2 text-gray-500">...</span>
-                <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">10</Button>
-                <Button variant="ghost" size="md" className="text-gray-500 hover:text-[#2FA3E3]">
-                  次へ →
-                </Button>
+              <div className="flex items-end">
+                <Button variant="primary" size="md" className="w-full">検索</Button>
               </div>
             </div>
           </div>
+
+          {/* ✅ 商品一覧 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {currentItems.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+
+          {/* ✅ ページネーション */}
+          <div className="flex justify-center mt-12 gap-2">
+
+            <Button
+              variant="ghost"
+              size="md"
+              className="text-gray-500 hover:text-[#2FA3E3]"
+              onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+            >
+              ← 前へ
+            </Button>
+
+            {/* ページ番号 */}
+            {Array.from({ length: totalPages }, (_, i) => (
+              <Button
+                key={i}
+                variant={currentPage === i + 1 ? "primary" : "ghost"}
+                size="md"
+                onClick={() => setCurrentPage(i + 1)}
+              >
+                {i + 1}
+              </Button>
+            ))}
+
+            <Button
+              variant="ghost"
+              size="md"
+              className="text-gray-500 hover:text-[#2FA3E3]"
+              onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+            >
+              次へ →
+            </Button>
+
+          </div>
+
         </div>
       </div>
-
     </div>
   );
 }
