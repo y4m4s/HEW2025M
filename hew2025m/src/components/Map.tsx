@@ -11,7 +11,11 @@ const center = {
   lng: 139.6917,
 };
 
-const Map: React.FC = () => {
+interface MapProps {
+  onMarkerClick?: (post: any) => void;
+}
+
+const Map: React.FC<MapProps> = ({ onMarkerClick }) => {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
   });
@@ -19,17 +23,28 @@ const Map: React.FC = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
 
+  const handleMarkerClick = (post: any) => {
+    setSelectedPost(post);
+    if (onMarkerClick) {
+      onMarkerClick(post);
+    }
+  };
+
   useEffect(() => {
     fetch("/api/posts")
       .then(res => res.json())
       .then(data => {
         if (data.posts) {
-          setPosts(data.posts.filter((p: any) => p.locationData && p.locationData.lat && p.locationData.lng));
+          // location フィールドに緯度経度がある投稿のみをフィルター
+          setPosts(data.posts.filter((p: any) => p.location && p.location.lat && p.location.lng));
         }
+      })
+      .catch(err => {
+        console.error('投稿の取得に失敗しました:', err);
       });
   }, []);
 
-  if (!isLoaded) return <div>Carregando mapa...</div>;
+  if (!isLoaded) return <div className="h-full flex items-center justify-center text-gray-500">マップを読み込み中...</div>;
 
   return (
     <GoogleMap
@@ -41,24 +56,24 @@ const Map: React.FC = () => {
         <Marker
           key={idx}
           position={{
-            lat: post.locationData.lat,
-            lng: post.locationData.lng,
+            lat: post.location.lat,
+            lng: post.location.lng,
           }}
-          onClick={() => setSelectedPost(post)}
+          onClick={() => handleMarkerClick(post)}
           title={post.title}
         />
       ))}
       {selectedPost && (
         <InfoWindow
           position={{
-            lat: selectedPost.locationData.lat,
-            lng: selectedPost.locationData.lng,
+            lat: selectedPost.location.lat,
+            lng: selectedPost.location.lng,
           }}
           onCloseClick={() => setSelectedPost(null)}
         >
           <div>
             <h3 style={{ fontWeight: 'bold', marginBottom: 6 }}>{selectedPost.title}</h3>
-            <p style={{ fontSize: 12, color: '#444' }}>{selectedPost.locationData.address}</p>
+            <p style={{ fontSize: 12, color: '#444' }}>{selectedPost.address || '住所未設定'}</p>
             <p style={{ fontSize: 14 }}>{selectedPost.content}</p>
           </div>
         </InfoWindow>
