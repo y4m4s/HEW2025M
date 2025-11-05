@@ -13,9 +13,10 @@ const center = {
 
 interface MapProps {
   onMarkerClick?: (post: any) => void;
+  onMapClick?: (lat: number, lng: number) => void;
 }
 
-const Map: React.FC<MapProps> = ({ onMarkerClick }) => {
+const Map: React.FC<MapProps> = ({ onMarkerClick, onMapClick }) => {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
   });
@@ -27,6 +28,14 @@ const Map: React.FC<MapProps> = ({ onMarkerClick }) => {
     setSelectedPost(post);
     if (onMarkerClick) {
       onMarkerClick(post);
+    }
+  };
+
+  const handleMapClick = (e: google.maps.MapMouseEvent) => {
+    if (e.latLng && onMapClick) {
+      const lat = e.latLng.lat();
+      const lng = e.latLng.lng();
+      onMapClick(lat, lng);
     }
   };
 
@@ -51,6 +60,7 @@ const Map: React.FC<MapProps> = ({ onMarkerClick }) => {
       mapContainerStyle={containerStyle}
       center={center}
       zoom={7}
+      onClick={handleMapClick}
     >
       {posts.map((post, idx) => (
         <Marker
