@@ -1,12 +1,32 @@
 import mongoose, { Schema, Model } from 'mongoose';
 
+// カテゴリの型定義
+export type ProductCategory =
+  | 'rod'      // ロッド/竿
+  | 'reel'     // リール
+  | 'lure'     // ルアー
+  | 'line'     // ライン/糸
+  | 'hook'     // ハリ/針
+  | 'bait'     // 餌
+  | 'wear'     // ウェア
+  | 'set'      // セット用品
+  | 'service'  // サービス
+  | 'other';   // その他
+
+// 商品の状態型定義
+export type ProductCondition =
+  | 'new'   // 新品・未使用
+  | 'good'  // 目立った傷や汚れなし
+  | 'fair'  // やや傷や汚れあり
+  | 'poor'; // 傷や汚れあり
+
 // 商品の型定義
 export interface IProduct {
   title: string;
   description: string;
   price: number;
-  category: string;
-  condition: 'new' | 'like-new' | 'good' | 'fair' | 'poor';
+  category: ProductCategory;
+  condition: ProductCondition;
   images: string[];
   sellerId: string;
   sellerName: string;
@@ -39,11 +59,12 @@ const ProductSchema = new Schema<IProduct>(
     },
     category: {
       type: String,
+      enum: ['rod', 'reel', 'lure', 'line', 'hook', 'bait', 'wear', 'set', 'service', 'other'],
       required: [true, 'カテゴリーは必須です'],
     },
     condition: {
       type: String,
-      enum: ['new', 'like-new', 'good', 'fair', 'poor'],
+      enum: ['new', 'good', 'fair', 'poor'],
       required: [true, '商品の状態は必須です'],
     },
     images: {

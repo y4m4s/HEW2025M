@@ -1,45 +1,94 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ProductCard, { Product } from '@/components/ProductCard';
 import Button from '@/components/Button';
-import { Fish, Search, MapPin, Users, ArrowRight, Circle, Bug, Package, Shirt, Ship } from 'lucide-react';
+import { Fish, Search, MapPin, Users, ArrowRight, Circle, Bug, Package, Shirt, Ship, Zap, Info } from 'lucide-react';
 
 export default function Home() {
-  const featuredProducts: Product[] = [
-    {
-      id: 1,
-      name: 'ダイワ製 海釣り用ロッド',
-      price: 18000,
-      location: '湘南・江ノ島',
-      condition: '良好',
-      postedDate: '2日前'
-    },
-    {
-      id: 2,
-      name: 'シマノ電動リール',
-      price: 45000,
-      location: '横浜・本牧',
-      condition: '未使用に近い',
-      postedDate: '1日前'
-    },
-    {
-      id: 3,
-      name: 'メガバス ルアーセット',
-      price: 12500,
-      location: '多摩川・調布',
-      condition: '良好',
-      postedDate: '3日前'
-    },
-    {
-      id: 4,
-      name: 'タックルボックス一式',
-      price: 8000,
-      location: '東京湾・船橋',
-      condition: '新品',
-      postedDate: '1日前'
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchFeaturedProducts();
+  }, []);
+
+  const fetchFeaturedProducts = async () => {
+    try {
+      setLoading(true);
+
+      const response = await fetch('/api/products?status=available');
+      if (!response.ok) {
+        throw new Error('商品の取得に失敗しました');
+      }
+
+      const data = await response.json();
+
+      // 最新4件を取得
+      const formattedProducts: Product[] = data.products
+        .slice(0, 4)
+        .map((product: {
+          _id: string;
+          title: string;
+          price: number;
+          condition: string;
+          images?: string[];
+          sellerName?: string;
+          createdAt: string;
+        }) => ({
+          id: product._id,
+          name: product.title,
+          price: product.price,
+          location: product.sellerName || '出品者未設定',
+          condition: formatCondition(product.condition),
+          postedDate: formatDate(product.createdAt),
+          imageUrl: product.images?.[0]
+        }));
+
+      setFeaturedProducts(formattedProducts);
+    } catch (err) {
+      console.error('商品取得エラー:', err);
+      // エラー時は空配列を設定（エラー表示はせず、商品なしの状態にする）
+      setFeaturedProducts([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  // 状態を日本語に変換
+  const formatCondition = (cond: string): string => {
+    const conditionMap: Record<string, string> = {
+      'new': '新品・未使用',
+      'like-new': '未使用に近い',
+      'good': '目立った傷汚れなし',
+      'fair': 'やや傷や汚れあり',
+      'poor': '傷や汚れあり'
+    };
+    return conditionMap[cond] || cond;
+  };
+
+  // 日付をフォーマット
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return '今日';
+    } else if (diffDays === 1) {
+      return '昨日';
+    } else if (diffDays < 7) {
+      return `${diffDays}日前`;
+    } else {
+      return date.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+  };
 
   return (
     <div>
@@ -97,55 +146,116 @@ export default function Home() {
             <h3 className="text-3xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>釣り用品カテゴリー</h3>
             <p className="text-base text-gray-600">よく取引されている釣り用品をチェック</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
-              <div className="w-20 h-20 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-5 text-white">
-                <Fish size={32} />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            {/* ロッド/竿 */}
+            <Link href="/search?category=rod">
+              <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+                <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
+                  <Fish size={28} />
+                </div>
+                <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ロッド/竿</h4>
+                <p className="text-gray-600 text-sm mb-3">海釣り・川釣り用</p>
               </div>
-              <h4 className="text-xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ロッド・竿</h4>
-              <p className="text-gray-600 mb-4">海釣り・川釣り・ルアー竿</p>
-              <span className="inline-block bg-blue-50 text-[#2FA3E3] py-1 px-4 rounded-full text-sm font-bold">1,234件</span>
-            </div>
-            <div className="bg-white p-8 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
-              <div className="w-20 h-20 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-5 text-white">
-                <Circle size={32} />
+            </Link>
+
+            {/* リール */}
+            <Link href="/search?category=reel">
+              <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+                <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
+                  <Circle size={28} />
+                </div>
+                <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>リール</h4>
+                <p className="text-gray-600 text-sm mb-3">スピニング・ベイト</p>
               </div>
-              <h4 className="text-xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>リール</h4>
-              <p className="text-gray-600 mb-4">スピニング・ベイト・電動リール</p>
-              <span className="inline-block bg-blue-50 text-[#2FA3E3] py-1 px-4 rounded-full text-sm font-bold">856件</span>
-            </div>
-            <div className="bg-white p-8 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
-              <div className="w-20 h-20 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-5 text-white">
-                <Bug size={32} />
+            </Link>
+
+            {/* ルアー */}
+            <Link href="/search?category=lure">
+              <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+                <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
+                  <Bug size={28} />
+                </div>
+                <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ルアー</h4>
+                <p className="text-gray-600 text-sm mb-3">ハード・ソフト</p>
               </div>
-              <h4 className="text-xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ルアー・仕掛け</h4>
-              <p className="text-gray-600 mb-4">ハードルアー・ワーム・針</p>
-              <span className="inline-block bg-blue-50 text-[#2FA3E3] py-1 px-4 rounded-full text-sm font-bold">2,189件</span>
-            </div>
-            <div className="bg-white p-8 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
-              <div className="w-20 h-20 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-5 text-white">
-                <Package size={32} />
+            </Link>
+
+            {/* ライン/糸 */}
+            <Link href="/search?category=line">
+              <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+                <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
+                  <Zap size={28} />
+                </div>
+                <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ライン/糸</h4>
+                <p className="text-gray-600 text-sm mb-3">各種ライン</p>
               </div>
-              <h4 className="text-xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>タックルボックス</h4>
-              <p className="text-gray-600 mb-4">道具箱・収納・ケース</p>
-              <span className="inline-block bg-blue-50 text-[#2FA3E3] py-1 px-4 rounded-full text-sm font-bold">423件</span>
-            </div>
-            <div className="bg-white p-8 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
-              <div className="w-20 h-20 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-5 text-white">
-                <Shirt size={32} />
+            </Link>
+
+            {/* ハリ/針 */}
+            <Link href="/search?category=hook">
+              <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+                <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
+                  <Search size={28} />
+                </div>
+                <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ハリ/針</h4>
+                <p className="text-gray-600 text-sm mb-3">各種フック</p>
               </div>
-              <h4 className="text-xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ウェア・装身具</h4>
-              <p className="text-gray-600 mb-4">ライフジャケット・帽子・サングラス</p>
-              <span className="inline-block bg-blue-50 text-[#2FA3E3] py-1 px-4 rounded-full text-sm font-bold">678件</span>
-            </div>
-            <div className="bg-white p-8 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
-              <div className="w-20 h-20 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-5 text-white">
-                <Ship size={32} />
+            </Link>
+
+            {/* 餌 */}
+            <Link href="/search?category=bait">
+              <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+                <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
+                  <Fish size={28} className="rotate-45" />
+                </div>
+                <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>餌</h4>
+                <p className="text-gray-600 text-sm mb-3">生餌・練り餌</p>
               </div>
-              <h4 className="text-xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ボート・船外機</h4>
-              <p className="text-gray-600 mb-4">フィッシングボート・カヤック</p>
-              <span className="inline-block bg-blue-50 text-[#2FA3E3] py-1 px-4 rounded-full text-sm font-bold">145件</span>
-            </div>
+            </Link>
+
+            {/* ウェア */}
+            <Link href="/search?category=wear">
+              <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+                <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
+                  <Shirt size={28} />
+                </div>
+                <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ウェア</h4>
+                <p className="text-gray-600 text-sm mb-3">服・装備品</p>
+              </div>
+            </Link>
+
+            {/* セット用品 */}
+            <Link href="/search?category=set">
+              <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+                <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
+                  <Package size={28} />
+                </div>
+                <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>セット用品</h4>
+                <p className="text-gray-600 text-sm mb-3">まとめてお得</p>
+              </div>
+            </Link>
+
+            {/* サービス */}
+            <Link href="/search?category=service">
+              <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+                <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
+                  <Users size={28} />
+                </div>
+                <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>サービス</h4>
+                <p className="text-gray-600 text-sm mb-3">ガイド・修理</p>
+              </div>
+            </Link>
+
+            {/* その他 */}
+            <Link href="/search?category=other">
+              <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+                <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
+                  <Info size={28} />
+                </div>
+                <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>その他</h4>
+                <p className="text-gray-600 text-sm mb-3">その他の用品</p>
+              </div>
+            </Link>
           </div>
         </section>
 
@@ -155,16 +265,33 @@ export default function Home() {
             <h3 className="text-3xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>最新の出品釣り用品</h3>
             <p className="text-base text-gray-600">新しく出品された注目の釣り用品</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} variant="featured" />
-            ))}
-          </div>
-          <div className="text-center">
-            <Button href="/search" variant="primary" size="lg" icon={<ArrowRight size={20} />}>
-              すべての商品を見る
-            </Button>
-          </div>
+
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2FA3E3]"></div>
+            </div>
+          ) : featuredProducts.length === 0 ? (
+            <div className="text-center py-20">
+              <Fish className="mx-auto text-gray-400 mb-4" size={64} />
+              <p className="text-gray-600 text-lg mb-4">まだ商品が出品されていません</p>
+              <Button href="/sell" variant="primary" size="md" icon={<Fish size={18} />}>
+                最初の商品を出品する
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+                {featuredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} variant="featured" />
+                ))}
+              </div>
+              <div className="text-center">
+                <Button href="/search" variant="primary" size="lg" icon={<ArrowRight size={20} />}>
+                  すべての商品を見る
+                </Button>
+              </div>
+            </>
+          )}
         </section>
 
         {/* 特徴セクション */}

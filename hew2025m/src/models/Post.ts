@@ -10,10 +10,10 @@ export interface IMediaFile {
   uploadedAt: Date;
 }
 
-export interface ILocationData {
+// 位置情報（座標）の型定義
+export interface ILocation {
   lat: number;
   lng: number;
-  address: string;
 }
 
 export interface IPost {
@@ -24,8 +24,8 @@ export interface IPost {
   authorId: string;
   authorName: string;
   tags: string[];
-  location: string;
-  locationData?: ILocationData;
+  address?: string; // 住所（任意）
+  location?: ILocation; // 座標情報（緯度経度）
   likes: number;
   comments: Array<{
     userId: string;
@@ -56,15 +56,32 @@ const PostSchema = new Schema<IPost>(
       ],
       default: [],
     },
-    authorId: { type: String, required: true },
-    authorName: { type: String, required: true },
-    tags: { type: [String], default: [] },
-    location: { type: String, default: '' },
-    locationData: {
+    authorId: {
+      type: String,
+      required: [true, '投稿者IDは必須です'],
+    },
+    authorName: {
+      type: String,
+      required: [true, '投稿者名は必須です'],
+    },
+    tags: {
+      type: [String],
+      default: [],
+    },
+    address: {
+      type: String,
+      required: false,
+    },
+    location: {
       type: {
-        lat: { type: Number, required: true },
-        lng: { type: Number, required: true },
-        address: { type: String, required: true },
+        lat: {
+          type: Number,
+          required: true,
+        },
+        lng: {
+          type: Number,
+          required: true,
+        },
       },
       required: false,
     },
