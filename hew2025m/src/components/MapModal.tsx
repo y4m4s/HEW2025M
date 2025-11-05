@@ -51,18 +51,26 @@ const MapModal: React.FC<MapModalProps> = ({
       const geocoder = new google.maps.Geocoder();
       const result = await geocoder.geocode({
         location: { lat, lng },
+        language: 'ja', // 日本語で取得
+        region: 'JP',   // 日本地域を優先
       });
 
       if (result.results[0]) {
-        setAddress(result.results[0].formatted_address);
+        // 日本語住所から国名を除外
+        let formattedAddress = result.results[0].formatted_address;
+        // 末尾の「日本」または「Japan」を削除
+        formattedAddress = formattedAddress.replace(/[、,]\s*(日本|Japan)\s*$/, '');
+        formattedAddress = formattedAddress.replace(/^\s*(日本|Japan)[、,]\s*/, '');
+        formattedAddress = formattedAddress.replace(/\s+(日本|Japan)\s*$/, '');
+        setAddress(formattedAddress.trim());
       } else {
-        // 住所が取得できない場合は緯度経度を表示
-        setAddress(`緯度${lat.toFixed(6)}, 経度${lng.toFixed(6)}`);
+        // 住所が取得できない場合は空文字列を設定
+        setAddress('');
       }
     } catch (error) {
       console.error('住所の取得に失敗しました:', error);
-      // エラーの場合は緯度経度を表示
-      setAddress(`緯度${lat.toFixed(6)}, 経度${lng.toFixed(6)}`);
+      // エラーの場合も空文字列を設定
+      setAddress('');
     } finally {
       setIsLoadingAddress(false);
     }
@@ -106,12 +114,15 @@ const MapModal: React.FC<MapModalProps> = ({
   // 位置情報を確定
   const handleConfirm = useCallback(() => {
     if (selectedPosition) {
-      // 住所が未設定の場合は緯度経度から自動生成
-      const finalAddress = address || `緯度${selectedPosition.lat.toFixed(6)}, 経度${selectedPosition.lng.toFixed(6)}`;
+      // 住所が取得できていない場合は警告
+      if (!address) {
+        alert('住所を取得できませんでした。別の位置を選択してください。');
+        return;
+      }
       onSelectLocation({
         lat: selectedPosition.lat,
         lng: selectedPosition.lng,
-        address: finalAddress,
+        address: address,
       });
       onClose();
     }
@@ -216,7 +227,7 @@ const MapModal: React.FC<MapModalProps> = ({
                 variant="primary"
                 size="md"
                 onClick={handleConfirm}
-                disabled={!selectedPosition}
+                disabled={!selectedPosition || !address || isLoadingAddress}
               >
                 この位置に決定
               </Button>
