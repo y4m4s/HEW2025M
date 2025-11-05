@@ -40,6 +40,7 @@ export default function CommunityPage() {
         likes?: number;
         comments?: unknown[];
         category?: string;
+        media?: Array<{ url: string; order: number }>;
       }) => ({
         id: post._id,
         title: post.title,
@@ -54,7 +55,10 @@ export default function CommunityPage() {
         likes: post.likes || 0,
         comments: post.comments?.length || 0,
         category: post.category || 'other',
-        isLiked: false
+        isLiked: false,
+        imageUrl: post.media && post.media.length > 0
+          ? post.media.sort((a, b) => a.order - b.order)[0].url
+          : undefined
       }));
 
       // 人気の投稿: いいね数が最も多い投稿
