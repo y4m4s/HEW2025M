@@ -16,6 +16,7 @@ export interface Post {
   comments: number;
   category: 'sea' | 'river';
   isLiked?: boolean;
+  imageUrl?: string;
 }
 
 interface PostCardProps {
@@ -27,12 +28,35 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
   if (variant === 'simple') {
     return (
       <Link href={`/postDetail/${post.id}`}>
-        <div className="bg-white rounded-lg shadow-md p-6 min-h-32 hover:shadow-lg transition-shadow cursor-pointer">
-          <h3 className="font-semibold text-lg mb-2">{post.title}</h3>
-          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{post.excerpt}</p>
-          <div className="flex justify-between items-center text-sm text-gray-500">
-            <span>{post.author}</span>
-            <span>{post.date}</span>
+        <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer overflow-hidden">
+          <div className="flex gap-4">
+            {/* 画像 */}
+            <div className="w-32 h-32 flex-shrink-0 bg-gray-200 flex items-center justify-center">
+              {post.imageUrl ? (
+                <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
+              ) : (
+                <Fish size={24} className="text-gray-400" />
+              )}
+            </div>
+
+            {/* コンテンツ */}
+            <div className="flex-1 p-4">
+              <h3 className="font-semibold text-lg mb-2 line-clamp-1">{post.title}</h3>
+              <p className="text-gray-600 text-sm mb-3 line-clamp-2">{post.excerpt}</p>
+
+              {/* 位置情報 */}
+              {post.location && post.location !== '場所未設定' && (
+                <div className="flex items-center text-xs text-gray-500 mb-2">
+                  <MapPin size={12} className="mr-1" />
+                  {post.location}
+                </div>
+              )}
+
+              <div className="flex justify-between items-center text-sm text-gray-500">
+                <span>{post.author}</span>
+                <span>{post.date}</span>
+              </div>
+            </div>
           </div>
         </div>
       </Link>
@@ -42,17 +66,35 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
   if (variant === 'compact') {
     return (
       <Link href={`/postDetail/${post.id}`}>
-        <div className="bg-white rounded-lg shadow-md p-8 mb-6 min-h-48 hover:shadow-lg transition-shadow cursor-pointer">
-          <h3 className="font-semibold text-xl mb-3">{post.title}</h3>
-          <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                <User size={16} className="text-gray-600" />
-              </div>
-              <span className="text-sm font-medium">{post.author}</span>
+        <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer overflow-hidden">
+          {/* 画像 */}
+          {post.imageUrl && (
+            <div className="h-64 bg-gray-200 flex items-center justify-center overflow-hidden">
+              <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
             </div>
-            <span className="text-sm text-gray-500">{post.date}</span>
+          )}
+
+          <div className="p-8">
+            <h3 className="font-semibold text-xl mb-3">{post.title}</h3>
+            <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
+
+            {/* 位置情報 */}
+            {post.location && post.location !== '場所未設定' && (
+              <div className="flex items-center text-sm text-gray-600 mb-4">
+                <MapPin size={14} className="mr-1" />
+                {post.location}
+              </div>
+            )}
+
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                  <User size={16} className="text-gray-600" />
+                </div>
+                <span className="text-sm font-medium">{post.author}</span>
+              </div>
+              <span className="text-sm text-gray-500">{post.date}</span>
+            </div>
           </div>
         </div>
       </Link>
@@ -63,9 +105,15 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
     <Link href={`/postDetail/${post.id}`}>
       <article className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow cursor-pointer">
       <div className="relative">
-        <div className="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center">
-          <Fish size={32} className="text-gray-400" />
-          <span className="text-gray-500 text-sm ml-2">画像なし</span>
+        <div className="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center overflow-hidden">
+          {post.imageUrl ? (
+            <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
+          ) : (
+            <>
+              <Fish size={32} className="text-gray-400" />
+              <span className="text-gray-500 text-sm ml-2">画像なし</span>
+            </>
+          )}
         </div>
         <div className={`absolute top-3 left-3 px-2 py-1 rounded text-xs font-medium text-white ${
           post.category === 'sea' ? 'bg-blue-500' : 'bg-green-500'
