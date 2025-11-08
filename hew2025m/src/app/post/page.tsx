@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, MapPin, X } from 'lucide-react';
 import Button from '@/components/Button';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import MapModal, { LocationData } from '@/components/MapModal';
 
 
 export default function Post() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState('');
@@ -20,6 +21,18 @@ export default function Post() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
+
+  // URLクエリパラメータから位置情報を取得
+  useEffect(() => {
+    const lat = searchParams.get('lat');
+    const lng = searchParams.get('lng');
+    const addressParam = searchParams.get('address');
+
+    if (lat && lng && addressParam) {
+      setLocation({ lat: parseFloat(lat), lng: parseFloat(lng) });
+      setAddress(addressParam);
+    }
+  }, [searchParams]);
 
   // ファイル選択処理
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

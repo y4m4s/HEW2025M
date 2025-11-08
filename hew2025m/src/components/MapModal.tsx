@@ -63,10 +63,15 @@ const MapModal: React.FC<MapModalProps> = ({
       if (result.results[0]) {
         // 日本語住所から国名を除外
         let formattedAddress = result.results[0].formatted_address;
+
+        // Plus Code（例：5XPM+4X）を除外
+        formattedAddress = formattedAddress.replace(/[A-Z0-9]{4}\+[A-Z0-9]{2,3}\s*/g, '');
+
         // 末尾の「日本」または「Japan」を削除
         formattedAddress = formattedAddress.replace(/[、,]\s*(日本|Japan)\s*$/, '');
         formattedAddress = formattedAddress.replace(/^\s*(日本|Japan)[、,]\s*/, '');
         formattedAddress = formattedAddress.replace(/\s+(日本|Japan)\s*$/, '');
+
         setAddress(formattedAddress.trim());
       } else {
         // 住所が取得できない場合は空文字列を設定
