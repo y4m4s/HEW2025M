@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ProductCard, { Product } from '@/components/ProductCard';
 import Button from '@/components/Button';
-import { Fish, MapPin } from 'lucide-react';
+import { Fish } from 'lucide-react';
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
@@ -13,24 +13,22 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
 
   // フィルター状態（URLパラメータから初期値を取得）
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState(() => searchParams.get('category') || '');
   const [priceRange, setPriceRange] = useState('');
   const [condition, setCondition] = useState('');
   const [sortBy, setSortBy] = useState('newest');
 
-  // URLパラメータから初期値を設定
+  // URLパラメータが変更された時にカテゴリを更新
   useEffect(() => {
-    const categoryParam = searchParams.get('category');
-    if (categoryParam) {
-      setCategory(categoryParam);
-    }
+    const categoryParam = searchParams.get('category') || '';
+    setCategory(categoryParam);
   }, [searchParams]);
 
   // フィルター変更時にデータ取得
   useEffect(() => {
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, condition, priceRange]);
+  }, [category, condition, priceRange, sortBy]);
 
   const fetchProducts = async () => {
     try {
@@ -90,6 +88,7 @@ export default function SearchPage() {
   const formatCondition = (cond: string): string => {
     const conditionMap: Record<string, string> = {
       'new': '新品・未使用',
+      'like-new': '未使用に近い',
       'good': '目立った傷汚れなし',
       'fair': 'やや傷や汚れあり',
       'poor': '傷や汚れあり'
@@ -208,12 +207,14 @@ export default function SearchPage() {
                   >
                     <option value="">すべて</option>
                     <option value="new">新品・未使用</option>
+                    <option value="like-new">未使用に近い</option>
                     <option value="good">目立った傷汚れなし</option>
                     <option value="fair">やや傷や汚れあり</option>
                     <option value="poor">傷や汚れあり</option>
                   </select>
                 </div>
               </div>
+            </div>
 
             {/* 並び替え */}
             <div className="flex justify-between items-center mb-6">
@@ -222,10 +223,7 @@ export default function SearchPage() {
                 <span className="text-sm text-gray-600">並び替え:</span>
                 <select
                   value={sortBy}
-                  onChange={(e) => {
-                    setSortBy(e.target.value);
-                    setProducts(sortProducts(products, e.target.value));
-                  }}
+                  onChange={(e) => setSortBy(e.target.value)}
                   className="p-2 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none"
                 >
                   <option value="newest">新着順</option>
@@ -234,6 +232,7 @@ export default function SearchPage() {
                   <option value="popular">人気順</option>
                 </select>
               </div>
+            </div>
 
             {/* 商品一覧 */}
             {loading ? (
@@ -260,55 +259,7 @@ export default function SearchPage() {
                 ))}
               </div>
             )}
-
-              <div className="flex items-end">
-                <Button variant="primary" size="md" className="w-full">検索</Button>
-              </div>
-            </div>
           </div>
-
-          {/* ✅ 商品一覧 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {currentItems.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-
-          {/* ✅ ページネーション */}
-          <div className="flex justify-center mt-12 gap-2">
-
-            <Button
-              variant="ghost"
-              size="md"
-              className="text-gray-500 hover:text-[#2FA3E3]"
-              onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-            >
-              ← 前へ
-            </Button>
-
-            {/* ページ番号 */}
-            {Array.from({ length: totalPages }, (_, i) => (
-              <Button
-                key={i}
-                variant={currentPage === i + 1 ? "primary" : "ghost"}
-                size="md"
-                onClick={() => setCurrentPage(i + 1)}
-              >
-                {i + 1}
-              </Button>
-            ))}
-
-            <Button
-              variant="ghost"
-              size="md"
-              className="text-gray-500 hover:text-[#2FA3E3]"
-              onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
-            >
-              次へ →
-            </Button>
-
-          </div>
-
         </div>
       </div>
     </div>

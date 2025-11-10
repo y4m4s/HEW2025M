@@ -317,6 +317,7 @@ export default function SellPage() {
                     >
                       <option value="">選択してください</option>
                       <option value="new">新品・未使用</option>
+                      <option value="like-new">未使用に近い</option>
                       <option value="good">目立った傷や汚れなし</option>
                       <option value="fair">やや傷や汚れあり</option>
                       <option value="poor">傷や汚れあり</option>
