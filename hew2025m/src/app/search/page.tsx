@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ProductCard, { Product } from '@/components/ProductCard';
 import Button from '@/components/Button';
-import { Fish } from 'lucide-react';
+import { Fish, Search } from 'lucide-react';
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
@@ -17,6 +17,7 @@ export default function SearchPage() {
   const [priceRange, setPriceRange] = useState('');
   const [condition, setCondition] = useState('');
   const [sortBy, setSortBy] = useState('newest');
+  const [keyword, setKeyword] = useState('');
 
   // URLパラメータが変更された時にカテゴリを更新
   useEffect(() => {
@@ -28,7 +29,7 @@ export default function SearchPage() {
   useEffect(() => {
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, condition, priceRange, sortBy]);
+  }, [category, condition, priceRange, sortBy, keyword]);
 
   const fetchProducts = async () => {
     try {
@@ -66,10 +67,13 @@ export default function SearchPage() {
         imageUrl: product.images?.[0]
       }));
 
-      // フィルタリング（価格帯）
+      // フィルタリング（価格帯とキーワード）
       let filtered = formattedProducts;
       if (priceRange) {
         filtered = filterByPrice(filtered, priceRange);
+      }
+      if (keyword) {
+        filtered = filterByKeyword(filtered, keyword);
       }
 
       // ソート
@@ -134,6 +138,17 @@ export default function SearchPage() {
     return items;
   };
 
+  // キーワードでフィルタリング
+  const filterByKeyword = (items: Product[], searchKeyword: string): Product[] => {
+    if (!searchKeyword) return items;
+    const lowerKeyword = searchKeyword.toLowerCase();
+    return items.filter(p =>
+      p.name.toLowerCase().includes(lowerKeyword) ||
+      p.location.toLowerCase().includes(lowerKeyword) ||
+      p.condition.toLowerCase().includes(lowerKeyword)
+    );
+  };
+
   // ソート
   const sortProducts = (items: Product[], sort: string): Product[] => {
     const sorted = [...items];
@@ -157,9 +172,25 @@ export default function SearchPage() {
             <h1 className="text-4xl font-bold text-center text-gray-800 mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
               商品を探す
             </h1>
-            <p className="text-center text-gray-600 mb-12">
+            <p className="text-center text-gray-600 mb-8">
               あなたが探している釣り用品を見つけましょう
             </p>
+
+            {/* 検索バー */}
+            <div className="flex justify-center mb-8">
+              <form className="relative max-w-2xl w-full" onSubmit={(e) => e.preventDefault()}>
+                <div className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-600">
+                  <Search size={16} />
+                </div>
+                <input
+                  type="search"
+                  placeholder="キーワードで検索"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  className="w-full py-4 px-5 pl-12 border-2 border-gray-200 rounded-full text-base outline-none transition-colors duration-300 focus:border-[#2FA3E3] placeholder:text-gray-400"
+                />
+              </form>
+            </div>
 
             {/* 検索フィルター */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-8">

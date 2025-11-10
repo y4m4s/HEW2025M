@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import PostCard, { Post } from '@/components/PostCard';
 import Button from '@/components/Button';
-import { Fish, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Fish, Plus, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 export default function PostList() {
   const [activeFilter, setActiveFilter] = useState('all');
@@ -11,6 +11,7 @@ export default function PostList() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [keyword, setKeyword] = useState('');
 
   const fetchPosts = async () => {
     try {
@@ -20,6 +21,9 @@ export default function PostList() {
       const params = new URLSearchParams();
       if (activeFilter !== 'all') {
         params.append('category', activeFilter);
+      }
+      if (keyword) {
+        params.append('keyword', keyword);
       }
 
       const response = await fetch(`/api/posts?${params}`);
@@ -74,7 +78,7 @@ export default function PostList() {
   useEffect(() => {
     fetchPosts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFilter]);
+  }, [activeFilter, keyword]);
 
   // タグから魚の名前を抽出
   const extractFishName = (tags: string[] = []): string => {
@@ -153,6 +157,22 @@ export default function PostList() {
             >
               新規投稿
             </Button>
+          </div>
+
+          {/* 検索バー */}
+          <div className="mb-8">
+            <form className="relative max-w-2xl" onSubmit={(e) => e.preventDefault()}>
+              <div className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-600">
+                <Search size={16} />
+              </div>
+              <input
+                type="search"
+                placeholder="投稿を検索（タイトル、本文、タグ、場所）"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                className="w-full py-4 px-5 pl-12 border-2 border-gray-200 rounded-full text-base outline-none transition-colors duration-300 focus:border-[#2FA3E3] placeholder:text-gray-400"
+              />
+            </form>
           </div>
 
           <div className="flex justify-between items-center mb-8">
