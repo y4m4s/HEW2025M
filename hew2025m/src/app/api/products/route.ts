@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!['new', 'good', 'fair', 'poor'].includes(condition)) {
+    if (!['new', 'like-new', 'good', 'fair', 'poor'].includes(condition)) {
       return NextResponse.json(
         { error: '商品の状態が正しくありません' },
         { status: 400 }
