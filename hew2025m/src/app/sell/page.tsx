@@ -53,19 +53,19 @@ export default function SellPage() {
 
     setSelectedFiles([...selectedFiles, ...validFiles]);
 
-    // Gerar URLs para pré-visualização
+    // URL作成
     const newPreviewUrls = validFiles.map((file) => URL.createObjectURL(file));
     setPreviewUrls([...previewUrls, ...newPreviewUrls]);
   };
 
-  // Remover arquivos
+  // 削除
   const handleRemoveFile = (index: number) => {
     URL.revokeObjectURL(previewUrls[index]);
     setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
     setPreviewUrls(previewUrls.filter((_, i) => i !== index));
   };
 
-  // Envio do formulário
+  // 送信フォーム
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -125,7 +125,7 @@ export default function SellPage() {
           condition,
           images: uploadedImages,
           sellerId,
-          sellerName: 'テストユーザー', // TODO: Substituir com nome real do usuário
+          sellerName: 'テストユーザー', 
           shippingPayer,
           shippingDays,
         }),
@@ -160,7 +160,7 @@ export default function SellPage() {
 
           <div className="bg-white rounded-xl shadow-lg p-8">
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Imagem do produto */}
+              {/* 商品の画像 */}
               <div>
                 <label className="block text-lg font-semibold text-gray-700 mb-3">
                   商品画像
@@ -187,7 +187,7 @@ export default function SellPage() {
                   />
                 </div>
 
-                {/* Pré-visualização de imagens */}
+                {/* 画像*/}
                 {previewUrls.length > 0 && (
                   <div className="mt-4 grid grid-cols-3 gap-4">
                     {previewUrls.map((url, index) => (
@@ -211,7 +211,7 @@ export default function SellPage() {
                 )}
               </div>
 
-              {/* Informações do Produto */}
+              {/*  商品詳細 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-lg font-semibold text-gray-700 mb-3">
@@ -269,7 +269,7 @@ export default function SellPage() {
                 </div>
               </div>
 
-              {/* Categoria e Condição */}
+              {/* カテゴリ*/}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-lg font-semibold text-gray-700 mb-3">
