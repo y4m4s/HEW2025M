@@ -85,7 +85,7 @@ export default function SellPage() {
 
     try {
       const timestamp = new Date().toISOString();
-      const sellerId = 'user-' + Date.now(); // TODO: Substituir com ID real do usuário
+      const sellerId = 'user-' + Date.now();
 
       let uploadedImages: string[] = [];
 
