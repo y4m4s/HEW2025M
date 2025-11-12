@@ -54,7 +54,7 @@ export default function SellPage() {
 
     setSelectedFiles([...selectedFiles, ...validFiles]);
 
-    // URL作成
+    // URL作成view
     const newPreviewUrls = validFiles.map((file) => URL.createObjectURL(file));
     setPreviewUrls([...previewUrls, ...newPreviewUrls]);
   };
