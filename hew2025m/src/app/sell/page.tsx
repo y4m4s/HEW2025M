@@ -33,6 +33,7 @@ export default function SellPage() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -69,6 +70,21 @@ export default function SellPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    setSubmitted(true);
+
+    // バリデーションチェック
+    if (
+      !title ||
+      !price ||
+      !category ||
+      !condition ||
+      !description ||
+      !shippingPayer ||
+      !shippingDays
+    ) {
+      return;
+    }
+
     if (isSubmitting) return;
 
     if (title.length > 50) {
@@ -85,7 +101,7 @@ export default function SellPage() {
 
     try {
       const timestamp = new Date().toISOString();
-      const sellerId = 'user-' + Date.now(); // TODO: Substituir com ID real do usuário
+      const sellerId = 'user-' + Date.now(); // TODO: 実際のユーザーIDに置き換える
 
       let uploadedImages: string[] = [];
 
@@ -125,7 +141,7 @@ export default function SellPage() {
           condition,
           images: uploadedImages,
           sellerId,
-          sellerName: 'テストユーザー', 
+          sellerName: 'テストユーザー', // TODO: 実際のユーザー名に置き換える
           shippingPayer,
           shippingDays,
         }),
@@ -159,7 +175,7 @@ export default function SellPage() {
           </p>
 
           <div className="bg-white rounded-xl shadow-lg p-8">
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} noValidate className="space-y-8">
               {/* 商品の画像 */}
               <div>
                 <label className="block text-lg font-semibold text-gray-700 mb-3">
@@ -222,15 +238,15 @@ export default function SellPage() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
-                      title === "" ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
+                      submitted && title === "" ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
                     }`}
                     placeholder="商品名を入力してください"
                     required
                     aria-required="true"
-                    aria-invalid={title === "" ? "true" : "false"}
+                    aria-invalid={submitted && title === "" ? "true" : "false"}
                     disabled={isSubmitting}
                   />
-                  {title === "" && (
+                  {submitted && title === "" && (
                     <p className="text-red-600 text-sm mt-2" role="alert">
                       商品名は必須です。
                 </p>
@@ -257,11 +273,11 @@ export default function SellPage() {
                       min="0"
                       required
                       aria-required="true"
-                      aria-invalid={price === "" ? "true" : "false"}
+                      aria-invalid={submitted && price === "" ? "true" : "false"}
                       disabled={isSubmitting}
                     />
                   </div>
-                  {price === "" && (
+                  {submitted && price === "" && (
                     <p className="text-red-600 text-sm mt-2" role="alert">
                       価格は必須です。
                     </p>
@@ -281,7 +297,7 @@ export default function SellPage() {
                     className="w-full p-4 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20 transition-all duration-300"
                     required
                     aria-required="true"
-                    aria-invalid={category === "" ? "true" : "false"}
+                    aria-invalid={submitted && category === "" ? "true" : "false"}
                     disabled={isSubmitting}
                   >
                     <option value="">選択してください</option>
@@ -291,7 +307,7 @@ export default function SellPage() {
                       </option>
                     ))}
                   </select>
-                  {category === "" && (
+                  {submitted && category === "" && (
                     <p className="text-red-600 text-sm mt-2" role="alert">
                       カテゴリーは必須です。
                     </p>
@@ -307,7 +323,7 @@ export default function SellPage() {
                     className="w-full p-4 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20 transition-all duration-300"
                     required
                     aria-required="true"
-                    aria-invalid={condition === "" ? "true" : "false"}
+                    aria-invalid={submitted && condition === "" ? "true" : "false"}
                     disabled={isSubmitting}
                   >
                     <option value="">選択してください</option>
@@ -317,7 +333,7 @@ export default function SellPage() {
                     <option value="fair">やや傷や汚れあり</option>
                     <option value="poor">傷や汚れあり</option>
                   </select>
-                  {condition === "" && (
+                  {submitted && condition === "" && (
                     <p className="text-red-600 text-sm mt-2" role="alert">
                       商品の状態は必須です。
                     </p>
@@ -342,10 +358,10 @@ export default function SellPage() {
                   placeholder="商品の詳細、使用感、注意事項などを記載してください"
                   required
                   aria-required="true"
-                  aria-invalid={description === "" ? "true" : "false"}
+                  aria-invalid={submitted && description === "" ? "true" : "false"}
                   disabled={isSubmitting}
                 ></textarea>
-                {description === "" && (
+                {submitted && description === "" && (
                   <p className="text-red-600 text-sm mt-2" role="alert">
                     商品の説明は必須です。
                   </p>
@@ -370,14 +386,14 @@ export default function SellPage() {
                     className="w-full p-4 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20 transition-all duration-300"
                     required
                     aria-required="true"
-                    aria-invalid={shippingPayer === "" ? "true" : "false"}
+                    aria-invalid={submitted && shippingPayer === "" ? "true" : "false"}
                     disabled={isSubmitting}
                   >
                     <option value="">選択してください</option>
                     <option value="seller">送料込み（出品者負担）</option>
                     <option value="buyer">着払い（購入者負担）</option>
                   </select>
-                  {shippingPayer === "" && (
+                  {submitted && shippingPayer === "" && (
                     <p className="text-red-600 text-sm mt-2" role="alert">
                       配送料の負担は必須です。
                     </p>
@@ -393,7 +409,7 @@ export default function SellPage() {
                     className="w-full p-4 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20 transition-all duration-300"
                     required
                     aria-required="true"
-                    aria-invalid={shippingDays === "" ? "true" : "false"}
+                    aria-invalid={submitted && shippingDays === "" ? "true" : "false"}
                     disabled={isSubmitting}
                   >
                     <option value="">選択してください</option>
@@ -401,7 +417,7 @@ export default function SellPage() {
                     <option value="2-3">2〜3日で発送</option>
                     <option value="4-7">4〜7日で発送</option>
                   </select>
-                  {shippingDays === "" && (
+                  {submitted && shippingDays === "" && (
                     <p className="text-red-600 text-sm mt-2" role="alert">
                       発送までの日数は必須です。
                     </p>
