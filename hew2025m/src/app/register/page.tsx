@@ -1,7 +1,8 @@
 "use client";
 import Link from 'next/link';
-import { auth, provider } from "@/lib/firebase";
+import { auth, provider, db } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -16,6 +17,7 @@ function SuccessToast({ message }: { message: string }) {
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,9 +39,35 @@ export default function RegisterPage() {
       setTimeout(() => setSuccessMessage(""), 1400);
       return;
     }
+
+    // ユーザーネームのバリデーション
+    if (username.length < 3) {
+      setSuccessMessage("ユーザーネームは3文字以上で入力してください");
+      setTimeout(() => setSuccessMessage(""), 2200);
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      setSuccessMessage("ユーザーネームは英数字とアンダースコアのみ使用できます");
+      setTimeout(() => setSuccessMessage(""), 2200);
+      return;
+    }
+
     setLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      // Firebase Authenticationでアカウント作成
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Firestoreにユーザープロフィールを保存
+      await setDoc(doc(db, "users", user.uid), {
+        displayName: username,
+        username: username,
+        bio: "",
+        photoURL: "",
+        createdAt: new Date().toISOString(),
+      });
+
       showSuccessAndRedirect("アカウント作成に成功しました！ログインへ移動します", "/login");
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
@@ -54,7 +82,8 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await signInWithPopup(auth, provider);
-      showSuccessAndRedirect("Googleでログインに成功しました！ホームへ移動します", "/");
+      // ユーザーネーム設定画面へリダイレクト
+      showSuccessAndRedirect("Googleでログインに成功しました！ユーザーネームを設定してください", "/setup-username");
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       setSuccessMessage("Googleでのログインエラー: " + message);
@@ -101,12 +130,20 @@ export default function RegisterPage() {
             
             <div className="mb-5">
               <label className="block text-sm font-medium text-gray-700 mb-2">ユーザーネーム</label>
-              <input 
-                type="text" 
-                className="w-full p-4 border border-gray-300 rounded-lg text-base transition-all duration-300 focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20" 
-                placeholder="ユーザーネームを入力" 
-                required 
-              />
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">@</span>
+                <input
+                  type="text"
+                  className="w-full p-4 pl-8 border border-gray-300 rounded-lg text-base transition-all duration-300 focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20"
+                  placeholder="username"
+                  value={username}
+                  onChange={e => setUsername(e.target.value.toLowerCase())}
+                  required
+                  minLength={3}
+                  pattern="[a-zA-Z0-9_]+"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">3文字以上、英数字とアンダースコアのみ</p>
             </div>
             
             <div className="mb-5">

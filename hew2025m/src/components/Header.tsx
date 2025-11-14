@@ -1,19 +1,67 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Bell, Mail, User as UserIcon } from "lucide-react";
 import Button from "@/components/Button";
-import { useAuth } from "@/lib/useAuth"; // import correto
-import { auth } from "@/lib/firebase";
+import LogoutModal from "@/components/LogoutModal";
+import { useAuth } from "@/lib/useAuth";
+import { auth, db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function Header() {
-  const user = useAuth(); // pega usuário logado
+  const { user } = useAuth();
+  const router = useRouter();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [username, setUsername] = useState<string>("");
+  const [displayName, setDisplayName] = useState<string>("");
 
-  const handleLogout = async () => {
+  // Firestoreからユーザー情報を取得
+  useEffect(() => {
+    if (!user) {
+      setUsername("");
+      setDisplayName("");
+      return;
+    }
+
+    const fetchUserProfile = async () => {
+      try {
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setUsername(data.username || "");
+          setDisplayName(data.displayName || user.displayName || "ユーザー");
+        } else {
+          setDisplayName(user.displayName || "ユーザー");
+        }
+      } catch (error) {
+        console.error("ユーザー情報取得エラー:", error);
+        setDisplayName(user.displayName || "ユーザー");
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
+
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = async () => {
     try {
       await auth.signOut(); // desloga do Firebase
+      router.push("/"); // トップページに遷移
     } catch (error) {
       console.error("Erro ao deslogar:", error);
+    } finally {
+      setShowLogoutModal(false);
     }
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
   };
 
   return (
@@ -29,19 +77,19 @@ export default function Header() {
         <nav className="mx-11 flex justify-around gap-12">
           <Link
             href="/sell"
-            className="no-underline text-gray-800 text-base hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-300"
+            className="relative no-underline text-gray-800 text-base hover:text-[#2FA3E3] transition-colors duration-300 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#2FA3E3] after:transition-all after:duration-300 hover:after:w-full"
           >
             出品する
           </Link>
           <Link
             href="/search"
-            className="no-underline text-gray-800 text-base hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-300"
+            className="relative no-underline text-gray-800 text-base hover:text-[#2FA3E3] transition-colors duration-300 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#2FA3E3] after:transition-all after:duration-300 hover:after:w-full"
           >
             商品を探す
           </Link>
           <Link
             href="/community"
-            className="no-underline text-gray-800 text-base hover:text-blue-600 hover:border-b-2 hover:border-blue-600 transition-all duration-300"
+            className="relative no-underline text-gray-800 text-base hover:text-[#2FA3E3] transition-colors duration-300 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#2FA3E3] after:transition-all after:duration-300 hover:after:w-full"
           >
             コミュニティ
           </Link>
@@ -71,11 +119,11 @@ export default function Header() {
                 className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
               >
                 <UserIcon size={18} />
-                <span>{user.displayName || "ユーザー"}</span>
+                <span>{username ? `@${username}` : displayName}</span>
               </Link>
 
               <button
-                onClick={handleLogout}
+                onClick={handleLogoutClick}
                 className="py-2 px-4 border border-gray-300 rounded-full hover:bg-gray-100 transition-colors duration-300"
               >
                 ログアウト
@@ -93,6 +141,12 @@ export default function Header() {
           )}
         </div>
       </div>
+
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onConfirm={handleLogoutConfirm}
+        onCancel={handleLogoutCancel}
+      />
     </header>
   );
 }

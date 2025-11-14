@@ -3,8 +3,9 @@ import Link from 'next/link';
 import Button from '@/components/Button';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth, provider } from '@/lib/firebase';
+import { auth, provider, db } from '@/lib/firebase';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 function SuccessToast({ message }: { message: string }) {
   return (
@@ -48,8 +49,24 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      await signInWithPopup(auth, provider);
-      showSuccessAndRedirect('Googleでログイン成功！ホームへ移動します');
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Firestoreでユーザープロフィールを確認
+      const docRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists() || !docSnap.data().username) {
+        // ユーザーネームが未設定の場合は設定画面へ
+        setToast('ユーザーネームを設定してください');
+        setTimeout(() => {
+          setToast('');
+          router.push('/setup-username');
+        }, 1800);
+      } else {
+        // 既にユーザーネームが設定されている場合はホームへ
+        showSuccessAndRedirect('Googleでログイン成功！ホームへ移動します');
+      }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       setToast('Googleログインエラー: ' + message);
