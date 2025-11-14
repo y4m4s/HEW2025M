@@ -5,17 +5,18 @@ import { Camera, Fish, X } from 'lucide-react';
 import Button from '@/components/Button';
 import { useRouter } from 'next/navigation';
 
+// カテゴリの定義（表示名とDB保存用の値のマッピング）
 const CATEGORIES = [
-  'ロッド/竿',
-  'リール',
-  'ルアー',
-  'ライン/糸',
-  'ハリ/針',
-  '餌',
-  'ウェア',
-  'セット用品',
-  'サービス',
-  'その他',
+  { label: 'ロッド/竿', value: 'rod' },
+  { label: 'リール', value: 'reel' },
+  { label: 'ルアー', value: 'lure' },
+  { label: 'ライン/糸', value: 'line' },
+  { label: 'ハリ/針', value: 'hook' },
+  { label: '餌', value: 'bait' },
+  { label: 'ウェア', value: 'wear' },
+  { label: 'セット用品', value: 'set' },
+  { label: 'サービス', value: 'service' },
+  { label: 'その他', value: 'other' },
 ] as const;
 
 export default function SellPage() {
@@ -203,26 +204,24 @@ export default function SellPage() {
                   />
                 </div>
 
-                {/* 画像*/}
-                {previewUrls.length > 0 && (
-                  <div className="mt-4 grid grid-cols-3 gap-4">
-                    {previewUrls.map((url, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={url}
-                          alt={`プレビュー ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg border"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFile(index)}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          disabled={isSubmitting}
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
+                {/* カテゴリーと状態 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-lg font-semibold text-gray-700 mb-3">カテゴリー</label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full p-4 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20 transition-all duration-300"
+                      required
+                      disabled={isSubmitting}
+                    >
+                      <option value="">選択してください</option>
+                      {CATEGORIES.map((cat) => (
+                        <option key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
               </div>

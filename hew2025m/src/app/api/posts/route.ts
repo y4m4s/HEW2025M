@@ -9,13 +9,28 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
     const authorId = searchParams.get('authorId');
-    let query = {};
+    const keyword = searchParams.get('keyword');
+
+    let query: any = {};
+
     if (category) {
-      query = { category };
+      query.category = category;
     }
     if (authorId) {
-      query = { ...query, authorId };
+      query.authorId = authorId;
     }
+
+    // キーワード検索: title, content, tags, addressを対象に検索
+    if (keyword) {
+      const keywordRegex = new RegExp(keyword, 'i'); // 大文字小文字を区別しない
+      query.$or = [
+        { title: keywordRegex },
+        { content: keywordRegex },
+        { tags: keywordRegex },
+        { address: keywordRegex },
+      ];
+    }
+
     const posts = await Post.find(query)
       .sort({ createdAt: -1 })
       .limit(50);
@@ -37,7 +52,7 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
-    const { title, content, category, media, authorId, authorName, tags, location, locationData } = body;
+    const { title, content, category, media, authorId, authorName, tags, address, location } = body;
 
     // バリデーション
     if (!title || !content || !authorId || !authorName) {
@@ -62,7 +77,8 @@ export async function POST(request: NextRequest) {
       authorId,
       authorName,
       tags: tags || [],
-      location: location || '',
+      address: address || undefined,
+      location: location || undefined,
       likes: 0,
       comments: [],
     };

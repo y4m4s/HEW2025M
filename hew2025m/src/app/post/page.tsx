@@ -1,25 +1,38 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, MapPin, X } from 'lucide-react';
 import Button from '@/components/Button';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import MapModal, { LocationData } from '@/components/MapModal';
 
 
 export default function Post() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [location, setLocation] = useState('');
-  const [locationData, setLocationData] = useState<LocationData | null>(null);
+  const [address, setAddress] = useState('');
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
+
+  // URLクエリパラメータから位置情報を取得
+  useEffect(() => {
+    const lat = searchParams.get('lat');
+    const lng = searchParams.get('lng');
+    const addressParam = searchParams.get('address');
+
+    if (lat && lng && addressParam) {
+      setLocation({ lat: parseFloat(lat), lng: parseFloat(lng) });
+      setAddress(addressParam);
+    }
+  }, [searchParams]);
 
   // ファイル選択処理
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,14 +89,14 @@ export default function Post() {
 
   // 位置情報選択の処理
   const handleSelectLocation = (data: LocationData) => {
-    setLocationData(data);
-    setLocation(data.address);
+    setAddress(data.address);
+    setLocation({ lat: data.lat, lng: data.lng });
   };
 
   // 位置情報のクリア
   const handleClearLocation = () => {
-    setLocationData(null);
-    setLocation('');
+    setAddress('');
+    setLocation(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -155,9 +168,9 @@ export default function Post() {
           media: uploadedMedia,
           authorId,
           authorName: 'テストユーザー', // TODO: 実際のユーザー名に置き換え
-          tags: location ? [location] : [],
-          location,
-          locationData: locationData || undefined,
+          tags: address ? [address] : [],
+          address: address || undefined,
+          location: location || undefined,
         }),
       });
 
@@ -303,7 +316,7 @@ export default function Post() {
                 位置情報（任意）
               </label>
 
-              {!locationData ? (
+              {!address ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -337,7 +350,7 @@ export default function Post() {
                   {/* 住所 */}
                   <div className="bg-white rounded-lg p-4 mb-3">
                     <div className="text-xs text-gray-600 mb-1">住所</div>
-                    <div className="font-medium text-gray-900">{locationData.address}</div>
+                    <div className="font-medium text-gray-900">{address}</div>
                   </div>
 
                   {/* 変更ボタン */}
@@ -382,7 +395,7 @@ export default function Post() {
         isOpen={isMapModalOpen}
         onClose={() => setIsMapModalOpen(false)}
         onSelectLocation={handleSelectLocation}
-        initialLocation={locationData || undefined}
+        initialLocation={location && address ? { ...location, address } : undefined}
       />
     </div>
   );

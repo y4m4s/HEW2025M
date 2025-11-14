@@ -9,12 +9,16 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
+    const condition = searchParams.get('condition');
     const sellerId = searchParams.get('sellerId');
     const status = searchParams.get('status');
 
     let query: any = {};
     if (category) {
       query.category = category;
+    }
+    if (condition) {
+      query.condition = condition;
     }
     if (sellerId) {
       query.sellerId = sellerId;
