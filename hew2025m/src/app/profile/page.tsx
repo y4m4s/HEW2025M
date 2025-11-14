@@ -2,9 +2,8 @@
 import { useState, useEffect } from "react";
 import { User, Fish, X } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useRouter } from "next/navigation";
 
 interface UserProfile {
@@ -18,6 +17,12 @@ export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile>({
+    displayName: "",
+    username: "",
+    bio: "",
+    photoURL: "",
+  });
+  const [editProfile, setEditProfile] = useState<UserProfile>({
     displayName: "",
     username: "",
     bio: "",
@@ -48,6 +53,7 @@ export default function ProfilePage() {
         if (docSnap.exists()) {
           const data = docSnap.data() as UserProfile;
           setProfile(data);
+          setEditProfile(data);
         } else {
           // 初回ログイン時のデフォルト値
           const defaultProfile: UserProfile = {
@@ -57,6 +63,7 @@ export default function ProfilePage() {
             photoURL: user.photoURL || "",
           };
           setProfile(defaultProfile);
+          setEditProfile(defaultProfile);
         }
       } catch (error) {
         console.error("プロフィール取得エラー:", error);
@@ -79,26 +86,48 @@ export default function ProfilePage() {
 
     setSaving(true);
     try {
-      let photoURL = profile.photoURL;
+      let photoURL = editProfile.photoURL;
 
       // 画像がアップロードされている場合
       if (selectedFile) {
-        const storageRef = ref(storage, `avatars/${user.uid}`);
-        await uploadBytes(storageRef, selectedFile);
-        photoURL = await getDownloadURL(storageRef);
+        try {
+          // APIを使ってローカルに画像を保存
+          const formData = new FormData();
+          formData.append("file", selectedFile);
+          formData.append("userId", user.uid);
+
+          const uploadResponse = await fetch("/api/upload-avatar", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error("画像のアップロードに失敗しました");
+          }
+
+          const uploadData = await uploadResponse.json();
+          photoURL = uploadData.imageUrl;
+        } catch (uploadError) {
+          console.error("画像アップロードエラー:", uploadError);
+          alert("画像のアップロードに失敗しました。テキスト情報のみ保存します。");
+          // 画像アップロードが失敗しても、テキスト情報は保存を続ける
+          photoURL = editProfile.photoURL;
+        }
       }
 
       // Firestoreに保存
       const updatedProfile: UserProfile = {
-        ...profile,
+        ...editProfile,
         photoURL,
       };
 
       await setDoc(doc(db, "users", user.uid), updatedProfile);
       setProfile(updatedProfile);
+      setEditProfile(updatedProfile);
       setEditOpen(false);
       setSelectedFile(null);
       setPreviewURL("");
+      alert("プロフィールを保存しました");
     } catch (error) {
       console.error("プロフィール保存エラー:", error);
       alert("プロフィールの保存に失敗しました");
@@ -127,6 +156,7 @@ export default function ProfilePage() {
                 setEditOpen(false);
                 setSelectedFile(null);
                 setPreviewURL("");
+                setEditProfile(profile); // 編集をキャンセルして元の値に戻す
               }}
             >
               <X size={22} />
@@ -137,9 +167,9 @@ export default function ProfilePage() {
             <div className="flex flex-col items-center mb-4">
               {/* Avatar Preview */}
               <div className="w-28 h-28 mb-3 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                {previewURL || profile.photoURL ? (
+                {previewURL || editProfile.photoURL ? (
                   <img
-                    src={previewURL || profile.photoURL}
+                    src={previewURL || editProfile.photoURL}
                     alt="プロフィール画像"
                     className="w-full h-full object-cover"
                   />
@@ -161,8 +191,8 @@ export default function ProfilePage() {
               </label>
               <input
                 type="text"
-                value={profile.displayName}
-                onChange={(e) => setProfile({ ...profile, displayName: e.target.value })}
+                value={editProfile.displayName}
+                onChange={(e) => setEditProfile({ ...editProfile, displayName: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]"
                 placeholder="表示名を入力"
               />
@@ -175,8 +205,8 @@ export default function ProfilePage() {
               </label>
               <input
                 type="text"
-                value={profile.username}
-                onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+                value={editProfile.username}
+                onChange={(e) => setEditProfile({ ...editProfile, username: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]"
                 placeholder="@ユーザー名"
               />
@@ -188,8 +218,8 @@ export default function ProfilePage() {
                 自己紹介
               </label>
               <textarea
-                value={profile.bio}
-                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                value={editProfile.bio}
+                onChange={(e) => setEditProfile({ ...editProfile, bio: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2FA3E3] resize-none"
                 rows={4}
                 placeholder="自己紹介を入力"

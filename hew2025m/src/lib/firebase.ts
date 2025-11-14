@@ -19,9 +19,10 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 
-// Firestoreの初期化（Next.jsのSSR環境でのオフラインエラーを防ぐ）
+// Firestoreの初期化（クライアントサイドでは高速な接続を使用）
 const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
+  // SSR環境でのみLong Pollingを使用、ブラウザでは通常の高速接続
+  experimentalForceLongPolling: typeof window === "undefined",
   ignoreUndefinedProperties: true,
 });
 
