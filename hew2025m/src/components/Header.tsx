@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/useAuth"; // import correto
 import { auth } from "@/lib/firebase";
 
 export default function Header() {
-  const user = useAuth(); // pega usuário logado
+  const { user } = useAuth(); // pega usuário logado
   const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 

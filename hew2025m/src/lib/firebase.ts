@@ -1,6 +1,8 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
+import { initializeFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
@@ -17,4 +19,12 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 
-export { auth, provider, analytics };
+// Firestoreの初期化（Next.jsのSSR環境でのオフラインエラーを防ぐ）
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+  ignoreUndefinedProperties: true,
+});
+
+const storage = getStorage(app);
+
+export { auth, provider, analytics, db, storage };
