@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { User, Fish, X } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, getDocFromCache } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 interface UserProfile {
@@ -48,7 +48,17 @@ export default function ProfilePage() {
     const fetchProfile = async () => {
       try {
         const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
+
+        // まずキャッシュから取得を試みる（高速）
+        let docSnap;
+        try {
+          docSnap = await getDocFromCache(docRef);
+          console.log("キャッシュからプロフィールを取得");
+        } catch {
+          // キャッシュにない場合はサーバーから取得
+          console.log("サーバーからプロフィールを取得");
+          docSnap = await getDoc(docRef);
+        }
 
         if (docSnap.exists()) {
           const data = docSnap.data() as UserProfile;

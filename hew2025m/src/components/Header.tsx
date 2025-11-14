@@ -7,7 +7,7 @@ import Button from "@/components/Button";
 import LogoutModal from "@/components/LogoutModal";
 import { useAuth } from "@/lib/useAuth";
 import { auth, db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, getDocFromCache } from "firebase/firestore";
 
 export default function Header() {
   const { user } = useAuth();
@@ -27,7 +27,15 @@ export default function Header() {
     const fetchUserProfile = async () => {
       try {
         const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
+
+        // まずキャッシュから取得を試みる
+        let docSnap;
+        try {
+          docSnap = await getDocFromCache(docRef);
+        } catch {
+          // キャッシュにない場合はサーバーから取得
+          docSnap = await getDoc(docRef);
+        }
 
         if (docSnap.exists()) {
           const data = docSnap.data();

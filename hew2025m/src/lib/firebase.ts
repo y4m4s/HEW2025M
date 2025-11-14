@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
-import { initializeFirestore, enableIndexedDbPersistence } from "firebase/firestore";
+import { initializeFirestore, enableIndexedDbPersistence, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -19,25 +19,16 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 
-// Firestoreの初期化（クライアントサイドでは高速な接続を使用）
+// Firestoreの初期化（クライアントサイドでは高速な接続とキャッシュを使用）
 const db = initializeFirestore(app, {
   // SSR環境でのみLong Pollingを使用、ブラウザでは通常の高速接続
   experimentalForceLongPolling: typeof window === "undefined",
   ignoreUndefinedProperties: true,
+  // 永続的なローカルキャッシュを有効化（複数タブ対応）
+  localCache: typeof window !== "undefined"
+    ? persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    : undefined,
 });
-
-// オフライン永続化を有効にする（ブラウザのみ）
-if (typeof window !== "undefined") {
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === "failed-precondition") {
-      // 複数のタブが開いている場合
-      console.warn("Firestore永続化: 複数のタブが開いています");
-    } else if (err.code === "unimplemented") {
-      // ブラウザがサポートしていない場合
-      console.warn("Firestore永続化: ブラウザがサポートしていません");
-    }
-  });
-}
 
 const storage = getStorage(app);
 
