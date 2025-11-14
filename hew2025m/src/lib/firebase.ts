@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
-import { initializeFirestore } from "firebase/firestore";
+import { initializeFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -25,6 +25,19 @@ const db = initializeFirestore(app, {
   experimentalForceLongPolling: typeof window === "undefined",
   ignoreUndefinedProperties: true,
 });
+
+// オフライン永続化を有効にする（ブラウザのみ）
+if (typeof window !== "undefined") {
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === "failed-precondition") {
+      // 複数のタブが開いている場合
+      console.warn("Firestore永続化: 複数のタブが開いています");
+    } else if (err.code === "unimplemented") {
+      // ブラウザがサポートしていない場合
+      console.warn("Firestore永続化: ブラウザがサポートしていません");
+    }
+  });
+}
 
 const storage = getStorage(app);
 

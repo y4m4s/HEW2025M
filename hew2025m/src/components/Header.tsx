@@ -51,11 +51,20 @@ export default function Header() {
 
   const handleLogoutConfirm = async () => {
     try {
-      await auth.signOut(); // desloga do Firebase
-      router.push("/"); // トップページに遷移
+      // ユーザー情報をクリア
+      setUsername("");
+      setDisplayName("");
+
+      // Firebase Authからログアウト
+      await auth.signOut();
+
+      // モーダルを閉じる
+      setShowLogoutModal(false);
+
+      // トップページに遷移
+      router.push("/");
     } catch (error) {
-      console.error("Erro ao deslogar:", error);
-    } finally {
+      console.error("ログアウトエラー:", error);
       setShowLogoutModal(false);
     }
   };
