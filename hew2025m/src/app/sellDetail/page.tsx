@@ -153,37 +153,93 @@ export default function SellDetail() {
         </section>
 
         {/* ✅ Rakuten */}
-        <section className="mt-14">
-          <h2 className="text-xl font-bold mb-4">楽天おすすめ商品</h2>
+        {/* ✅ Rakuten 商品ランキング風デザイン */}
+<section className="mt-16 bg-white rounded-2xl shadow-md p-6 border border-gray-200">
+  <h2 className="text-2xl font-bold mb-6 text-center text-blue-700 tracking-wide">
+    Rakuten 人気商品ランキング 🛍️
+  </h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {rakutenProducts.map((p, idx) => (
-              <div
-                key={idx}
-                className="border p-3 rounded-lg bg-white shadow-sm hover:shadow-md transition"
-              >
-                <img
-                  src={p.Item.mediumImageUrls[0].imageUrl}
-                  alt={p.Item.itemName}
-                  className="w-full h-32 object-cover rounded"
-                />
-                <div className="font-bold text-sm mt-2 line-clamp-2">
-                  {p.Item.itemName}
-                </div>
-                <div className="text-blue-600 font-semibold mt-1">
-                  ¥{p.Item.itemPrice}
-                </div>
-                <a
-                  href={p.Item.itemUrl}
-                  target="_blank"
-                  className="text-blue-500 underline text-sm"
-                >
-                  楽天で見る
-                </a>
-              </div>
-            ))}
+  {/* 🔍 検索フォーム */}
+  <form
+    onSubmit={(e) => e.preventDefault()}
+    className="flex flex-col md:flex-row items-center justify-center gap-4 mb-8"
+  >
+    <div className="flex items-center gap-2">
+      <label htmlFor="genre" className="text-sm font-medium text-gray-700">
+        ジャンルID
+      </label>
+      <input
+        id="genre"
+        type="text"
+        placeholder="例: 100005 (米・雑穀)"
+        className="border rounded px-3 py-2 w-48 text-sm"
+      />
+    </div>
+
+    <div className="flex items-center gap-2">
+      <label htmlFor="keyword" className="text-sm font-medium text-gray-700">
+        キーワード
+      </label>
+      <input
+        id="keyword"
+        type="text"
+        placeholder="例: お米"
+        className="border rounded px-3 py-2 w-48 text-sm"
+      />
+    </div>
+
+    <button
+      type="submit"
+      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-semibold shadow-sm"
+    >
+      検索
+    </button>
+  </form>
+
+  {/* 📋 ランキングリスト */}
+  <div className="space-y-6">
+    {rakutenProducts.map((p, idx) => (
+      <div
+        key={idx}
+        className="flex items-start gap-4 border-b pb-4 last:border-none"
+      >
+        {/* 🏆 ランキング番号 */}
+        <div className="text-2xl font-bold text-blue-600 w-8 text-center">
+          {idx + 1}.
+        </div>
+
+        {/* 🖼️ 商品画像 */}
+        <img
+          src={p.Item.mediumImageUrls[0].imageUrl}
+          alt={p.Item.itemName}
+          className="w-20 h-20 object-cover rounded border"
+        />
+
+        {/* 📦 詳細 */}
+        <div className="flex-1">
+          <a
+            href={p.Item.itemUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-blue-600 hover:underline text-sm"
+          >
+            {p.Item.itemName}
+          </a>
+
+          <div className="text-sm text-gray-500 mt-1">
+            Loja: {p.Item.shopName}
           </div>
-        </section>
+
+          <div className="text-lg font-bold text-gray-800 mt-1">
+            ¥{p.Item.itemPrice.toLocaleString()}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
+
+
       </main>
     </div>
   );
