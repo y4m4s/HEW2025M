@@ -40,7 +40,10 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
           throw new Error('Rakuten API fetch failed');
         }
         const data = await response.json();
-        setRakutenProducts(data.Items || []);
+        // A API com formatVersion=2 retorna os itens diretamente no array 'Items'.
+        // Cada elemento do array já é o objeto do produto.
+        // Não é necessário mapear para 'item.Item'.
+        setRakutenProducts(data.Items || []); 
       } catch (err) {
         console.error('Rakuten API error:', err);
         setRakutenProducts([]);
@@ -66,9 +69,9 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
         ) : rakutenProducts.length > 0 ? (
           rakutenProducts.map((p, idx) => {
             
-            // --- Verificação de Segurança da Imagem ---
-            const imageUrl = (p.mediumImageUrls && p.mediumImageUrls.length > 0)
-              ? p.mediumImageUrls[0].imageUrl // Usa a imagem da Rakuten
+            // --- Verificação de Segurança da Imagem --- 
+            const imageUrl = (p.mediumImageUrls && p.mediumImageUrls.length > 0 && p.mediumImageUrls[0])
+              ? p.mediumImageUrls[0].imageUrl.replace('?_ex=128x128', '') // Usa a imagem da Rakuten se tudo existir
               : 'https://placehold.co/80x80/e9ecef/6c757d?text=画像なし'; // Usa um placeholder seguro
 
             return (
@@ -94,7 +97,7 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
                     {p.itemName}
                   </a>
                   <div className="text-sm text-gray-500 mt-1">
-                    Loja: {p.shopName}
+                    ショップ: {p.shopName}
                   </div>
                   <div className="text-lg font-bold text-gray-800 mt-1">
                     ¥{p.itemPrice.toLocaleString()}
