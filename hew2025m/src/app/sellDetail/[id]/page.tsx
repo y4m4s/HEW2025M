@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, ArrowLeft, MapPin, Calendar, User } from 'lucide-react';
 import Button from '@/components/Button';
+import RakutenProducts from '@/components/rakuten'; // 1. IMPORTE O NOVO COMPONENTE
+
+// ❌ A 'RakutenItem' interface FOI REMOVIDA DAQUI
 
 interface ProductDetail {
   _id: string;
@@ -31,6 +34,10 @@ export default function SellDetailPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeTab, setActiveTab] = useState('comments');
 
+  // ❌ Os estados 'rakutenProducts' e 'rakutenLoading' FORAM REMOVIDOS DAQUI
+  // ❌ O 'useEffect' que buscava na Rakuten FOI REMOVIDO DAQUI
+  // ❌ A função 'fetchRakutenProducts' FOI REMOVIDA DAQUI
+
   useEffect(() => {
     if (params.id) {
       fetchProduct();
@@ -41,12 +48,10 @@ export default function SellDetailPage() {
     try {
       setLoading(true);
       setError(null);
-
       const response = await fetch(`/api/products/${params.id}`);
       if (!response.ok) {
         throw new Error('商品の取得に失敗しました');
       }
-
       const data = await response.json();
       setProduct(data.product);
     } catch (err) {
@@ -56,6 +61,8 @@ export default function SellDetailPage() {
       setLoading(false);
     }
   };
+  
+  // ... (todas as suas funções formatPrice, formatDate, get...Label, etc. continuam aqui) ...
 
   const formatPrice = (price: number) => {
     return `¥${price.toLocaleString()}`;
@@ -121,6 +128,7 @@ export default function SellDetailPage() {
     setCurrentSlide(index);
   };
 
+  // ... (seu 'if (loading)' e 'if (error || !product)' continuam aqui) ...
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-gray-50">
@@ -140,6 +148,7 @@ export default function SellDetailPage() {
     );
   }
 
+
   const images = product.images.length > 0
     ? product.images
     : ["https://via.placeholder.com/400x300/e9ecef/6c757d?text=画像なし"];
@@ -147,6 +156,7 @@ export default function SellDetailPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <main className="flex-1 container mx-auto px-4 py-6">
+        {/* ... (Seu botão de voltar e detalhes do produto continuam aqui) ... */}
         <Button
           onClick={() => router.back()}
           variant="ghost"
@@ -158,149 +168,151 @@ export default function SellDetailPage() {
         </Button>
 
         <div className="grid lg:grid-cols-2 gap-8 bg-white rounded-lg shadow-md p-6">
-          <section className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-bold mb-2">{product.title}</h1>
-              <div className="flex gap-4 text-sm text-gray-600">
-                <div className="flex items-center gap-1">
-                  <Calendar size={14} />
-                  <span>{formatDate(product.createdAt)}</span>
+          {/* ... (Toda a <section> esquerda e direita dos detalhes do produto) ... */}
+            {/* Seção Esquerda (Imagens, etc) */}
+            <section className="space-y-6">
+              <div>
+                <h1 className="text-2xl font-bold mb-2">{product.title}</h1>
+                <div className="flex gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-1">
+                    <Calendar size={14} />
+                    <span>{formatDate(product.createdAt)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <User size={14} />
+                    <span>{product.sellerName}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <User size={14} />
-                  <span>{product.sellerName}</span>
+                <div className="mt-2">
+                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                    product.status === 'available' ? 'bg-green-100 text-green-800' :
+                    product.status === 'sold' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {getStatusLabel(product.status)}
+                  </span>
                 </div>
               </div>
-              <div className="mt-2">
-                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                  product.status === 'available' ? 'bg-green-100 text-green-800' :
-                  product.status === 'sold' ? 'bg-red-100 text-red-800' :
-                  'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {getStatusLabel(product.status)}
-                </span>
-              </div>
-            </div>
 
-            <div className="relative">
-              <div className="relative overflow-hidden rounded-lg bg-gray-100">
-                <div
-                  className="flex transition-transform duration-300 ease-in-out"
-                  style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-                >
-                  {images.map((src, index) => (
-                    <div key={index} className="w-full flex-shrink-0">
-                      <img
-                        src={src}
-                        alt={`商品画像${index + 1}`}
-                        className="w-full h-80 object-cover"
-                      />
-                    </div>
-                  ))}
+              <div className="relative">
+                <div className="relative overflow-hidden rounded-lg bg-gray-100">
+                  <div
+                    className="flex transition-transform duration-300 ease-in-out"
+                    style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                  >
+                    {images.map((src, index) => (
+                      <div key={index} className="w-full flex-shrink-0">
+                        <img
+                          src={src}
+                          alt={`商品画像${index + 1}`}
+                          className="w-full h-80 object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {images.length > 1 && (
+                    <>
+                      <button
+                        onClick={prevSlide}
+                        className="absolute left-2 top-1-2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-colors"
+                      >
+                        <ChevronLeft size={20} />
+                      </button>
+                      <button
+                        onClick={nextSlide}
+                        className="absolute right-2 top-1-2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-colors"
+                      >
+                        <ChevronRight size={20} />
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 {images.length > 1 && (
-                  <>
-                    <button
-                      onClick={prevSlide}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-colors"
-                    >
-                      <ChevronLeft size={20} />
-                    </button>
-
-                    <button
-                      onClick={nextSlide}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-colors"
-                    >
-                      <ChevronRight size={20} />
-                    </button>
-                  </>
+                  <div className="flex justify-center mt-4 gap-2">
+                    {images.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => goToSlide(index)}
+                        className={`w-3 h-3 rounded-full transition-colors ${
+                          currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
                 )}
               </div>
+            </section>
 
-              {images.length > 1 && (
-                <div className="flex justify-center mt-4 gap-2">
-                  {images.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => goToSlide(index)}
-                      className={`w-3 h-3 rounded-full transition-colors ${
-                        currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
-                      }`}
-                    />
-                  ))}
+            {/* Seção Direita (Preço, Detalhes, etc) */}
+            <section className="space-y-6">
+              <div className="border-b pb-4">
+                <h2 className="text-3xl font-bold text-[#2FA3E3] mb-2">
+                  {formatPrice(product.price)}
+                </h2>
+                <p className="text-sm text-gray-600">
+                  {product.shippingPayer === 'seller' ? '送料込み' : '送料別'}
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-semibold mb-3">商品詳細</h3>
+                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {product.description}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="text-gray-600">カテゴリ</span>
+                  <span className="font-medium">{getCategoryLabel(product.category)}</span>
                 </div>
-              )}
-            </div>
-          </section>
-
-          <section className="space-y-6">
-            <div className="border-b pb-4">
-              <h2 className="text-3xl font-bold text-[#2FA3E3] mb-2">
-                {formatPrice(product.price)}
-              </h2>
-              <p className="text-sm text-gray-600">
-                {product.shippingPayer === 'seller' ? '送料込み' : '送料別'}
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-xl font-semibold mb-3">商品詳細</h3>
-              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                {product.description}
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-gray-600">カテゴリ</span>
-                <span className="font-medium">{getCategoryLabel(product.category)}</span>
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="text-gray-600">商品の状態</span>
+                  <span className="font-medium">{getConditionLabel(product.condition)}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="text-gray-600">配送料の負担</span>
+                  <span className="font-medium">
+                    {product.shippingPayer === 'seller' ? '出品者負担' : '購入者負担'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="text-gray-600">発送までの日数</span>
+                  <span className="font-medium">
+                    {product.shippingDays === '1-2' ? '1-2日' :
+                      product.shippingDays === '2-3' ? '2-3日' : '4-7日'}で発送
+                  </span>
+                </div>
               </div>
 
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-gray-600">商品の状態</span>
-                <span className="font-medium">{getConditionLabel(product.condition)}</span>
+              <div className="flex gap-4 pt-4">
+                <Button
+                  variant="ghost"
+                  size="md"
+                  className="flex-1 border border-gray-300"
+                  disabled={product.status !== 'available'}
+                >
+                  ブックマーク
+                </Button>
+                <Button
+                  variant="primary"
+                  size="md"
+                  className="flex-1"
+                  disabled={product.status !== 'available'}
+                >
+                  {product.status === 'available' ? '購入する' : '購入できません'}
+                </Button>
               </div>
-
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-gray-600">配送料の負担</span>
-                <span className="font-medium">
-                  {product.shippingPayer === 'seller' ? '出品者負担' : '購入者負担'}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-gray-600">発送までの日数</span>
-                <span className="font-medium">
-                  {product.shippingDays === '1-2' ? '1-2日' :
-                   product.shippingDays === '2-3' ? '2-3日' : '4-7日'}で発送
-                </span>
-              </div>
-            </div>
-
-            <div className="flex gap-4 pt-4">
-              <Button
-                variant="ghost"
-                size="md"
-                className="flex-1 border border-gray-300"
-                disabled={product.status !== 'available'}
-              >
-                ブックマーク
-              </Button>
-              <Button
-                variant="primary"
-                size="md"
-                className="flex-1"
-                disabled={product.status !== 'available'}
-              >
-                {product.status === 'available' ? '購入する' : '購入できません'}
-              </Button>
-            </div>
-          </section>
+            </section>
         </div>
+        
 
+        {/* Seção de Abas */}
         <section className="mt-8 bg-white rounded-lg shadow-md p-6">
           <div className="border-b border-gray-200">
+            {/* ... (Botões das abas) ... */}
             <div className="flex gap-8">
               <button
                 onClick={() => setActiveTab('comments')}
@@ -328,6 +340,7 @@ export default function SellDetailPage() {
           <div className="mt-6">
             {activeTab === 'comments' ? (
               <div>
+                {/* Seção de Comentários */}
                 <p className="text-gray-600 mb-4">この商品へのコメントはまだありません</p>
                 <div className="bg-gray-50 p-4 rounded mb-4">
                   <textarea
@@ -336,11 +349,18 @@ export default function SellDetailPage() {
                     rows={4}
                   />
                 </div>
-                <Button variant="primary" size="md">
+                <Button variant="primary" size="md" className="mb-4">
                   コメントする
                 </Button>
+
+                {/* 2. CHAME O COMPONENTE AQUI */}
+                <RakutenProducts keyword={getCategoryLabel(product.category)} />
+                
+                {/* ❌ Toda a <section> da Rakuten FOI REMOVIDA DAQUI */}
+                
               </div>
             ) : (
+              // Seção de Informações do Vendedor
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
