@@ -1,21 +1,20 @@
-'use client'; // Next.jsのクライアントコンポーネントとしてマーク
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, ArrowLeft, MapPin, Calendar, User } from 'lucide-react';
 import Button from '@/components/Button';
 
-// 楽天APIから取得する商品の型定義
+// 楽天インターフェース
 interface RakutenItem {
   itemCode: string;
   itemName: string;
   itemUrl: string;
   itemPrice: number;
   shopName: string;
-  mediumImageUrls?: string[]; // 修正済み: formatVersion=2は文字列の配列を返す
+  mediumImageUrls?: string[]; // 修正部分[]
 }
 
-// データベースから取得する商品詳細の型定義
 interface ProductDetail {
   _id: string;
   title: string;
@@ -33,50 +32,34 @@ interface ProductDetail {
   updatedAt: string;
 }
 
-// 商品詳細ページのメインコンポーネント
 export default function SellDetailPage() {
-  // --- フックとStateの定義 ---
-  const params = useParams(); // URLからパラメータ（例: /sell/123 の "123"）を取得
-  const router = useRouter(); // ページ遷移（戻るボタンなど）のためのルーター
-
-  // 商品詳細データを保持するState
+  const params = useParams();
+  const router = useRouter();
   const [product, setProduct] = useState<ProductDetail | null>(null);
-  // メインのローディング状態を管理するState
   const [loading, setLoading] = useState(true);
-  // エラーメッセージを保持するState
   const [error, setError] = useState<string | null>(null);
-  // 画像カルーセルの現在スライドを管理
   const [currentSlide, setCurrentSlide] = useState(0);
-  // 「コメント」か「出品者情報」のアクティブタブを管理
   const [activeTab, setActiveTab] = useState('comments');
   
-  // 楽天APIから取得した関連商品を保持
+  // --- Lógica da Rakuten movida para cá ---
   const [rakutenProducts, setRakutenProducts] = useState<RakutenItem[]>([]);
-  // 楽天APIのローディング状態を管理
   const [rakutenLoading, setRakutenLoading] = useState(true);
 
-  // --- データ取得のEffect ---
-
-  // 1. URLのidが変わった時（=ページが読み込まれた時）に実行
   useEffect(() => {
     if (params.id) {
-      fetchProduct(); // 商品詳細を取得する関数を呼び出す
+      fetchProduct();
     }
-  }, [params.id]); // params.idに依存
+  }, [params.id]);
 
-  // 2. productデータが正常に取得できた後に実行
+  // useEffect から　API da Rakuten
+  // prodoct が取得できたらキーワードで探す
   useEffect(() => {
     if (product) {
-      // 商品カテゴリ名を日本語のキーワードとして取得
       const keyword = getCategoryLabel(product.category);
-      // そのキーワードで楽天APIを検索
       fetchRakutenProducts(keyword);
     }
-  }, [product]); // productデータに依存
+  }, [product]); // 重視: 'product'
 
-  // --- データ取得関数 ---
-
-  // APIルート（/api/products/[id]）から商品詳細を取得する非同期関数
   const fetchProduct = async () => {
     try {
       setLoading(true);
@@ -86,48 +69,43 @@ export default function SellDetailPage() {
         throw new Error('商品の取得に失敗しました');
       }
       const data = await response.json();
-      setProduct(data.product); // 取得したデータをStateにセット
+      setProduct(data.product);
     } catch (err) {
       console.error('商品取得エラー:', err);
       setError(err instanceof Error ? err.message : '商品の取得に失敗しました');
     } finally {
-      setLoading(false); // ローディング完了
+      setLoading(false);
     }
   };
 
-  // 楽天APIにキーワード検索をかける非同期関数
+  // --- 楽天APIを呼び出す関数---
   const fetchRakutenProducts = async (keyword: string) => {
     if (!keyword) {
       setRakutenLoading(false);
-      return; // キーワードがなければ何もしない
+      return;
     }
     setRakutenLoading(true);
     try {
-      // APIを叩く。formatVersion=2を指定
       const response = await fetch(
-        `https://app.rakuten.co.jp/services/api/IchibaItem/Search/20170T06?applicationId=${process.env.NEXT_PUBLIC_RAKUTEN_APP_ID}&keyword=${encodeURIComponent(keyword)}&hits=6&formatVersion=2`
+        `https://app.rakuten.co.jp/services/api/IchibaItem/Search/20170706?applicationId=${process.env.NEXT_PUBLIC_RAKUTEN_APP_ID}&keyword=${encodeURIComponent(keyword)}&hits=6&formatVersion=2`
       );
       if (!response.ok) {
         throw new Error('Rakuten API fetch failed');
       }
       const data = await response.json();
-      setRakutenProducts(data.Items || []); // 取得した商品をStateにセット
+      setRakutenProducts(data.Items || []);
     } catch (err) {
       console.error('Rakuten API error:', err);
-      setRakutenProducts([]); // エラー時は空配列をセット
+      setRakutenProducts([]);
     } finally {
-      setRakutenLoading(false); // 楽天APIのローディング完了
+      setRakutenLoading(false);
     }
   };
   
-  // --- ヘルパー関数（フォーマット・変換） ---
-
-  // 数値を「¥1,000」形式の文字列にフォーマットする関数
   const formatPrice = (price: number) => {
     return `¥${price.toLocaleString()}`;
   };
 
-  // 日付文字列を「2025年11月15日」形式にフォーマットする関数
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ja-JP', {
@@ -137,7 +115,6 @@ export default function SellDetailPage() {
     });
   };
 
-  // 'new' を '新品・未使用' に変換する関数
   const getConditionLabel = (condition: string): string => {
     const conditionMap: Record<string, string> = {
       'new': '新品・未使用',
@@ -148,7 +125,6 @@ export default function SellDetailPage() {
     return conditionMap[condition] || condition;
   };
 
-  // 'available' を '販売中' に変換する関数
   const getStatusLabel = (status: string): string => {
     const statusMap: Record<string, string> = {
       'available': '販売中',
@@ -158,7 +134,6 @@ export default function SellDetailPage() {
     return statusMap[status] || status;
   };
 
-  // 'rod' を 'ロッド/竿' に変換する関数（楽天検索のキーワードにも使用）
   const getCategoryLabel = (category: string): string => {
     const categoryMap: Record<string, string> = {
       'rod': 'ロッド/竿',
@@ -175,30 +150,22 @@ export default function SellDetailPage() {
     return categoryMap[category] || category;
   };
 
-  // --- カルーセルの操作関数 ---
-
-  // 画像カルーセルを「次へ」進める関数
   const nextSlide = () => {
     if (product && product.images.length > 0) {
       setCurrentSlide((prev) => (prev + 1) % product.images.length);
     }
   };
 
-  // 画像カルーセルを「前へ」戻す関数
   const prevSlide = () => {
     if (product && product.images.length > 0) {
       setCurrentSlide((prev) => (prev - 1 + product.images.length) % product.images.length);
     }
   };
 
-  // 特定のインデックスの画像スライドに移動する関数（下の・ボタン用）
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
   };
 
-  // --- レンタリング ---
-
-  // メインのローディング中の表示
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-gray-50">
@@ -207,7 +174,6 @@ export default function SellDetailPage() {
     );
   }
 
-  // エラー発生時または商品が見つからない場合の表示
   if (error || !product) {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50">
@@ -219,17 +185,15 @@ export default function SellDetailPage() {
     );
   }
 
-  // 表示する画像配列を決定（商品画像がなければプレースホルダー画像）
+
   const images = product.images.length > 0
     ? product.images
     : ["https://via.placeholder.com/400x300/e9ecef/6c757d?text=画像なし"];
 
-  // 正常時のJSX（画面描画）
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <main className="flex-1 container mx-auto px-4 py-6">
-        
-        {/* 「戻る」ボタン */}
+        {/* ... (商品ボタンここから戻る) ... */}
         <Button
           onClick={() => router.back()}
           variant="ghost"
@@ -240,12 +204,10 @@ export default function SellDetailPage() {
           戻る
         </Button>
 
-        {/* メインの2カラムレイアウト（左：画像、右：詳細） */}
         <div className="grid lg:grid-cols-2 gap-8 bg-white rounded-lg shadow-md p-6">
-          
-            {/* 左カラム：商品タイトル、画像カルーセルなど */}
+          {/* ... 商品... */}
+            {/* 左側 */}
             <section className="space-y-6">
-              {/* 商品タイトル・日付・出品者 */}
               <div>
                 <h1 className="text-2xl font-bold mb-2">{product.title}</h1>
                 <div className="flex gap-4 text-sm text-gray-600">
@@ -269,14 +231,12 @@ export default function SellDetailPage() {
                 </div>
               </div>
 
-              {/* 画像カルーセル */}
               <div className="relative">
                 <div className="relative overflow-hidden rounded-lg bg-gray-100">
                   <div
                     className="flex transition-transform duration-300 ease-in-out"
                     style={{ transform: `translateX(-${currentSlide * 100}%)` }}
                   >
-                    {/* 画像カルーセルの各画像をマッピング */}
                     {images.map((src, index) => (
                       <div key={index} className="w-full flex-shrink-0">
                         <img
@@ -288,7 +248,6 @@ export default function SellDetailPage() {
                     ))}
                   </div>
 
-                  {/* 画像が複数ある場合のみ矢印ボタンを表示 */}
                   {images.length > 1 && (
                     <>
                       <button
@@ -307,7 +266,6 @@ export default function SellDetailPage() {
                   )}
                 </div>
 
-                {/* 画像が複数ある場合のみインジケーター（・ボタン）を表示 */}
                 {images.length > 1 && (
                   <div className="flex justify-center mt-4 gap-2">
                     {images.map((_, index) => (
@@ -324,9 +282,8 @@ export default function SellDetailPage() {
               </div>
             </section>
 
-            {/* 右カラム：価格、商品説明、詳細情報 */}
+            {/* 右側 */}
             <section className="space-y-6">
-              {/* 価格 */}
               <div className="border-b pb-4">
                 <h2 className="text-3xl font-bold text-[#2FA3E3] mb-2">
                   {formatPrice(product.price)}
@@ -336,7 +293,6 @@ export default function SellDetailPage() {
                 </p>
               </div>
 
-              {/* 商品説明 */}
               <div>
                 <h3 className="text-xl font-semibold mb-3">商品詳細</h3>
                 <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
@@ -344,7 +300,6 @@ export default function SellDetailPage() {
                 </p>
               </div>
 
-              {/* 詳細情報テーブル */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2 border-b">
                   <span className="text-gray-600">カテゴリ</span>
@@ -369,7 +324,6 @@ export default function SellDetailPage() {
                 </div>
               </div>
 
-              {/* アクションボタン */}
               <div className="flex gap-4 pt-4">
                 <Button
                   variant="ghost"
@@ -392,10 +346,10 @@ export default function SellDetailPage() {
         </div>
         
 
-        {/* タブセクション（コメント、出品者情報） */}
+        {/* 画面*/}
         <section className="mt-8 bg-white rounded-lg shadow-md p-6">
           <div className="border-b border-gray-200">
-            {/* タブ切り替えボタン */}
+            {/* ... ボタン ... */}
             <div className="flex gap-8">
               <button
                 onClick={() => setActiveTab('comments')}
@@ -420,12 +374,10 @@ export default function SellDetailPage() {
             </div>
           </div>
 
-          {/* タブの中身 */}
           <div className="mt-6">
-            {/* activeTabの値によって表示を切り替え */}
             {activeTab === 'comments' ? (
-              // コメントタブ
               <div>
+                {/* コメント部分 */}
                 <p className="text-gray-600 mb-4">この商品へのコメントはまだありません</p>
                 <div className="bg-gray-50 p-4 rounded mb-4">
                   <textarea
@@ -440,7 +392,7 @@ export default function SellDetailPage() {
 
               </div>
             ) : (
-              // 出品者情報タブ
+              // 販売情報
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
@@ -456,14 +408,14 @@ export default function SellDetailPage() {
           </div>
         </section>
 
-        {/* 楽天API関連商品ランキングセクション */}
+        {/* 楽天セッション*/}
         <section className="mt-16 bg-white rounded-2xl shadow-md p-6 border border-gray-200">
           <h2 className="text-2xl font-bold mb-6 text-center text-blue-700 tracking-wide">
             Rakuten 関連商品ランキング 🛍️
           </h2>
           <div className="space-y-6">
-            {/* 楽天APIローディング中はスケルトン表示 */}
             {rakutenLoading ? (
+              // 楽天のイニシアライト
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="flex items-center gap-4 animate-pulse">
@@ -476,31 +428,26 @@ export default function SellDetailPage() {
                 ))}
               </div>
             ) : rakutenProducts.length > 0 ? (
-              // 取得した楽天商品をリスト表示
               rakutenProducts.map((p, idx) => {
                 
-                // 楽天API(formatVersion=2)から画像URLを正しく取得
-                // p.mediumImageUrls[0] が画像のURL文字列そのもの
+                // <--  URL呼び出し
                 const imageUrl = (p.mediumImageUrls && p.mediumImageUrls.length > 0 && p.mediumImageUrls[0])
-                  ? p.mediumImageUrls[0].split('?')[0] // パラメータを除外
-                  : 'https://placehold.co/80x80/e9ecef/6c757d?text=画像なし'; // フォールバック画像
+                  ? p.mediumImageUrls[0].split('?')[0] // アクセスする p.mediumImageUrls[0] 直接
+                  : 'https://placehold.co/80x80/e9ecef/6c757d?text=画像なし'; // Fallback 
 
                 return (
                   <div
                     key={p.itemCode}
                     className="flex items-start gap-4 border-b pb-4 last:border-none"
                   >
-                    {/* ランキング番号 */}
                     <div className="text-2xl font-bold text-blue-600 w-8 text-center">
                       {idx + 1}.
                     </div>
-                    {/* 商品画像 */}
                     <img
                       src={imageUrl}
                       alt={p.itemName}
                       className="w-20 h-20 object-cover rounded border"
                     />
-                    {/* 商品詳細 */}
                     <div className="flex-1">
                       <a
                         href={p.itemUrl}
@@ -521,7 +468,6 @@ export default function SellDetailPage() {
                 );
               })
             ) : (
-              // 関連商品がなかった場合の表示
               <p className="text-center text-gray-500">関連する商品が見つかりませんでした。</p>
             )}
           </div>
