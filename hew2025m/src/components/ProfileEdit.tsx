@@ -110,10 +110,9 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile }: Profile
         }
       }
 
-      // Firestoreに保存
-      const updatedProfile: UserProfile = {
+      // Firestoreに保存（usernameは除外して保存）
+      const updatedProfile = {
         displayName: editProfile.displayName.trim(),
-        username: editProfile.username.trim(),
         bio: editProfile.bio.trim(),
         photoURL,
       };
@@ -213,18 +212,19 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile }: Profile
           />
         </div>
 
-        {/* ユーザー名 */}
+        {/* ユーザー名（読み取り専用） */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            ユーザー名
+            ユーザーID
           </label>
           <input
             type="text"
             value={editProfile.username}
-            onChange={(e) => setEditProfile({ ...editProfile, username: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]"
+            readOnly
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
             placeholder="@ユーザー名"
           />
+          <p className="text-xs text-gray-500 mt-1">ユーザーIDは変更できません</p>
         </div>
 
         {/* 自己紹介 */}
