@@ -1,182 +1,162 @@
-import { Mail, DollarSign, Heart, Users, MessageCircle, Megaphone, Bell } from 'lucide-react';
-import Button from '@/components/Button';
+'use client'; // 👈 'useState'フックを使うため、クライアントコンポーネントとして指定
 
-function getNotificationIcon(iconType: string) {
-  switch (iconType) {
-    case 'mail': return <Mail size={24} />;
-    case 'dollar': return <DollarSign size={24} />;
-    case 'heart': return <Heart size={24} />;
-    case 'users': return <Users size={24} />;
-    case 'message': return <MessageCircle size={24} />;
-    case 'megaphone': return <Megaphone size={24} />;
-    default: return <Bell size={24} />;
-  }
+import { useState } from 'react'; // 'useState'を React からインポート
+// 修正箇所: 必要なアイコンのみを正しくインポートします
+import { Megaphone, JapaneseYen, MessageSquare, Trash2 } from 'lucide-react'; // ✅ CORRIGIDO
+
+// --- 1. 通知アイテムの型定義 ---
+interface NotificationItem {
+  id: string;
+  iconType: 'system' | 'sales' | 'comment'; // アイコンの種類を限定
+  iconBgColor: string; // Tailwindのクラス
+  title: string;
+  description: string;
+  timestamp: string;
+  tag: string;
+  isUnread: boolean;
 }
 
+// --- 2. サンプルの通知データ ---
+const sampleNotifications: NotificationItem[] = [
+  {
+    id: '1',
+    iconType: 'system',
+    iconBgColor: 'bg-cyan-500', // 青緑系
+    title: 'システムメンテナンスのお知らせ',
+    description: '明日午前2時〜4時にシステムメンテナンスを実施いたします。サービスをご利用いただけない時間帯がございますので、ご了承ください。',
+    timestamp: '2時間前',
+    tag: 'システム通知',
+    isUnread: true,
+  },
+  {
+    id: '2',
+    iconType: 'sales',
+    iconBgColor: 'bg-green-500', // 緑系
+    title: '商品が売れました！',
+    description: '「ダイワ エメラルダス MX 83M」が売れました。購入者への発送準備をお願いいたします。',
+    timestamp: '3時間前',
+    tag: '売上通知',
+    isUnread: true,
+  },
+  {
+    id: '3',
+    iconType: 'comment',
+    iconBgColor: 'bg-yellow-500', // 黄色系
+    title: '商品にコメントが付きました',
+    description: '田中太郎さんが「シマノ ステラ SW 8000HG」にコメントしました：「この商品の状態について詳しく教えてください」',
+    timestamp: '5時間前',
+    tag: 'コメント',
+    isUnread: true,
+  },
+];
+
+// --- 3. アイコンを返すヘルパー関数 ---
+const getNotificationIcon = (iconType: string) => {
+  switch (iconType) {
+    case 'system':
+      return <Megaphone className="w-6 h-6 text-white" />;
+    case 'sales':
+      return <JapaneseYen className="w-6 h-6 text-white" />; // ✅ CORRIGIDO
+    case 'comment':
+      return <MessageSquare className="w-6 h-6 text-white" />;
+    default:
+      return null;
+  }
+};
+
+// --- 4. 通知ページのメインコンポーネント ---
 export default function NotificationPage() {
-  const notifications = [
-    {
-      id: 1,
-      type: 'message',
-      title: '新しいメッセージ',
-      content: '釣り人1さんからメッセージが届きました',
-      time: '5分前',
-      unread: true,
-icon: 'mail'
-    },
-    {
-      id: 2,
-      type: 'sell',
-      title: '商品が購入されました',
-      content: 'あなたの商品「釣り竿セット」が購入されました',
-      time: '1時間前',
-      unread: true,
-icon: 'dollar'
-    },
-    {
-      id: 3,
-      type: 'like',
-      title: 'いいね！がつきました',
-      content: 'あなたの商品「ルアーセット」にいいね！がつきました',
-      time: '3時間前',
-      unread: false,
-icon: 'heart'
-    },
-    {
-      id: 4,
-      type: 'follow',
-      title: '新しいフォロワー',
-      content: '釣り好き太郎さんがあなたをフォローしました',
-      time: '5時間前',
-      unread: false,
-icon: 'users'
-    },
-    {
-      id: 5,
-      type: 'comment',
-      title: 'コメントがつきました',
-      content: 'あなたの投稿にコメントがつきました',
-      time: '1日前',
-      unread: false,
-icon: 'message'
-    },
-    {
-      id: 6,
-      type: 'system',
-      title: 'システム通知',
-      content: '新機能「マップ検索」がリリースされました',
-      time: '2日前',
-      unread: false,
-icon: 'megaphone'
-    }
-  ];
+  // 通知のリストをStateで管理
+  const [notifications, setNotifications] = useState(sampleNotifications);
+
+  // 既読にする処理（ダミー）
+  const handleMarkAsRead = (id: string) => {
+    console.log(`Mark as read: ${id}`);
+    // 実際の処理: setNotifications(...) で対象アイテムの isUnread を false にする
+  };
+
+  // 削除する処理（ダミー）
+  const handleDelete = (id: string) => {
+    console.log(`Delete: ${id}`);
+    // 実際の処理: setNotifications(...) で対象アイテムをリストから削除する
+  };
 
   return (
-    <div>
-      
-      <div className="bg-gray-50 min-h-screen">
-        <div className="container mx-auto px-5 py-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex justify-between items-center mb-8">
-              <h1 className="text-4xl font-bold text-gray-800" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
-                通知
-              </h1>
-              <Button variant="ghost" size="md" className="text-[#2FA3E3] hover:text-[#1d7bb8]">
-                すべて既読にする
-              </Button>
-            </div>
+    <div className="bg-gray-100 min-h-screen p-8">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* パンくずリスト */}
+        <nav className="text-sm text-gray-600 mb-4">
+          <span>ホーム</span> &gt; <span>通知</span>
+        </nav>
 
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="p-4 bg-gray-50 border-b border-gray-200">
-                <div className="flex gap-4">
-                  <Button variant="primary" size="md">
-                    すべて
-                  </Button>
-                  <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">
-                    未読のみ
-                  </Button>
-                  <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">
-                    メッセージ
-                  </Button>
-                  <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">
-                    取引
-                  </Button>
-                </div>
-              </div>
-
-              <div className="divide-y divide-gray-100">
-                {notifications.map((notification) => (
-                  <div 
-                    key={notification.id}
-                    className={`p-6 hover:bg-gray-50 cursor-pointer transition-colors duration-200 ${
-                      notification.unread ? 'bg-blue-50 border-l-4 border-l-[#2FA3E3]' : ''
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="text-2xl">
-                        {getNotificationIcon(notification.icon)}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className={`font-semibold ${notification.unread ? 'text-gray-900' : 'text-gray-700'}`}>
-                            {notification.title}
-                          </h3>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-500">
-                              {notification.time}
-                            </span>
-                            {notification.unread && (
-                              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                            )}
-                          </div>
-                        </div>
-                        <p className={`text-sm ${notification.unread ? 'text-gray-700' : 'text-gray-600'}`}>
-                          {notification.content}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* 空の状態表示 */}
-              {notifications.length === 0 && (
-                <div className="p-12 text-center">
-                  <div className="text-6xl text-gray-300 mb-4">
-                    <Bell size={64} />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                    通知はありません
-                  </h3>
-                  <p className="text-gray-500">
-                    新しい通知があるとここに表示されます
-                  </p>
-                </div>
-              )}
-
-              {/* ページネーション */}
-              {notifications.length > 0 && (
-                <div className="p-6 bg-gray-50 border-t border-gray-200">
-                  <div className="flex justify-center">
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="md" className="text-gray-500 hover:text-[#2FA3E3]">
-                        ← 前へ
-                      </Button>
-                      <Button variant="primary" size="md">1</Button>
-                      <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">2</Button>
-                      <Button variant="ghost" size="md" className="text-gray-600 hover:text-[#2FA3E3]">3</Button>
-                      <Button variant="ghost" size="md" className="text-gray-500 hover:text-[#2FA3E3]">
-                        次へ →
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+        {/* ヘッダー（タイトルと操作） */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-800">✉️ 通知</h1>
+          <div className="flex items-center gap-4">
+            <button className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700">
+              すべて既読にする
+            </button>
+            <select className="border border-gray-300 rounded-md p-2 text-sm">
+              <option>すべての通知</option>
+              <option>未読の通知</option>
+            </select>
           </div>
         </div>
-      </div>
 
+        {/* 通知リストのコンテナ */}
+        <div className="space-y-4">
+          
+          {/* 通知リストをループ処理 */}
+          {notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`bg-white shadow-md rounded-lg p-4 flex items-start gap-4 ${
+                notification.isUnread ? 'border-l-4 border-blue-500' : 'border-l-4 border-transparent'
+              }`}
+            >
+              {/* 1. アイコンセクション */}
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${notification.iconBgColor}`}
+              >
+                {getNotificationIcon(notification.iconType)}
+              </div>
+
+              {/* 2. コンテンツセクション */}
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-900">{notification.title}</h3>
+                <p className="text-sm text-gray-700 mt-1">{notification.description}</p>
+                
+                {/* メタ情報（タイムスタンプとタグ） */}
+                <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                  <span>{notification.timestamp}</span>
+                  <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                    {notification.tag}
+                  </span>
+                </div>
+              </div>
+
+              {/* 3. アクションボタンセクション */}
+              <div className="flex flex-col space-y-2">
+                <button
+                  onClick={() => handleMarkAsRead(notification.id)}
+                  className="bg-green-600 text-white px-3 py-1 rounded-md text-xs font-semibold hover:bg-green-700"
+                >
+                  既読にする
+                </button>
+                <button
+                  onClick={() => handleDelete(notification.id)}
+                  className="bg-red-600 text-white px-3 py-1 rounded-md text-xs font-semibold hover:bg-red-700 flex items-center justify-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  削除
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+      </div>
     </div>
   );
 }

@@ -1,7 +1,6 @@
-// store/useNotificationStore.ts
-import create from 'zustand';
+import { create } from 'zustand';
 
-interface Notification {
+export type Notification = {
   id: number;
   type: string;
   title: string;
@@ -9,27 +8,38 @@ interface Notification {
   time: string;
   unread: boolean;
   icon: string;
-}
+};
 
-interface NotificationStore {
+type NotificationStore = {
   notifications: Notification[];
-  addNotification: (notification: Notification) => void;
-  removeNotification: (id: number) => void;
+  setNotifications: (items: Notification[]) => void;
+  markAsRead: (id: number) => void;
   markAllAsRead: () => void;
-}
+  addNotification: (item: Notification) => void;
+};
 
 export const useNotificationStore = create<NotificationStore>((set) => ({
   notifications: [],
-  addNotification: (notification) =>
+
+  setNotifications: (items) => set({ notifications: items }),
+
+  markAsRead: (id) =>
     set((state) => ({
-      notifications: [notification, ...state.notifications],
+      notifications: state.notifications.map((n) =>
+        n.id === id ? { ...n, unread: false } : n
+      ),
     })),
-  removeNotification: (id) =>
-    set((state) => ({
-      notifications: state.notifications.filter((n) => n.id !== id),
-    })),
+
   markAllAsRead: () =>
     set((state) => ({
-      notifications: state.notifications.map((n) => ({ ...n, unread: false })),
+      notifications: state.notifications.map((n) => ({
+        ...n,
+        unread: false,
+      })),
+    })),
+
+  addNotification: (item) =>
+    set((state) => ({
+      notifications: [item, ...state.notifications],
     })),
 }));
