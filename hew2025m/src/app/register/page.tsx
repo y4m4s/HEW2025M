@@ -1,8 +1,9 @@
 "use client";
 import Link from 'next/link';
-import { auth, provider, db } from "@/lib/firebase";
+import { auth, provider } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -81,10 +82,12 @@ export default function RegisterPage() {
   const handleGoogleRegister = async () => {
     setLoading(true);
     try {
+      console.log("Googleで登録を開始します（ポップアップ方式）");
       await signInWithPopup(auth, provider);
       // ユーザーネーム設定画面へリダイレクト
       showSuccessAndRedirect("Googleでログインに成功しました！ユーザーネームを設定してください", "/setup-username");
     } catch (error: unknown) {
+      console.error("Googleログインエラー:", error);
       const message = error instanceof Error ? error.message : String(error);
       setSuccessMessage("Googleでのログインエラー: " + message);
       setTimeout(() => setSuccessMessage(""), 2200);

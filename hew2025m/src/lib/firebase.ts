@@ -1,7 +1,7 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
-import { initializeFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Check if API key exists
@@ -23,31 +23,39 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-let app;
-try {
-  app = initializeApp(firebaseConfig);
-} catch (err) {
-  console.error('[DEBUG] initializeApp error:', err);
-  throw err;
-}
+console.log("Firebase初期化中...");
+console.log("プロジェクトID:", firebaseConfig.projectId);
+console.log("Auth Domain:", firebaseConfig.authDomain);
 
-let auth;
-try {
-  auth = getAuth(app);
-} catch (err) {
-  console.error('[DEBUG] getAuth error (likely invalid API key):', err);
-  throw new Error('Firebase auth failed: auth/invalid-api-key. Check the API key in the Google Console and .env file.');
-}
+// アプリが既に初期化されているか確認
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+console.log("Firebaseアプリ初期化完了");
 
-// Initialize services
+const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
+// ポップアップのプロンプト設定
+provider.setCustomParameters({
+  prompt: 'select_account'
+});
+
 const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 
-// Firestore initialization (use long polling only in SSR environment, otherwise use fast connection)
-const db = initializeFirestore(app, {
-  experimentalForceLongPolling: typeof window === "undefined", 
-  ignoreUndefinedProperties: true,
-});
+// Firestoreの初期化（シンプル化・高速化）
+let db;
+try {
+  // 既に初期化されているか確認
+  db = getFirestore(app);
+  console.log("既存のFirestoreインスタンスを使用");
+} catch (e) {
+  // 新規初期化（最もシンプルな設定）
+  db = initializeFirestore(app, {
+    ignoreUndefinedProperties: true,
+    experimentalForceLongPolling: false, // 高速接続のため無効化
+  });
+  console.log("新規Firestoreインスタンス作成（高速モード）");
+}
+
+console.log("Firestore初期化完了 - プロジェクト:", app.options.projectId);
 
 // Firebase Storage
 const storage = getStorage(app);

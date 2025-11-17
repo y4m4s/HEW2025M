@@ -2,12 +2,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
+import { useProfile } from "@/contexts/ProfileContext";
 import { db } from "@/lib/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { Fish } from "lucide-react";
 
 export default function SetupUsernamePage() {
   const { user, loading: authLoading } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -21,34 +23,23 @@ export default function SetupUsernamePage() {
     }
   }, [user, authLoading, router]);
 
-  // 既にユーザーネームが設定されているかチェック
+  // ProfileContextを使って既存ユーザーかチェック（Firestore直接アクセスを削除）
   useEffect(() => {
-    if (!user) return;
+    if (!user || profileLoading) return;
 
-    const checkExistingProfile = async () => {
-      try {
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
+    console.log("ProfileContext経由でプロフィール確認:", profile);
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          // 既にusernameが設定されている場合はホームへ
-          if (data.username) {
-            router.push("/");
-            return;
-          }
-        }
+    // 既にusernameが設定されている場合はホームへ
+    if (profile.username && profile.username !== user.email?.split("@")[0]) {
+      console.log("ユーザーネーム設定済み、ホームへリダイレクト");
+      router.push("/");
+      return;
+    }
 
-        // デフォルト値を設定
-        setDisplayName(user.displayName || "");
-        setUsername("");
-      } catch (error) {
-        console.error("プロフィール確認エラー:", error);
-      }
-    };
-
-    checkExistingProfile();
-  }, [user, router]);
+    // デフォルト値を設定
+    setDisplayName(profile.displayName || user.displayName || "");
+    setUsername("");
+  }, [user, profile, profileLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +79,7 @@ export default function SetupUsernamePage() {
     }
   };
 
-  if (authLoading || !user) {
+  if (authLoading || profileLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p>読み込み中...</p>
