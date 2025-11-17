@@ -18,6 +18,8 @@ export default function ProfilePage() {
   const [editOpen, setEditOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("selling");
   const [sellingCount, setSellingCount] = useState(0);
+  const [historyCount, setHistoryCount] = useState(0);
+  const [bookmarkCount, setBookmarkCount] = useState(0);
 
   // ユーザー認証チェック
   useEffect(() => {
@@ -113,7 +115,7 @@ export default function ProfilePage() {
                   }`}
                   onClick={() => setActiveTab("history")}
                 >
-                  出品履歴 (0)
+                  出品履歴 ({historyCount})
                 </button>
                 <button
                   className={`px-6 py-4 font-medium transition-colors ${
@@ -123,13 +125,19 @@ export default function ProfilePage() {
                   }`}
                   onClick={() => setActiveTab("bookmarks")}
                 >
-                  ブックマーク (0)
+                  ブックマーク ({bookmarkCount})
                 </button>
               </div>
 
-              {activeTab === "selling" && <ProfSelling onCountChange={setSellingCount} />}
-              {activeTab === "history" && <ProfHistory />}
-              {activeTab === "bookmarks" && <ProfBookmark />}
+              <div style={{ display: activeTab === "selling" ? "block" : "none" }}>
+                <ProfSelling onCountChange={setSellingCount} />
+              </div>
+              <div style={{ display: activeTab === "history" ? "block" : "none" }}>
+                <ProfHistory onCountChange={setHistoryCount} />
+              </div>
+              <div style={{ display: activeTab === "bookmarks" ? "block" : "none" }}>
+                <ProfBookmark onCountChange={setBookmarkCount} />
+              </div>
             </div>
 
           </div>

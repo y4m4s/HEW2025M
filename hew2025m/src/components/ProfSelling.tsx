@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Fish } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
+import { useRouter } from "next/navigation";
 
 interface Product {
   _id: string;
@@ -18,6 +19,7 @@ interface ProfSellingProps {
 
 export default function ProfSelling({ onCountChange }: ProfSellingProps) {
   const { user } = useAuth();
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -91,7 +93,11 @@ export default function ProfSelling({ onCountChange }: ProfSellingProps) {
   return (
     <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {products.map((product) => (
-        <div key={product._id} className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition cursor-pointer">
+        <div
+          key={product._id}
+          className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition cursor-pointer"
+          onClick={() => router.push(`/sellDetail/${product._id}`)}
+        >
           <div className="h-36 bg-gray-200 flex items-center justify-center overflow-hidden">
             {product.images && product.images.length > 0 ? (
               <img
