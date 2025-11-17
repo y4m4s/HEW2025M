@@ -47,13 +47,13 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile }: Profile
 
     // ファイルサイズチェック（5MB制限）
     if (file.size > 5 * 1024 * 1024) {
-      console.error("画像サイズが5MBを超えています:", file.size);
+      alert("画像サイズが5MBを超えています");
       return;
     }
 
     // 画像タイプチェック
     if (!file.type.startsWith("image/")) {
-      console.error("画像ファイル以外が選択されました:", file.type);
+      alert("画像ファイルを選択してください");
       return;
     }
 
@@ -69,21 +69,17 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile }: Profile
 
   const handleSaveProfile = async () => {
     if (!user) {
-      console.error("ユーザーが未認証です");
+      alert("ユーザーが認証されていません");
       return;
     }
 
     setSaving(true);
-    console.log("保存開始:", new Date().toISOString());
-    console.log("Firebase接続状態確認 - db:", db ? "初期化済み" : "未初期化");
-    console.log("ユーザー情報:", { uid: user.uid, email: user.email });
 
     try {
       let photoURL = editProfile.photoURL;
 
       // 画像がアップロードされている場合
       if (selectedFile) {
-        console.log("画像アップロード開始");
         try {
           const formData = new FormData();
           formData.append("file", selectedFile);
@@ -106,16 +102,15 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile }: Profile
 
           const uploadData = await uploadResponse.json();
           photoURL = `${uploadData.imageUrl}?t=${Date.now()}`;
-          console.log("画像アップロード完了:", photoURL);
         } catch (uploadError) {
           console.error("画像アップロードエラー:", uploadError);
+          alert("画像のアップロードに失敗しました");
           setSaving(false);
           return;
         }
       }
 
       // Firestoreに保存
-      console.log("Firestore保存開始 - ユーザーID:", user.uid);
       const updatedProfile: UserProfile = {
         displayName: editProfile.displayName.trim(),
         username: editProfile.username.trim(),
@@ -123,66 +118,15 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile }: Profile
         photoURL,
       };
 
-      console.log("保存するデータ:", updatedProfile);
+      const docRef = doc(db, "users", user.uid);
 
-      try {
-        // Firestoreに直接保存（タイムアウト30秒）
-        const docRef = doc(db, "users", user.uid);
-        console.log("ドキュメント参照作成完了:", docRef.path);
-
-        const startTime = Date.now();
-        console.log("Firestore保存開始:", new Date().toISOString());
-
-        // タイムアウト用のAbortController
-        let timeoutId: NodeJS.Timeout | null = null;
-
-        try {
-          // 30秒のタイムアウトを設定
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            timeoutId = setTimeout(() => {
-              const elapsed = Date.now() - startTime;
-              console.error(`Firestore保存がタイムアウトしました（${elapsed}ms）`);
-              reject(new Error("Firestore保存がタイムアウトしました（30秒）"));
-            }, 30000);
-          });
-
-          await Promise.race([
-            setDoc(docRef, updatedProfile, { merge: true }),
-            timeoutPromise
-          ]);
-
-          const endTime = Date.now();
-
-          console.log("✅ Firestore保存完了:", new Date().toISOString());
-          console.log("✅ 保存にかかった時間:", endTime - startTime, "ms");
-        } finally {
-          // タイムアウトタイマーをクリア
-          if (timeoutId) {
-            clearTimeout(timeoutId);
-          }
-        }
-      } catch (firestoreError: any) {
-        console.error("Firestore保存中のエラー:", firestoreError);
-        console.error("エラーコード:", firestoreError?.code);
-        console.error("エラーメッセージ:", firestoreError?.message);
-        console.error("エラー名:", firestoreError?.name);
-
-        // 権限エラーの場合は詳細を表示
-        if (firestoreError?.code === "permission-denied") {
-          console.error("⚠️ Firestoreの書き込み権限がありません");
-          console.error("Firebaseコンソールでセキュリティルールを確認してください");
-        }
-
-        // タイムアウトやオフラインエラーの場合
-        if (firestoreError?.code === "unavailable" ||
-            firestoreError?.message?.includes("offline") ||
-            firestoreError?.message?.includes("タイムアウト")) {
-          console.error("⚠️ Firestoreへの接続に問題があります");
-          console.error("ネットワーク接続を確認してください");
-        }
-
-        throw firestoreError;
-      }
+      // タイムアウト付きでFirestoreに保存
+      await Promise.race([
+        setDoc(docRef, updatedProfile, { merge: true }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Firestore保存がタイムアウトしました")), 30000)
+        ),
+      ]);
 
       // クリーンアップ
       if (previewURL) {
@@ -191,16 +135,20 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile }: Profile
       }
       setSelectedFile(null);
 
-      console.log("全処理完了:", new Date().toISOString());
-
       // モーダルを閉じる
       onClose();
     } catch (error) {
       console.error("プロフィール保存エラー:", error);
-      console.error("エラー詳細:", {
-        message: error instanceof Error ? error.message : "不明なエラー",
-        stack: error instanceof Error ? error.stack : undefined,
-      });
+
+      if (error instanceof Error) {
+        if (error.message.includes("permission-denied")) {
+          alert("プロフィールの保存権限がありません");
+        } else if (error.message.includes("タイムアウト")) {
+          alert("保存がタイムアウトしました。ネットワーク接続を確認してください");
+        } else {
+          alert("プロフィールの保存に失敗しました");
+        }
+      }
     } finally {
       setSaving(false);
     }

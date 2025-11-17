@@ -1,16 +1,23 @@
 "use client";
 import { useState, useEffect } from "react";
-import { User, Fish } from "lucide-react";
+import { User } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useRouter } from "next/navigation";
 import ProfileEdit from "@/components/ProfileEdit";
+import ProfSelling from "@/components/ProfSelling";
+import ProfHistory from "@/components/ProfHistory";
+import ProfBookmark from "@/components/ProfBookmark";
+
+type TabType = "selling" | "history" | "bookmarks";
 
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
   const { profile } = useProfile();
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>("selling");
+  const [sellingCount, setSellingCount] = useState(0);
 
   // ユーザー認証チェック
   useEffect(() => {
@@ -88,25 +95,41 @@ export default function ProfilePage() {
             {/* Produtos */}
             <div className="lg:col-span-2 bg-white rounded-xl shadow-lg">
               <div className="flex border-b text-sm">
-                <button className="px-6 py-4 text-[#2FA3E3] border-b-2 border-[#2FA3E3] font-medium">出品中 (24)</button>
-                <button className="px-6 py-4 text-gray-600 hover:text-[#2FA3E3]">販売済み (78)</button>
-                <button className="px-6 py-4 text-gray-600 hover:text-[#2FA3E3]">評価 (156)</button>
+                <button
+                  className={`px-6 py-4 font-medium transition-colors ${
+                    activeTab === "selling"
+                      ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
+                      : "text-gray-600 hover:text-[#2FA3E3]"
+                  }`}
+                  onClick={() => setActiveTab("selling")}
+                >
+                  出品中 ({sellingCount})
+                </button>
+                <button
+                  className={`px-6 py-4 font-medium transition-colors ${
+                    activeTab === "history"
+                      ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
+                      : "text-gray-600 hover:text-[#2FA3E3]"
+                  }`}
+                  onClick={() => setActiveTab("history")}
+                >
+                  出品履歴 (0)
+                </button>
+                <button
+                  className={`px-6 py-4 font-medium transition-colors ${
+                    activeTab === "bookmarks"
+                      ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
+                      : "text-gray-600 hover:text-[#2FA3E3]"
+                  }`}
+                  onClick={() => setActiveTab("bookmarks")}
+                >
+                  ブックマーク (0)
+                </button>
               </div>
 
-              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition">
-                    <div className="h-36 bg-gray-200 flex items-center justify-center">
-                      <Fish />
-                    </div>
-                    <div className="p-3 text-sm">
-                      <p className="font-medium">釣り竿セット 初心者向け</p>
-                      <p className="text-lg font-bold text-[#2FA3E3]">¥3,500</p>
-                      <p className="text-xs text-gray-500">出品中・2日前</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {activeTab === "selling" && <ProfSelling onCountChange={setSellingCount} />}
+              {activeTab === "history" && <ProfHistory />}
+              {activeTab === "bookmarks" && <ProfBookmark />}
             </div>
 
           </div>

@@ -82,7 +82,6 @@ export default function RegisterPage() {
   const handleGoogleRegister = async () => {
     setLoading(true);
     try {
-      console.log("Googleで登録を開始します（ポップアップ方式）");
       await signInWithPopup(auth, provider);
       // ユーザーネーム設定画面へリダイレクト
       showSuccessAndRedirect("Googleでログインに成功しました！ユーザーネームを設定してください", "/setup-username");

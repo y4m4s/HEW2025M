@@ -55,7 +55,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Firestoreのリアルタイム監視（タイムアウト削除・高速化）
+  // Firestoreのリアルタイム監視
   useEffect(() => {
     if (!user) {
       setProfile({
@@ -69,24 +69,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
 
     setLoading(true);
-    const startTime = Date.now();
-    console.log("ProfileContext: プロフィール監視開始 - ユーザーID:", user.uid);
-
     const docRef = doc(db, "users", user.uid);
 
-    // Firestoreの変更をリアルタイムで監視（タイムアウトなし）
+    // Firestoreの変更をリアルタイムで監視
     const unsubscribe = onSnapshot(
       docRef,
       (docSnap) => {
-        const endTime = Date.now();
-        console.log(`ProfileContext: プロフィール取得成功 (${endTime - startTime}ms)`);
-
         if (docSnap.exists()) {
           const data = docSnap.data() as UserProfile;
-          console.log("ProfileContext: プロフィールデータ:", data);
           setProfile(data);
         } else {
-          console.log("ProfileContext: プロフィールドキュメントが存在しません");
           // 初回ログイン時のデフォルト値
           const defaultProfile: UserProfile = {
             displayName: user.displayName || "名無しユーザー",
@@ -98,11 +90,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         }
         setLoading(false);
       },
-      (error: any) => {
-        const endTime = Date.now();
-        console.error(`ProfileContext: プロフィール監視エラー (${endTime - startTime}ms)`, error);
-        console.error("エラーコード:", error?.code);
-        console.error("エラーメッセージ:", error?.message);
+      (error) => {
+        console.error("プロフィール監視エラー:", error);
 
         // エラー時もデフォルト値を設定
         const defaultProfile: UserProfile = {

@@ -23,15 +23,12 @@ export default function SetupUsernamePage() {
     }
   }, [user, authLoading, router]);
 
-  // ProfileContextを使って既存ユーザーかチェック（Firestore直接アクセスを削除）
+  // ProfileContextを使って既存ユーザーかチェック
   useEffect(() => {
     if (!user || profileLoading) return;
 
-    console.log("ProfileContext経由でプロフィール確認:", profile);
-
     // 既にusernameが設定されている場合はホームへ
     if (profile.username && profile.username !== user.email?.split("@")[0]) {
-      console.log("ユーザーネーム設定済み、ホームへリダイレクト");
       router.push("/");
       return;
     }

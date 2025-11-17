@@ -49,14 +49,9 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      console.log("Googleログインを開始します（ポップアップ方式）");
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      console.log("Google認証成功:", user.uid);
+      await signInWithPopup(auth, provider);
 
-      // Firestoreの確認を削除し、常にsetup-usernameへリダイレクト
       // setup-username側で既存ユーザーかどうかを判定する
-      console.log("setup-usernameへ移動（プロフィール確認はスキップ）");
       setToast('ログイン成功！');
       setTimeout(() => {
         setToast('');
