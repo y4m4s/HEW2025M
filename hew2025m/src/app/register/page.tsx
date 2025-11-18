@@ -2,8 +2,6 @@
 import Link from 'next/link';
 import { auth, provider } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -18,7 +16,6 @@ function SuccessToast({ message }: { message: string }) {
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,39 +38,32 @@ export default function RegisterPage() {
       return;
     }
 
-    // ユーザーネームのバリデーション
-    if (username.length < 3) {
-      setSuccessMessage("ユーザーネームは3文字以上で入力してください");
-      setTimeout(() => setSuccessMessage(""), 2200);
-      return;
-    }
-
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-      setSuccessMessage("ユーザーネームは英数字とアンダースコアのみ使用できます");
-      setTimeout(() => setSuccessMessage(""), 2200);
-      return;
-    }
-
     setLoading(true);
     try {
-      // Firebase Authenticationでアカウント作成
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      // Firebase Authenticationでアカウント作成のみ
+      await createUserWithEmailAndPassword(auth, email, password);
 
-      // Firestoreにユーザープロフィールを保存
-      await setDoc(doc(db, "users", user.uid), {
-        displayName: username,
-        username: username,
-        bio: "",
-        photoURL: "",
-        createdAt: new Date().toISOString(),
-      });
-
-      showSuccessAndRedirect("アカウント作成に成功しました！ログインへ移動します", "/login");
+      // ユーザーID設定画面へリダイレクト
+      showSuccessAndRedirect("アカウント作成に成功しました！ユーザーIDを設定してください", "/setup-username");
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      setSuccessMessage("登録エラー: " + message);
-      setTimeout(() => setSuccessMessage(""), 2200);
+      let errorMessage = "登録エラーが発生しました";
+
+      // Firebase Authenticationのエラーコードに応じてメッセージを変更
+      const firebaseError = error as { code?: string };
+      if (firebaseError.code === "auth/email-already-in-use") {
+        errorMessage = "このメールアドレスは既に登録されています。ログインページからログインしてください。";
+      } else if (firebaseError.code === "auth/invalid-email") {
+        errorMessage = "メールアドレスの形式が正しくありません";
+      } else if (firebaseError.code === "auth/weak-password") {
+        errorMessage = "パスワードは6文字以上で設定してください";
+      } else if (firebaseError.code === "auth/operation-not-allowed") {
+        errorMessage = "メール/パスワード認証が有効になっていません";
+      } else if (firebaseError.code === "auth/network-request-failed") {
+        errorMessage = "ネットワークエラーが発生しました。接続を確認してください";
+      }
+
+      setSuccessMessage(errorMessage);
+      setTimeout(() => setSuccessMessage(""), 3000);
     } finally {
       setLoading(false);
     }
@@ -82,7 +72,6 @@ export default function RegisterPage() {
   const handleGoogleRegister = async () => {
     setLoading(true);
     try {
-      console.log("Googleで登録を開始します（ポップアップ方式）");
       await signInWithPopup(auth, provider);
       // ユーザーネーム設定画面へリダイレクト
       showSuccessAndRedirect("Googleでログインに成功しました！ユーザーネームを設定してください", "/setup-username");
@@ -130,25 +119,7 @@ export default function RegisterPage() {
                 onChange={e => setEmail(e.target.value)}
               />
             </div>
-            
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-gray-700 mb-2">ユーザーネーム</label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">@</span>
-                <input
-                  type="text"
-                  className="w-full p-4 pl-8 border border-gray-300 rounded-lg text-base transition-all duration-300 focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20"
-                  placeholder="username"
-                  value={username}
-                  onChange={e => setUsername(e.target.value.toLowerCase())}
-                  required
-                  minLength={3}
-                  pattern="[a-zA-Z0-9_]+"
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">3文字以上、英数字とアンダースコアのみ</p>
-            </div>
-            
+
             <div className="mb-5">
               <label className="block text-sm font-medium text-gray-700 mb-2">パスワード</label>
               <input

@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Camera, Fish, X } from 'lucide-react';
 import Button from '@/components/Button';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/useAuth';
+import { useProfile } from '@/contexts/ProfileContext';
 
 // カテゴリの定義（表示名とDB保存用の値のマッピング）
 const CATEGORIES = [
@@ -22,6 +24,8 @@ const CATEGORIES = [
 export default function SellPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user, loading: authLoading } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
 
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
@@ -35,6 +39,14 @@ export default function SellPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [submitted, setSubmitted] = useState(false);
+
+  // 認証チェック：未ログインならログインページへリダイレクト
+  useEffect(() => {
+    if (!authLoading && !user) {
+      alert('商品を出品するにはログインが必要です');
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -97,12 +109,20 @@ export default function SellPage() {
       return;
     }
 
+    // 認証チェック
+    if (!user) {
+      alert('商品を出品するにはログインが必要です');
+      router.push('/login');
+      return;
+    }
+
     setIsSubmitting(true);
     setUploadProgress('出品を準備中...');
 
     try {
       const timestamp = new Date().toISOString();
-      const sellerId = 'user-' + Date.now(); // TODO: 実際のユーザーIDに置き換える
+      const sellerId = `user-${user.uid}`;
+      const sellerName = profile.displayName || user.displayName || '名無しユーザー';
 
       let uploadedImages: string[] = [];
 
@@ -142,7 +162,7 @@ export default function SellPage() {
           condition,
           images: uploadedImages,
           sellerId,
-          sellerName: 'テストユーザー', // TODO: 実際のユーザー名に置き換える
+          sellerName,
           shippingPayer,
           shippingDays,
         }),
@@ -163,6 +183,23 @@ export default function SellPage() {
       setUploadProgress('');
     }
   };
+
+  // ローディング中の表示
+  if (authLoading || profileLoading) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#2FA3E3] mx-auto mb-4"></div>
+          <p className="text-gray-600">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 未認証の場合は何も表示しない（useEffectでリダイレクト済み）
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -329,7 +366,6 @@ export default function SellPage() {
                   >
                     <option value="">選択してください</option>
                     <option value="new">新品・未使用</option>
-                    <option value="like-new">未使用に近い</option>
                     <option value="good">目立った傷や汚れなし</option>
                     <option value="fair">やや傷や汚れあり</option>
                     <option value="poor">傷や汚れあり</option>
