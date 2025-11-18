@@ -1,6 +1,8 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
+import { getAnalytics } from "firebase/analytics";
 
 // Check if API key exists
 const firebaseApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
@@ -31,6 +33,7 @@ provider.setCustomParameters({
   prompt: 'select_account'
 });
 
+// Analytics (ブラウザ環境でのみ初期化)
 const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 
 // Firestoreの初期化（シンプル化・高速化）
@@ -53,4 +56,4 @@ console.log("Firestore初期化完了 - プロジェクト:", app.options.projec
 // Firebase Storage
 const storage = getStorage(app);
 
-export { auth, provider, db };
+export { auth, provider, db, storage, analytics };

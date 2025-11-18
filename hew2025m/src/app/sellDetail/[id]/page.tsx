@@ -385,26 +385,6 @@ export default function SellDetailPage() {
               </div>
 
               <div className="flex gap-4 pt-4">
-                <Button
-                  variant="ghost"
-                  size="md"
-                  className="flex-1 border border-gray-300"
-                  disabled={product.status !== 'available'}
-                >
-                  ブックマーク
-                </Button>
-                <Button
-                  variant="primary"
-                  size="md"
-                  className="flex-1"
-                  disabled={product.status !== 'available'}
-                >
-                  {product.status === 'available' ? '購入する' : '購入できません'}
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex gap-4 pt-4">
               <Button
                 variant="ghost"
                 size="md"

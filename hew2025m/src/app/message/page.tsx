@@ -69,9 +69,13 @@ export default function MessagePage() {
     return () => unsubscribe();
   }, [messagesRef]);
 
-  // メッセージの自動スクロール処理
+  // メッセージの自動スクロール処理（新しいメッセージが追加された時のみ）
+  const prevMessagesLength = useRef(messages.length);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > prevMessagesLength.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    prevMessagesLength.current = messages.length;
   }, [messages]);
 
   // メッセージ送信処理
@@ -103,7 +107,7 @@ export default function MessagePage() {
 
   return (
     // --- メインレイアウトコンテナ (3カラムに変更) ---
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-[calc(100vh-5rem)] bg-gray-50">
 
       {/* --- 1. サイドバー (会話リスト) --- */}
       <div className="w-80 flex-shrink-0 bg-white shadow-lg border-r border-gray-200 flex flex-col">
