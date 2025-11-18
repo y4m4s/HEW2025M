@@ -1,8 +1,7 @@
-'use client'; // 👈 'useState'フックを使うため、クライアントコンポーネントとして指定
+'use client';
 
-import { useState } from 'react'; // 'useState'を React からインポート
-// 修正箇所: 必要なアイコンのみを正しくインポートします
-import { Megaphone, JapaneseYen, MessageSquare, Trash2 } from 'lucide-react'; // ✅ CORRIGIDO
+import { useState } from 'react';
+import { Megaphone, JapaneseYen, MessageSquare, Trash2 } from 'lucide-react';
 
 // --- 1. 通知アイテムの型定義 ---
 interface NotificationItem {
