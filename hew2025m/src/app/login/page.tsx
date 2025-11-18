@@ -49,25 +49,16 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+      await signInWithPopup(auth, provider);
 
-      // Firestoreでユーザープロフィールを確認
-      const docRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(docRef);
-
-      if (!docSnap.exists() || !docSnap.data().username) {
-        // ユーザーネームが未設定の場合は設定画面へ
-        setToast('ユーザーネームを設定してください');
-        setTimeout(() => {
-          setToast('');
-          router.push('/setup-username');
-        }, 1800);
-      } else {
-        // 既にユーザーネームが設定されている場合はホームへ
-        showSuccessAndRedirect('Googleでログイン成功！ホームへ移動します');
-      }
+      // setup-username側で既存ユーザーかどうかを判定する
+      setToast('ログイン成功！');
+      setTimeout(() => {
+        setToast('');
+        router.push('/setup-username');
+      }, 1000);
     } catch (error: unknown) {
+      console.error("Googleログインエラー:", error);
       const message = error instanceof Error ? error.message : String(error);
       setToast('Googleログインエラー: ' + message);
       setTimeout(() => setToast(''), 2200);

@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, ArrowLeft, MapPin, Calendar, User } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, MapPin, Calendar, User, Bookmark } from 'lucide-react';
 import Button from '@/components/Button';
+import { useAuth } from '@/lib/useAuth';
+import { db } from '@/lib/firebase';
+import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 
 interface ProductDetail {
   _id: string;
@@ -25,17 +28,39 @@ interface ProductDetail {
 export default function SellDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeTab, setActiveTab] = useState('comments');
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
   useEffect(() => {
     if (params.id) {
       fetchProduct();
     }
   }, [params.id]);
+
+  // ブックマーク状態をチェック
+  useEffect(() => {
+    if (user && params.id) {
+      checkBookmarkStatus();
+    }
+  }, [user, params.id]);
+
+  const checkBookmarkStatus = async () => {
+    if (!user || !params.id) return;
+
+    try {
+      const bookmarkRef = doc(db, 'users', user.uid, 'bookmarks', params.id as string);
+      const bookmarkSnap = await getDoc(bookmarkRef);
+      setIsBookmarked(bookmarkSnap.exists());
+    } catch (error) {
+      console.error('ブックマーク状態の取得エラー:', error);
+    }
+  };
 
   const fetchProduct = async () => {
     try {
@@ -119,6 +144,42 @@ export default function SellDetailPage() {
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
+  };
+
+  const handleBookmark = async () => {
+    if (!user) {
+      alert('ブックマークするにはログインが必要です');
+      router.push('/login');
+      return;
+    }
+
+    if (!product) return;
+
+    setBookmarkLoading(true);
+    try {
+      const bookmarkRef = doc(db, 'users', user.uid, 'bookmarks', product._id);
+
+      if (isBookmarked) {
+        // ブックマーク解除
+        await deleteDoc(bookmarkRef);
+        setIsBookmarked(false);
+      } else {
+        // ブックマーク追加
+        await setDoc(bookmarkRef, {
+          productId: product._id,
+          title: product.title,
+          price: product.price,
+          image: product.images[0] || '',
+          createdAt: new Date().toISOString(),
+        });
+        setIsBookmarked(true);
+      }
+    } catch (error) {
+      console.error('ブックマークエラー:', error);
+      alert('ブックマークの操作に失敗しました');
+    } finally {
+      setBookmarkLoading(false);
+    }
   };
 
   if (loading) {
@@ -282,10 +343,16 @@ export default function SellDetailPage() {
               <Button
                 variant="ghost"
                 size="md"
-                className="flex-1 border border-gray-300"
-                disabled={product.status !== 'available'}
+                className={`flex-1 border ${
+                  isBookmarked
+                    ? 'border-[#2FA3E3] bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
+                    : 'border-gray-300'
+                }`}
+                onClick={handleBookmark}
+                disabled={bookmarkLoading}
+                icon={<Bookmark size={18} fill={isBookmarked ? 'white' : 'none'} />}
               >
-                ブックマーク
+                {bookmarkLoading ? '処理中...' : isBookmarked ? 'ブックマーク済み' : 'ブックマーク'}
               </Button>
               <Button
                 variant="primary"

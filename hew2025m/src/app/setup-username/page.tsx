@@ -2,12 +2,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
+import { useProfile } from "@/contexts/ProfileContext";
 import { db } from "@/lib/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { Fish } from "lucide-react";
 
 export default function SetupUsernamePage() {
   const { user, loading: authLoading } = useAuth();
+  const { profile, loading: profileLoading } = useProfile();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -21,34 +23,20 @@ export default function SetupUsernamePage() {
     }
   }, [user, authLoading, router]);
 
-  // 既にユーザーネームが設定されているかチェック
+  // ProfileContextを使って既存ユーザーかチェック
   useEffect(() => {
-    if (!user) return;
+    if (!user || profileLoading) return;
 
-    const checkExistingProfile = async () => {
-      try {
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
+    // 既にusernameが設定されている場合はホームへ
+    if (profile.username && profile.username !== user.email?.split("@")[0]) {
+      router.push("/");
+      return;
+    }
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          // 既にusernameが設定されている場合はホームへ
-          if (data.username) {
-            router.push("/");
-            return;
-          }
-        }
-
-        // デフォルト値を設定
-        setDisplayName(user.displayName || "");
-        setUsername("");
-      } catch (error) {
-        console.error("プロフィール確認エラー:", error);
-      }
-    };
-
-    checkExistingProfile();
-  }, [user, router]);
+    // デフォルト値を設定
+    setDisplayName(profile.displayName || user.displayName || "");
+    setUsername("");
+  }, [user, profile, profileLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +76,7 @@ export default function SetupUsernamePage() {
     }
   };
 
-  if (authLoading || !user) {
+  if (authLoading || profileLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p>読み込み中...</p>
@@ -132,7 +120,7 @@ export default function SetupUsernamePage() {
             {/* ユーザーネーム */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ユーザーネーム <span className="text-red-500">*</span>
+                ユーザーID <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">@</span>
@@ -147,8 +135,11 @@ export default function SetupUsernamePage() {
                   pattern="[a-zA-Z0-9_]+"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 mt-1">
                 3文字以上、英数字とアンダースコアのみ使用可能
+              </p>
+              <p className="text-xs text-red-600 font-semibold mt-1">
+                ⚠ 一度設定したユーザーIDは変更することができません。
               </p>
             </div>
 

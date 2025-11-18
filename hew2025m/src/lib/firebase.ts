@@ -1,8 +1,6 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getAnalytics } from "firebase/analytics";
-import { initializeFirestore, enableIndexedDbPersistence } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
@@ -14,31 +12,17 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID!
 };
 
-const app = initializeApp(firebaseConfig);
+// Firebaseアプリの初期化
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+
+// Firebase Authenticationの設定
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
-
-// Firestoreの初期化（クライアントサイドでは高速な接続を使用）
-const db = initializeFirestore(app, {
-  // SSR環境でのみLong Pollingを使用、ブラウザでは通常の高速接続
-  experimentalForceLongPolling: typeof window === "undefined",
-  ignoreUndefinedProperties: true,
+provider.setCustomParameters({
+  prompt: 'select_account'
 });
 
-// オフライン永続化を有効にする（ブラウザのみ）
-if (typeof window !== "undefined") {
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === "failed-precondition") {
-      // 複数のタブが開いている場合
-      console.warn("Firestore永続化: 複数のタブが開いています");
-    } else if (err.code === "unimplemented") {
-      // ブラウザがサポートしていない場合
-      console.warn("Firestore永続化: ブラウザがサポートしていません");
-    }
-  });
-}
+// Firestoreの初期化
+const db = getFirestore(app);
 
-const storage = getStorage(app);
-
-export { auth, provider, analytics, db, storage };
+export { auth, provider, db };

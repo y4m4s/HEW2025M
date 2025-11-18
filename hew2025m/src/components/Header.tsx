@@ -1,49 +1,19 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Bell, Mail, User as UserIcon } from "lucide-react";
 import Button from "@/components/Button";
 import LogoutModal from "@/components/LogoutModal";
 import { useAuth } from "@/lib/useAuth";
-import { auth, db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { useProfile } from "@/contexts/ProfileContext";
+import { auth } from "@/lib/firebase";
 
 export default function Header() {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [username, setUsername] = useState<string>("");
-  const [displayName, setDisplayName] = useState<string>("");
-
-  // Firestoreからユーザー情報を取得
-  useEffect(() => {
-    if (!user) {
-      setUsername("");
-      setDisplayName("");
-      return;
-    }
-
-    const fetchUserProfile = async () => {
-      try {
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setUsername(data.username || "");
-          setDisplayName(data.displayName || user.displayName || "ユーザー");
-        } else {
-          setDisplayName(user.displayName || "ユーザー");
-        }
-      } catch (error) {
-        console.error("ユーザー情報取得エラー:", error);
-        setDisplayName(user.displayName || "ユーザー");
-      }
-    };
-
-    fetchUserProfile();
-  }, [user]);
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
@@ -51,10 +21,6 @@ export default function Header() {
 
   const handleLogoutConfirm = async () => {
     try {
-      // ユーザー情報をクリア
-      setUsername("");
-      setDisplayName("");
-
       // Firebase Authからログアウト
       await auth.signOut();
 
@@ -127,8 +93,18 @@ export default function Header() {
                 href="/profile"
                 className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
               >
-                <UserIcon size={18} />
-                <span>{username ? `@${username}` : displayName}</span>
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                  {profile.photoURL ? (
+                    <img
+                      src={profile.photoURL}
+                      alt="プロフィール画像"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <UserIcon size={18} />
+                  )}
+                </div>
+                <span>{profile.displayName || "ユーザー"}</span>
               </Link>
 
               <button
