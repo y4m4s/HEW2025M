@@ -1,50 +1,83 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-// Star e Flag foram adicionados para a nova barra de perfil
-import { User, Send, Star, Flag } from 'lucide-react'; 
+import { User, Send, Star, Flag } from 'lucide-react';
 import { useNotificationStore } from '@/store/useNotificationStore';
-import { db } from '@/lib/firebase'; // Firebase
-import { collection, addDoc, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import {
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  Timestamp,
+  doc, // --- NOVO ---
+} from 'firebase/firestore';
 
-// メッセージの型定義
+// --- NOVO ---
+// Precisamos saber quem é o usuário atual.
+// Idealmente, isso viria de um hook de autenticação (ex: useAuth).
+// Por agora, vamos usar um valor fixo.
+const MY_USER_ID = 'eduardo';
+
+// --- MODIFICADO ---
+// Mensagem agora guarda o ID real do remetente
 interface Message {
   id: string;
-  sender: 'me' | 'partner';
+  senderId: string; // 'me' ou 'partner' foi substituído por 'senderId'
   content: string;
   timestamp: string;
 }
 
-// 会話相手の型定義
+// --- MODIFICADO ---
+// O ID da conversa agora deve ser o ID REAL do usuário parceiro
 interface Conversation {
-  id: string;
+  id: string; // Este ID agora representa o ID do OUTRO usuário (ex: 'tanaka-taro')
   name: string;
   preview: string;
 }
 
-// サイドバーに表示するダミーの会話データ
+// --- MODIFICADO ---
+// Vamos usar IDs mais realistas
 const conversations: Conversation[] = [
-  { id: '1', name: '田中太郎', preview: '商品について質問が...' },
-  { id: '2', name: '佐藤花子', preview: 'ありがとうございました' },
-  { id: '3', name: '山田次郎', preview: '配送方法について' },
+  { id: 'tanaka-taro', name: '田中太郎', preview: '商品について質問が...' },
+  { id: 'sato-hanako', name: '佐藤花子', preview: 'ありがとうございました' },
+  { id: 'yamada-jiro', name: '山田次郎', preview: '配送方法について' },
 ];
+
+// --- NOVO ---
+// Função para criar um ID de sala de chat único e consistente
+const getChatRoomId = (userId1: string, userId2: string) => {
+  if (userId1 < userId2) {
+    return `${userId1}_${userId2}`;
+  } else {
+    return `${userId2}_${userId1}`;
+  }
+};
 
 export default function MessagePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 現在選択されている会話相手を管理するState
   const [selectedUser, setSelectedUser] = useState<Conversation>(conversations[0]);
 
-  // Zustand store (通知用)
   const addNotification = useNotificationStore(state => state.addNotification);
 
-  // Firestoreの'messages'コレクションへの参照
-  const messagesRef = collection(db, 'messages');
-
+  // --- MODIFICADO ---
   // Firestoreとのリアルタイム同期
   useEffect(() => {
+    // Se não há usuário selecionado, não faz nada
+    if (!selectedUser) return;
+
+    // --- NOVO ---
+    // Cria o ID da sala de chat baseado no MEU ID e no ID do parceiro
+    const partnerId = selectedUser.id;
+    const chatRoomId = getChatRoomId(MY_USER_ID, partnerId);
+
+    // --- NOVO ---
+    // A referência agora aponta para a SUB-COLEÇÃO 'messages' dentro da sala de chat
+    const messagesRef = collection(db, 'chatRooms', chatRoomId, 'messages');
     const q = query(messagesRef, orderBy('timestamp', 'asc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -52,23 +85,25 @@ export default function MessagePage() {
         const data = doc.data();
         return {
           id: doc.id,
-          sender: data.sender,
+          senderId: data.senderId, // --- MODIFICADO ---
           content: data.content,
-          timestamp: data.timestamp instanceof Timestamp
-            ? data.timestamp.toDate().toLocaleTimeString('ja-JP', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            : data.timestamp,
+          timestamp:
+            data.timestamp instanceof Timestamp
+              ? data.timestamp.toDate().toLocaleTimeString('ja-JP', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : data.timestamp,
         };
       });
       setMessages(messagesData);
     });
 
+    // Limpa a inscrição ao trocar de usuário ou desmontar o componente
     return () => unsubscribe();
-  }, [messagesRef]);
+  }, [selectedUser]); // --- MODIFICADO --- (Agora depende do selectedUser)
 
-  // メッセージの自動スクロール処理（新しいメッセージが追加された時のみ）
+  // ... (o useEffect para auto-scroll continua o mesmo) ...
   const prevMessagesLength = useRef(messages.length);
   useEffect(() => {
     if (messages.length > prevMessagesLength.current) {
@@ -77,22 +112,33 @@ export default function MessagePage() {
     prevMessagesLength.current = messages.length;
   }, [messages]);
 
+  // --- MODIFICADO ---
   // メッセージ送信処理
   const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || !selectedUser) return;
 
-    const newMessage: Omit<Message, 'id' | 'timestamp'> = {
-      sender: 'me',
+    // --- NOVO ---
+    // Pega o ID da sala de chat correta
+    const partnerId = selectedUser.id;
+    const chatRoomId = getChatRoomId(MY_USER_ID, partnerId);
+
+    // --- NOVO ---
+    // Referência para a sub-coleção correta
+    const messagesRef = collection(db, 'chatRooms', chatRoomId, 'messages');
+
+    // --- MODIFICADO ---
+    // Salva o ID real do remetente
+    const newMessage = {
+      senderId: MY_USER_ID,
       content: inputValue.trim(),
+      timestamp: new Date(),
     };
 
-    await addDoc(messagesRef, {
-      ...newMessage,
-      timestamp: new Date(),
-    });
+    await addDoc(messagesRef, newMessage);
 
     setInputValue('');
 
+    // A notificação pode continuar igual
     addNotification({
       id: Date.now(),
       type: 'message',
@@ -105,18 +151,14 @@ export default function MessagePage() {
   };
 
   return (
-    // --- メインレイアウトコンテナ (3カラムに変更) ---
     <div className="flex h-[calc(100vh-5rem)] bg-gray-50">
-
-      {/* --- 1. サイドバー (会話リスト) --- */}
+      {/* --- 1. サイドバー (Conversas) --- */}
       <div className="w-80 flex-shrink-0 bg-white shadow-lg border-r border-gray-200 flex flex-col">
-        
-        {/* サイドバーヘッダー */}
+        {/* ... (Header do sidebar) ... */}
         <div className="h-20 p-5 border-b border-gray-200">
           <h1 className="text-xl font-bold text-gray-800">メッセージ履歴</h1>
         </div>
 
-        {/* 会話リスト */}
         <div className="flex-1 overflow-y-auto">
           {conversations.map((convo) => (
             <div
@@ -128,6 +170,7 @@ export default function MessagePage() {
               }`}
               onClick={() => setSelectedUser(convo)}
             >
+              {/* ... (Avatar e Nome) ... */}
               <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                 <User size={20} className="text-gray-600" />
               </div>
@@ -140,11 +183,9 @@ export default function MessagePage() {
         </div>
       </div>
 
-      {/* --- 2. チャットウィンドウ (中央) --- */}
-      {/* このdivに border-r を追加して、右サイドバーとの区切り線を作成 */}
+      {/* --- 2. チャットウィンドウ (Central) --- */}
       <div className="flex-1 flex flex-col border-r border-gray-200">
-        
-        {/* チャットヘッダー */}
+        {/* ... (Header do Chat) ... */}
         <div className="h-20 p-5 flex items-center bg-white border-b border-gray-200 shadow-sm">
           <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center mr-4">
             <User size={20} className="text-gray-600" />
@@ -156,24 +197,34 @@ export default function MessagePage() {
 
         {/* メッセージ表示エリア */}
         <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`rounded-lg px-4 py-3 max-w-md shadow-sm ${
-                msg.sender === 'me'
-                  ? 'bg-[#2FA3E3] text-white'
-                  : 'bg-white text-gray-800 border border-gray-200'
-              }`}>
-                <p className="text-sm">{msg.content}</p>
-                <span className={`text-xs block text-right mt-1 ${
-                  msg.sender === 'me' ? 'text-blue-100' : 'text-gray-400'
-                }`}>{msg.timestamp}</span>
+          
+          {/* --- MODIFICADO --- */}
+          {/* A lógica de exibição 'me' vs 'partner' mudou */}
+          {messages.map((msg) => {
+            const isMe = msg.senderId === MY_USER_ID;
+            
+            return (
+              <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                <div className={`rounded-lg px-4 py-3 max-w-md shadow-sm ${
+                  isMe
+                    ? 'bg-[#2FA3E3] text-white'
+                    : 'bg-white text-gray-800 border border-gray-200'
+                }`}>
+                  <p className="text-sm">{msg.content}</p>
+                  <span className={`text-xs block text-right mt-1 ${
+                    isMe ? 'text-blue-100' : 'text-gray-400'
+                  }`}>
+                    {msg.timestamp}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* メッセージ入力エリア */}
+        {/* ... (Área de Input) ... */}
+        {/* Esta parte não precisa de modificação */}
         <div className="p-4 bg-white border-t border-gray-200">
           <div className="flex gap-3">
             <input
@@ -195,36 +246,28 @@ export default function MessagePage() {
         </div>
       </div>
 
-      {/* --- 3. プロフィールサイドバー (新規追加) --- */}
+      {/* --- 3. プロフィールサイドバー (Direita) --- */}
+      {/* Esta parte não precisa de modificação */}
       <div className="w-80 flex-shrink-0 bg-white flex flex-col">
-        
-        {/* ヘッダー (画像に合わせて青色) */}
+        {/* ... (Header) ... */}
         <div className="h-20 p-5 border-b border-gray-200 flex items-center justify-center bg-[#1d7bb8]">
           <h2 className="text-xl font-bold text-white">取引相手</h2>
         </div>
         
-        {/* プロフィール本体 */}
         <div className="flex-1 p-6 flex flex-col items-center">
-          {/* アバター */}
           <div className="w-24 h-24 bg-gray-300 rounded-full flex items-center justify-center mb-4">
             <User size={60} className="text-gray-600" />
           </div>
-          
-          {/* 名前 (選択中のユーザー名を動的に表示) */}
           <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedUser.name}</h3>
           
-          {/* 評価 (ダミーデータ) */}
+          {/* ... (Avaliação e Botões) ... */}
           <div className="flex items-center gap-1 mb-6">
             <Star size={16} className="text-yellow-500 fill-yellow-500" />
-            <Star size={16} className="text-yellow-500 fill-yellow-500" />
-            <Star size={16} className="text-yellow-500 fill-yellow-500" />
-            <Star size={16} className="text-yellow-500 fill-yellow-500" />
+            {/* ... (outras estrelas) ... */}
             <Star size={16} className="text-yellow-500 fill-yellow-500" />
             <span className="text-md font-medium text-gray-700 ml-1">5.0</span>
             <span className="text-sm text-gray-500">(128)</span>
           </div>
-          
-          {/* ボタン */}
           <div className="w-full space-y-3">
             <button className="w-full bg-[#2FA3E3] text-white px-6 py-3 rounded-lg hover:bg-[#1d7bb8] flex items-center justify-center gap-2">
               <User size={16} />
@@ -237,7 +280,6 @@ export default function MessagePage() {
           </div>
         </div>
       </div>
-
     </div>
   );
 }
