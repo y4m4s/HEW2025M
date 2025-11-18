@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { User, Send, Star, Flag } from 'lucide-react';
 import { useNotificationStore } from '@/store/useNotificationStore';
@@ -11,42 +12,37 @@ import {
   orderBy,
   onSnapshot,
   Timestamp,
-  doc, // --- NOVO ---
+  doc,
 } from 'firebase/firestore';
 
-// --- NOVO ---
-// Precisamos saber quem é o usuário atual.
-// Idealmente, isso viria de um hook de autenticação (ex: useAuth).
-// Por agora, vamos usar um valor fixo.
 const MY_USER_ID = 'eduardo';
 
-// --- MODIFICADO ---
-// Mensagem agora guarda o ID real do remetente
+
 interface Message {
   id: string;
-  senderId: string; // 'me' ou 'partner' foi substituído por 'senderId'
+  senderId: string;
   content: string;
   timestamp: string;
 }
 
-// --- MODIFICADO ---
-// O ID da conversa agora deve ser o ID REAL do usuário parceiro
+// --- 変更 ---
+// 会話IDは、実際の相手ユーザーのIDである必要があります
 interface Conversation {
-  id: string; // Este ID agora representa o ID do OUTRO usuário (ex: 'tanaka-taro')
+  id: string; // このIDは相手のユーザーIDを表します (例: 'tanaka-taro')
   name: string;
   preview: string;
 }
 
-// --- MODIFICADO ---
-// Vamos usar IDs mais realistas
+// --- 変更 ---
+// より現実的なIDを使用します
 const conversations: Conversation[] = [
   { id: 'tanaka-taro', name: '田中太郎', preview: '商品について質問が...' },
   { id: 'sato-hanako', name: '佐藤花子', preview: 'ありがとうございました' },
   { id: 'yamada-jiro', name: '山田次郎', preview: '配送方法について' },
 ];
 
-// --- NOVO ---
-// Função para criar um ID de sala de chat único e consistente
+// --- 新規 ---
+// 一貫性のある一意のチャットルームIDを作成する関数
 const getChatRoomId = (userId1: string, userId2: string) => {
   if (userId1 < userId2) {
     return `${userId1}_${userId2}`;
@@ -56,6 +52,7 @@ const getChatRoomId = (userId1: string, userId2: string) => {
 };
 
 export default function MessagePage() {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -64,19 +61,19 @@ export default function MessagePage() {
 
   const addNotification = useNotificationStore(state => state.addNotification);
 
-  // --- MODIFICADO ---
+  // --- 変更 ---
   // Firestoreとのリアルタイム同期
   useEffect(() => {
-    // Se não há usuário selecionado, não faz nada
+    // ユーザーが選択されていない場合は何もしません
     if (!selectedUser) return;
 
-    // --- NOVO ---
-    // Cria o ID da sala de chat baseado no MEU ID e no ID do parceiro
+    // --- 新規 ---
+    // 自分のIDと相手のIDに基づいてチャットルームIDを作成します
     const partnerId = selectedUser.id;
     const chatRoomId = getChatRoomId(MY_USER_ID, partnerId);
 
-    // --- NOVO ---
-    // A referência agora aponta para a SUB-COLEÇÃO 'messages' dentro da sala de chat
+    // --- 新規 ---
+    // 参照はチャットルーム内のサブコレクション 'messages' を指すようになります
     const messagesRef = collection(db, 'chatRooms', chatRoomId, 'messages');
     const q = query(messagesRef, orderBy('timestamp', 'asc'));
 
@@ -85,7 +82,7 @@ export default function MessagePage() {
         const data = doc.data();
         return {
           id: doc.id,
-          senderId: data.senderId, // --- MODIFICADO ---
+          senderId: data.senderId, // --- 変更 ---
           content: data.content,
           timestamp:
             data.timestamp instanceof Timestamp
@@ -99,9 +96,9 @@ export default function MessagePage() {
       setMessages(messagesData);
     });
 
-    // Limpa a inscrição ao trocar de usuário ou desmontar o componente
+    // ユーザーを切り替えるか、コンポーネントがアンマウントされる時に購読を解除します
     return () => unsubscribe();
-  }, [selectedUser]); // --- MODIFICADO --- (Agora depende do selectedUser)
+  }, [selectedUser]); // --- 変更 --- (selectedUserに依存するようになりました)
 
   // ... (o useEffect para auto-scroll continua o mesmo) ...
   const prevMessagesLength = useRef(messages.length);
@@ -112,22 +109,22 @@ export default function MessagePage() {
     prevMessagesLength.current = messages.length;
   }, [messages]);
 
-  // --- MODIFICADO ---
+  // --- 変更 ---
   // メッセージ送信処理
   const handleSendMessage = async () => {
     if (!inputValue.trim() || !selectedUser) return;
 
-    // --- NOVO ---
-    // Pega o ID da sala de chat correta
+    // --- 新規 ---
+    // 正しいチャットルームIDを取得します
     const partnerId = selectedUser.id;
     const chatRoomId = getChatRoomId(MY_USER_ID, partnerId);
 
-    // --- NOVO ---
-    // Referência para a sub-coleção correta
+    // --- 新規 ---
+    // 正しいサブコレクションへの参照
     const messagesRef = collection(db, 'chatRooms', chatRoomId, 'messages');
 
-    // --- MODIFICADO ---
-    // Salva o ID real do remetente
+    // --- 変更 ---
+    // 送信者の実際のIDを保存します
     const newMessage = {
       senderId: MY_USER_ID,
       content: inputValue.trim(),
@@ -198,8 +195,8 @@ export default function MessagePage() {
         {/* メッセージ表示エリア */}
         <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50">
           
-          {/* --- MODIFICADO --- */}
-          {/* A lógica de exibição 'me' vs 'partner' mudou */}
+          {/* --- 変更 --- */}
+          {/* '自分' vs '相手' の表示ロジックが変更されました */}
           {messages.map((msg) => {
             const isMe = msg.senderId === MY_USER_ID;
             
@@ -269,11 +266,17 @@ export default function MessagePage() {
             <span className="text-sm text-gray-500">(128)</span>
           </div>
           <div className="w-full space-y-3">
-            <button className="w-full bg-[#2FA3E3] text-white px-6 py-3 rounded-lg hover:bg-[#1d7bb8] flex items-center justify-center gap-2">
+            <button
+              onClick={() => router.push(`/profile/${selectedUser.id}`)}
+              className="w-full bg-[#2FA3E3] text-white px-6 py-3 rounded-lg hover:bg-[#1d7bb8] flex items-center justify-center gap-2"
+            >
               <User size={16} />
               プロフィールを見る
             </button>
-            <button className="w-full bg-transparent text-red-600 px-6 py-3 rounded-lg border border-red-600 hover:bg-red-50 flex items-center justify-center gap-2">
+            <button
+              onClick={() => alert(`ユーザー「${selectedUser.name}」を報告します。`)}
+              className="w-full bg-transparent text-red-600 px-6 py-3 rounded-lg border border-red-600 hover:bg-red-50 flex items-center justify-center gap-2"
+            >
               <Flag size={16} />
               報告する
             </button>
