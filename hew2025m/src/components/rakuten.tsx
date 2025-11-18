@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-// 1. Interface para o formato da API (formatVersion=2)
+// 1. APIの形式用インターフェース (formatVersion=2)
 interface RakutenItem {
   itemCode: string;
   itemName: string;
@@ -12,19 +12,19 @@ interface RakutenItem {
   mediumImageUrls: { imageUrl: string }[];
 }
 
-// 2. Interface para as props que o componente vai receber
+// 2. コンポーネントが受け取るpropsのインターフェース
 interface RakutenProductsProps {
-  keyword: string; // Ex: "ロッド/竿"
+  keyword: string; // 例: "ロッド/竿"
 }
 
 export default function RakutenProducts({ keyword }: RakutenProductsProps) {
-  // 3. Estados locais para este componente
+  // 3. このコンポーネントのローカルステート
   const [rakutenProducts, setRakutenProducts] = useState<RakutenItem[]>([]);
   const [rakutenLoading, setRakutenLoading] = useState(true);
 
-  // 4. useEffect que busca na API
+  // 4. APIを呼び出すuseEffect
   useEffect(() => {
-    // Só busca se a keyword não estiver vazia
+    // keywordが空でない場合のみ検索を実行
     if (!keyword) {
       setRakutenLoading(false);
       return;
@@ -40,10 +40,10 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
           throw new Error('Rakuten API fetch failed');
         }
         const data = await response.json();
-        // A API com formatVersion=2 retorna os itens diretamente no array 'Items'.
-        // Cada elemento do array já é o objeto do produto.
-        // Não é necessário mapear para 'item.Item'.
-        setRakutenProducts(data.Items || []); 
+        // formatVersion=2のAPIは、'Items'配列に直接商品を返します。
+        // 配列の各要素がすでに商品オブジェクトです。
+        // 'item.Item'にマッピングする必要はありません。
+        setRakutenProducts(data.Items || []);
       } catch (err) {
         console.error('Rakuten API error:', err);
         setRakutenProducts([]);
@@ -53,9 +53,9 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
     };
 
     fetchRakutenProducts();
-  }, [keyword]); // 5. Dependência: [keyword] - Roda a busca de novo se a keyword mudar
+  }, [keyword]); // 5. 依存配列: [keyword] - keywordが変更された場合に再度検索を実行
 
-  // 6. O JSX (visual) do componente
+  // 6. コンポーネントのJSX（ビジュアル部分）
   return (
     <section className="mt-16 bg-white rounded-2xl shadow-md p-6 border border-gray-200">
       <h2 className="text-2xl font-bold mb-6 text-center text-blue-700 tracking-wide">
@@ -68,11 +68,11 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
           <p className="text-center text-gray-500">関連商品を検索中...</p>
         ) : rakutenProducts.length > 0 ? (
           rakutenProducts.map((p, idx) => {
-            
-            // --- Verificação de Segurança da Imagem --- 
+
+            // --- 画像の安全性チェック ---
             const imageUrl = (p.mediumImageUrls && p.mediumImageUrls.length > 0 && p.mediumImageUrls[0])
-              ? p.mediumImageUrls[0].imageUrl.replace('?_ex=128x128', '') // Usa a imagem da Rakuten se tudo existir
-              : 'https://placehold.co/80x80/e9ecef/6c757d?text=画像なし'; // Usa um placeholder seguro
+              ? p.mediumImageUrls[0].imageUrl.replace('?_ex=128x128', '') // すべて存在する場合は楽天の画像を使用
+              : 'https://placehold.co/80x80/e9ecef/6c757d?text=画像なし'; // 安全なプレースホルダーを使用
 
             return (
               <div
@@ -83,7 +83,7 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
                   {idx + 1}.
                 </div>
                 <img
-                  src={imageUrl} // Usa a variável segura
+                  src={imageUrl} // 安全な変数を使用
                   alt={p.itemName}
                   className="w-20 h-20 object-cover rounded border"
                 />

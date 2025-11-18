@@ -15,7 +15,7 @@ interface RakutenItem {
   itemUrl: string;
   itemPrice: number;
   shopName: string;
-  mediumImageUrls?: string[]; // 修正部分[]
+  mediumImageUrls?: string[];
 }
 
 interface ProductDetail {
@@ -45,7 +45,7 @@ export default function SellDetailPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeTab, setActiveTab] = useState('comments');
   
-  // --- Lógica da Rakuten movida para cá ---
+  // --- 楽天のロジックをここに移動 ---
   const [rakutenProducts, setRakutenProducts] = useState<RakutenItem[]>([]);
   const [rakutenLoading, setRakutenLoading] = useState(true);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -57,14 +57,14 @@ export default function SellDetailPage() {
     }
   }, [params.id]);
 
-  // useEffect から　API da Rakuten
-  // prodoct が取得できたらキーワードで探す
+  // useEffect から楽天APIを呼び出す
+  // productが取得できたらキーワードで検索
   useEffect(() => {
     if (product) {
       const keyword = getCategoryLabel(product.category);
       fetchRakutenProducts(keyword);
     }
-  }, [product]); // 重視: 'product'
+  }, [product]); // 依存配列: 'product'
   // ブックマーク状態をチェック
   useEffect(() => {
     if (user && params.id) {
@@ -102,7 +102,7 @@ export default function SellDetailPage() {
     }
   };
 
-  // --- 楽天APIを呼び出す関数---
+  // --- 楽天APIを呼び出す関数 ---
   const fetchRakutenProducts = async (keyword: string) => {
     if (!keyword) {
       setRakutenLoading(false);
@@ -265,9 +265,9 @@ export default function SellDetailPage() {
         </Button>
 
         <div className="grid lg:grid-cols-2 gap-8 bg-white rounded-lg shadow-md p-6">
-          {/* ... 商品... */}
-            {/* 左側 */}
-            <section className="space-y-6">
+          {/* 商品情報 */}
+          {/* 左側 */}
+          <section className="space-y-6">
               <div>
                 <h1 className="text-2xl font-bold mb-2">{product.title}</h1>
                 <div className="flex gap-4 text-sm text-gray-600">
@@ -412,10 +412,10 @@ export default function SellDetailPage() {
         </div>
         
 
-        {/* 画面*/}
+        {/* タブ画面 */}
         <section className="mt-8 bg-white rounded-lg shadow-md p-6">
           <div className="border-b border-gray-200">
-            {/* ... ボタン ... */}
+            {/* タブボタン */}
             <div className="flex gap-8">
               <button
                 onClick={() => setActiveTab('comments')}
@@ -458,7 +458,7 @@ export default function SellDetailPage() {
 
               </div>
             ) : (
-              // 販売情報
+              // 出品者情報
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
@@ -474,14 +474,14 @@ export default function SellDetailPage() {
           </div>
         </section>
 
-        {/* 楽天セッション*/}
+        {/* 楽天セクション */}
         <section className="mt-16 bg-white rounded-2xl shadow-md p-6 border border-gray-200">
           <h2 className="text-2xl font-bold mb-6 text-center text-blue-700 tracking-wide">
             Rakuten 関連商品ランキング 🛍️
           </h2>
           <div className="space-y-6">
             {rakutenLoading ? (
-              // 楽天のイニシアライト
+              // 楽天ローディング中
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="flex items-center gap-4 animate-pulse">
@@ -495,11 +495,11 @@ export default function SellDetailPage() {
               </div>
             ) : rakutenProducts.length > 0 ? (
               rakutenProducts.map((p, idx) => {
-                
-                // <--  URL呼び出し
+
+                // 画像URLの取得
                 const imageUrl = (p.mediumImageUrls && p.mediumImageUrls.length > 0 && p.mediumImageUrls[0])
-                  ? p.mediumImageUrls[0].split('?')[0] // アクセスする p.mediumImageUrls[0] 直接
-                  : 'https://placehold.co/80x80/e9ecef/6c757d?text=画像なし'; // Fallback 
+                  ? p.mediumImageUrls[0].split('?')[0] // p.mediumImageUrls[0] に直接アクセス
+                  : 'https://placehold.co/80x80/e9ecef/6c757d?text=画像なし'; // フォールバック画像
 
                 return (
                   <div
