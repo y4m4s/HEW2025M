@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, ArrowLeft, MapPin, Calendar, User, Bookmark } from 'lucide-react';
 import Button from '@/components/Button';
+import Comment from '@/components/Comment';
+import ImageModal from '@/components/ImageModal';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
@@ -43,19 +45,39 @@ export default function SellDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [activeTab, setActiveTab] = useState('comments');
-  
+
   // --- 楽天のロジックをここに移動 ---
   const [rakutenProducts, setRakutenProducts] = useState<RakutenItem[]>([]);
   const [rakutenLoading, setRakutenLoading] = useState(true);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
+  // 出品者のプロフィール情報
+  const [sellerProfile, setSellerProfile] = useState<{
+    displayName: string;
+    photoURL: string;
+    bio: string;
+  } | null>(null);
+  const [sellerProfileLoading, setSellerProfileLoading] = useState(false);
+
+  // 画像モーダル
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalImageIndex, setModalImageIndex] = useState(0);
+
   useEffect(() => {
     if (params.id) {
       fetchProduct();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
+
+  // 商品データが取得できたら出品者のプロフィールを取得
+  useEffect(() => {
+    if (product && product.sellerId) {
+      fetchSellerProfile(product.sellerId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product]);
 
   // useEffect から楽天APIを呼び出す
   // productが取得できたらキーワードで検索
@@ -99,6 +121,41 @@ export default function SellDetailPage() {
       setError(err instanceof Error ? err.message : '商品の取得に失敗しました');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 出品者のプロフィール情報を取得
+  const fetchSellerProfile = async (sellerId: string) => {
+    try {
+      setSellerProfileLoading(true);
+      const docRef = doc(db, 'users', sellerId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setSellerProfile({
+          displayName: data.displayName || '名無しユーザー',
+          photoURL: data.photoURL || '',
+          bio: data.bio || '',
+        });
+      } else {
+        // プロフィールが見つからない場合はデフォルト値
+        setSellerProfile({
+          displayName: '名無しユーザー',
+          photoURL: '',
+          bio: '',
+        });
+      }
+    } catch (err) {
+      console.error('出品者プロフィール取得エラー:', err);
+      // エラーの場合もデフォルト値を設定
+      setSellerProfile({
+        displayName: '名無しユーザー',
+        photoURL: '',
+        bio: '',
+      });
+    } finally {
+      setSellerProfileLoading(false);
     }
   };
 
@@ -188,6 +245,21 @@ export default function SellDetailPage() {
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
+  };
+
+  // 画像クリック時の処理
+  const handleImageClick = (index: number) => {
+    setModalImageIndex(index);
+    setIsModalOpen(true);
+  };
+
+  // モーダルを閉じるときの処理
+  const handleCloseModal = (finalIndex?: number) => {
+    setIsModalOpen(false);
+    // モーダルで表示していた画像インデックスをメインカルーセルに同期
+    if (finalIndex !== undefined) {
+      setCurrentSlide(finalIndex);
+    }
   };
 
   const handleBookmark = async () => {
@@ -302,7 +374,8 @@ export default function SellDetailPage() {
                         <img
                           src={src}
                           alt={`商品画像${index + 1}`}
-                          className="w-full h-80 object-cover"
+                          className="w-full h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => handleImageClick(index)}
                         />
                       </div>
                     ))}
@@ -312,13 +385,13 @@ export default function SellDetailPage() {
                     <>
                       <button
                         onClick={prevSlide}
-                        className="absolute left-2 top-1-2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-colors"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
                       >
                         <ChevronLeft size={20} />
                       </button>
                       <button
                         onClick={nextSlide}
-                        className="absolute right-2 top-1-2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-colors"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
                       >
                         <ChevronRight size={20} />
                       </button>
@@ -388,10 +461,10 @@ export default function SellDetailPage() {
               <Button
                 variant="ghost"
                 size="md"
-                className={`flex-1 border ${
+                className={`flex-1 ${
                   isBookmarked
-                    ? 'border-[#2FA3E3] bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
-                    : 'border-gray-300'
+                    ? 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
+                    : 'bg-white text-[#2FA3E3] hover:bg-blue-50'
                 }`}
                 onClick={handleBookmark}
                 disabled={bookmarkLoading}
@@ -412,66 +485,59 @@ export default function SellDetailPage() {
         </div>
         
 
-        {/* タブ画面 */}
+        {/* 出品者情報 */}
         <section className="mt-8 bg-white rounded-lg shadow-md p-6">
-          <div className="border-b border-gray-200">
-            {/* タブボタン */}
-            <div className="flex gap-8">
-              <button
-                onClick={() => setActiveTab('comments')}
-                className={`py-3 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'comments'
-                    ? 'border-[#2FA3E3] text-[#2FA3E3]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                コメント
-              </button>
-              <button
-                onClick={() => setActiveTab('reviews')}
-                className={`py-3 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'reviews'
-                    ? 'border-[#2FA3E3] text-[#2FA3E3]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                出品者情報
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            {activeTab === 'comments' ? (
-              <div>
-                {/* コメント部分 */}
-                <p className="text-gray-600 mb-4">この商品へのコメントはまだありません</p>
-                <div className="bg-gray-50 p-4 rounded mb-4">
-                  <textarea
-                    placeholder="コメントを入力..."
-                    className="w-full p-2 border border-gray-300 rounded resize-none focus:outline-none focus:border-[#2FA3E3]"
-                    rows={4}
-                  />
-                </div>
-                <Button variant="primary" size="md" className="mb-4">
-                  コメントする
-                </Button>
-
+          <h3 className="text-xl font-bold mb-4">出品者情報</h3>
+          {sellerProfileLoading ? (
+            <div className="flex items-center gap-3">
+              <div className="w-16 h-16 bg-gray-200 rounded-full animate-pulse" />
+              <div className="flex-1 space-y-2">
+                <div className="h-6 bg-gray-200 rounded w-1/3 animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded w-1/4 animate-pulse" />
               </div>
-            ) : (
-              // 出品者情報
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
+            </div>
+          ) : sellerProfile ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                {sellerProfile.photoURL ? (
+                  <img
+                    src={sellerProfile.photoURL}
+                    alt={sellerProfile.displayName}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
+                  />
+                ) : (
                   <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
                     <User size={32} className="text-gray-600" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-lg">{product.sellerName}</p>
-                    <p className="text-sm text-gray-600">出品者</p>
-                  </div>
+                )}
+                <div>
+                  <p className="font-semibold text-lg">{sellerProfile.displayName}</p>
+                  <p className="text-sm text-gray-600">出品者</p>
                 </div>
               </div>
-            )}
-          </div>
+              {sellerProfile.bio && (
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{sellerProfile.bio}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+                <User size={32} className="text-gray-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-lg">{product.sellerName}</p>
+                <p className="text-sm text-gray-600">出品者</p>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* コメントセクション */}
+        <section className="mt-8 bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-xl font-bold mb-4">コメント</h3>
+          <Comment productId={params.id as string} />
         </section>
 
         {/* 楽天セクション */}
@@ -539,6 +605,14 @@ export default function SellDetailPage() {
           </div>
         </section>
       </main>
+
+      {/* 画像モーダル */}
+      <ImageModal
+        images={images}
+        initialIndex={modalImageIndex}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }
