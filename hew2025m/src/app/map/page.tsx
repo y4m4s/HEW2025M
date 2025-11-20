@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, Navigation, Plus, Minus, ExternalLink, User, Fish } from 'lucide-react';
-import Map from "@/components/Map";
+import Map, { MapRef } from "@/components/Map";
 import Button from '@/components/Button';
 
 
@@ -26,6 +26,7 @@ export default function MapPage() {
   const [selectedPost, setSelectedPost] = useState<SelectedPost | null>(null);
   const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+  const mapRef = useRef<MapRef>(null);
 
   const handleMarkerClick = (post: SelectedPost) => {
     setSelectedPost(post);
@@ -71,29 +72,42 @@ export default function MapPage() {
     setClickedLocation({ lat, lng, address });
   };
 
+  // ボタンハンドラー
+  const handleCurrentLocation = () => {
+    mapRef.current?.moveToCurrentLocation();
+  };
+
+  const handleZoomIn = () => {
+    mapRef.current?.zoomIn();
+  };
+
+  const handleZoomOut = () => {
+    mapRef.current?.zoomOut();
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
 
       <div className="flex-1 container mx-auto px-4 py-6">
         <main className="grid lg:grid-cols-3 gap-6">
-          <aside className="lg:col-span-1 bg-white rounded-lg shadow-sm border">
-            <div className="bg-gray-50 px-4 py-3 rounded-t-lg border-b">
+          <aside className="lg:col-span-1 bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div className="bg-gray-50 px-4 py-3 border-b">
               <h3 className="flex items-center gap-2 font-semibold">
                 <MapPin size={18} className="text-blue-600" />
                 投稿情報
               </h3>
             </div>
 
-            <div className="p-4">
+            <div>
               {!selectedPost ? (
-                <div className="text-center py-10 text-gray-500">
+                <div className="text-center py-10 text-gray-500 px-4">
                   <MapPin size={48} className="mx-auto mb-4 text-gray-400" />
                   <p className="text-sm">マップ上のマーカーをクリックして</p>
                   <p className="text-sm">投稿情報を表示</p>
                 </div>
               ) : (
-                <div className="bg-white border rounded-lg overflow-hidden">
-                  <div className="relative h-32 bg-gray-200 flex items-center justify-center">
+                <div className="bg-white">
+                  <div className="relative h-48 bg-gray-200 flex items-center justify-center">
                     {selectedPost.media && selectedPost.media.length > 0 ? (
                       <Image
                         src={selectedPost.media.sort((a, b) => a.order - b.order)[0].url}
@@ -133,7 +147,7 @@ export default function MapPage() {
                       <div className="space-y-1.5 text-xs">
                         <div className="flex justify-between">
                           <span className="text-gray-600">住所:</span>
-                          <span className="font-medium text-gray-800">{selectedPost.address || '住所未設定'}</span>
+                          <span className="font-medium text-gray-800 text-right ml-2">{selectedPost.address || '住所未設定'}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">緯度:</span>
@@ -163,58 +177,65 @@ export default function MapPage() {
 
           <div className="lg:col-span-2 space-y-6">
             {/* 地図の枠 */}
-            <section className="bg-white rounded-lg shadow-sm border">
-            <div className="bg-gray-50 px-4 py-3 rounded-t-lg border-b flex justify-between items-center">
-              <h3 className="flex items-center gap-2 font-semibold">
-                <MapPin size={18} className="text-blue-600" />
-                マップ
-              </h3>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="bg-white border text-sm" icon={<Navigation size={14} />}>
-                  現在地
-                </Button>
-                <Button variant="outline" size="sm" className="w-8 h-8 p-0 bg-white border">
-                  <Plus size={14} />
-                </Button>
-                <Button variant="outline" size="sm" className="w-8 h-8 p-0 bg-white border">
-                  <Minus size={14} />
-                </Button>
+            <section className="bg-white rounded-lg shadow-sm border overflow-hidden">
+              <div className="bg-gray-50 px-4 py-3 border-b flex justify-between items-center">
+                <h3 className="flex items-center gap-2 font-semibold">
+                  <MapPin size={18} className="text-blue-600" />
+                  マップ
+                </h3>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-white border text-sm"
+                    icon={<Navigation size={14} />}
+                    onClick={handleCurrentLocation}
+                  >
+                    現在地
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-8 h-8 p-0 bg-white border"
+                    onClick={handleZoomIn}
+                  >
+                    <Plus size={14} />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-8 h-8 p-0 bg-white border"
+                    onClick={handleZoomOut}
+                  >
+                    <Minus size={14} />
+                  </Button>
+                </div>
               </div>
-            </div>
 
-            <div className="relative">
-              <div className="h-96">
-                <Map onMarkerClick={handleMarkerClick} onMapClick={handleMapClick} />
+              <div className="h-96 w-full">
+                <Map ref={mapRef} onMarkerClick={handleMarkerClick} onMapClick={handleMapClick} />
               </div>
-            </div>
-          </section>
+            </section>
 
           {/* 新しい場所で投稿の枠 */}
-          <section className="bg-white rounded-lg shadow-sm border">
-            <div className="bg-gray-50 px-4 py-3 rounded-t-lg border-b">
-              <h3 className="flex items-center gap-2 font-semibold">
-                <Navigation size={18} className="text-blue-600" />
-                新しい場所を選択
-              </h3>
-            </div>
-
-            <div className="p-4">
+          <section className="bg-white rounded-lg shadow-sm border h-48 flex flex-col">
+            <div className="p-4 flex-1 flex items-center justify-center">
               {!clickedLocation ? (
-                <p className="text-gray-600 text-sm">
-                  地図上の任意の場所をクリックして、その場所で投稿を作成できます
+                <p className="text-gray-500 text-sm text-center">
+                  地図上の任意の場所をクリックして<br />その場所で投稿を作成できます
                 </p>
               ) : (
-                <div className="space-y-3">
+                <div className="w-full space-y-3">
                   {isLoadingAddress ? (
-                    <p className="text-gray-500 text-sm">住所を取得中...</p>
+                    <p className="text-gray-500 text-sm text-center">住所を取得中...</p>
                   ) : (
                     <>
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                         <div className="flex items-start gap-2">
                           <MapPin size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p className="text-sm font-medium text-blue-900 mb-1">選択した場所</p>
-                            <p className="text-sm text-blue-800">{clickedLocation.address}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-blue-900 mb-1">選択した場所</p>
+                            <p className="text-xs text-blue-800 break-words">{clickedLocation.address}</p>
                           </div>
                         </div>
                       </div>

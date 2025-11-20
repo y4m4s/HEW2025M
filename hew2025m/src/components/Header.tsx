@@ -62,7 +62,7 @@ export default function Header() {
 
   return (
     <header className="bg-white py-4 px-10 border-b border-gray-200">
-      <div className="flex justify-around items-center mb-5">
+      <div className="flex justify-around items-center">
         <h1
           className="text-7xl font-bold text-[#2FA3E3]"
           style={{ fontFamily: "せのびゴシック, sans-serif" }}
