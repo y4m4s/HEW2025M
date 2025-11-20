@@ -3,19 +3,38 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, Mail, User as UserIcon } from "lucide-react";
 import Button from "@/components/Button";
 import LogoutModal from "@/components/LogoutModal";
 import { useAuth } from "@/lib/useAuth";
 import { useProfile } from "@/contexts/ProfileContext";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 
 export default function Header() {
   const { user } = useAuth();
   const { profile } = useProfile();
   const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+  // 未読通知数を取得
+  useEffect(() => {
+    if (!user) {
+      setUnreadNotificationCount(0);
+      return;
+    }
+
+    const notificationsRef = collection(db, 'users', user.uid, 'notifications');
+    const q = query(notificationsRef, where('isUnread', '==', true));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUnreadNotificationCount(snapshot.size);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
@@ -77,10 +96,15 @@ export default function Header() {
             <>
               <Link
                 href="/notification"
-                className="flex justify-center items-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 text-lg transition-all duration-300 hover:bg-gray-200 hover:text-[#2FA3E3]"
+                className="relative flex justify-center items-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 text-lg transition-all duration-300 hover:bg-gray-200 hover:text-[#2FA3E3]"
                 aria-label="通知"
               >
                 <Bell size={18} />
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                  </span>
+                )}
               </Link>
 
               <Link

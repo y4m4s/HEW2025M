@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react'; // --- 変更 --- (useEffect を追加)
+import { useRouter } from 'next/navigation'; // --- 新規 ---
 import { useAuth } from '@/lib/useAuth'; // --- 新規 ---
 import { Megaphone, JapaneseYen, MessageSquare, Trash2 } from 'lucide-react';
 import { db } from '@/lib/firebase'; // --- 新規 ---
@@ -26,6 +27,8 @@ interface NotificationItem {
   timestamp: Timestamp | string; // FirestoreはTimestampを送信します
   tag: string;
   isUnread: boolean;
+  link?: string; // 遷移先URL（オプション）
+  linkUserId?: string; // メッセージ通知用のユーザーID（オプション）
 }
 
 // --- sampleNotifications は削除されました ---
@@ -48,6 +51,7 @@ const getNotificationIcon = (iconType: string) => {
 // --- 通知ページのメインコンポーネント ---
 export default function NotificationPage() {
   const { user, loading: authLoading } = useAuth(); // --- 新規 ---
+  const router = useRouter(); // --- 新規 ---
   // --- 変更 ---
   // stateは空の配列で初期化します。
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -66,12 +70,14 @@ export default function NotificationPage() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const notifData: NotificationItem[] = snapshot.docs.map((doc) => {
         const data = doc.data();
+        console.log('通知ドキュメント取得:', doc.id, data); // デバッグ用
         return {
           id: doc.id,
           ...data,
           timestamp: data.timestamp, // timestampをそのまま保持します (または必要に応じてフォーマットします)
         } as NotificationItem;
       });
+      console.log('通知一覧 (変換後):', notifData); // デバッグ用
       setNotifications(notifData);
     });
 
@@ -126,6 +132,36 @@ export default function NotificationPage() {
     });
   };
 
+  // --- 新規 ---
+  // 通知をクリックした際の処理（遷移先に移動して既読にする）
+  const handleNotificationClick = async (notification: NotificationItem) => {
+    console.log('通知クリック:', notification);
+    console.log('linkUserId:', notification.linkUserId);
+    console.log('link:', notification.link);
+
+    // リンクがない場合は何もしない
+    if (!notification.linkUserId && !notification.link) {
+      console.log('リンクがありません');
+      return;
+    }
+
+    // 既読にする
+    if (notification.isUnread) {
+      await handleMarkAsRead(notification.id);
+    }
+
+    // 遷移先がある場合は移動
+    if (notification.linkUserId) {
+      // メッセージ通知の場合
+      console.log('メッセージページへ遷移:', notification.linkUserId);
+      router.push(`/message?userId=${notification.linkUserId}`);
+    } else if (notification.link) {
+      // その他のリンクがある場合
+      console.log('リンク先へ遷移:', notification.link);
+      router.push(notification.link);
+    }
+  };
+
   if (authLoading) {
     return <div className="flex h-screen items-center justify-center">読み込み中...</div>;
   }
@@ -178,7 +214,8 @@ export default function NotificationPage() {
                 notification.isUnread
                   ? 'border-l-4 border-blue-500'
                   : 'border-l-4 border-transparent'
-              }`}
+              } ${notification.link || notification.linkUserId ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+              onClick={() => handleNotificationClick(notification)}
             >
               {/* 1. アイコン */}
               <div
@@ -188,9 +225,16 @@ export default function NotificationPage() {
               </div>
 
               {/* 2. コンテンツ */}
-              <div className="flex-1">
-                <h3 className="font-bold text-gray-900">{notification.title}</h3>
-                <p className="text-sm text-gray-700 mt-1">{notification.description}</p>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-gray-900 break-words">
+                  {notification.title}
+                  {(notification.link || notification.linkUserId) && (
+                    <span className="ml-2 text-blue-500 text-xs">→ クリックして詳細を表示</span>
+                  )}
+                </h3>
+                <p className="text-sm text-gray-700 mt-1 line-clamp-2 break-words">
+                  {notification.description}
+                </p>
                 <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
                   {/* --- 変更 --- (フォーマット関数を使用) */}
                   <span>{formatTimestamp(notification.timestamp)}</span>
@@ -205,14 +249,20 @@ export default function NotificationPage() {
                 {/* --- 新規 --- (未読の場合のみボタンを表示) */}
                 {notification.isUnread && (
                   <button
-                    onClick={() => handleMarkAsRead(notification.id)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // 親のクリックイベントを防止
+                      handleMarkAsRead(notification.id);
+                    }}
                     className="bg-green-600 text-white px-3 py-1 rounded-md text-xs font-semibold hover:bg-green-700"
                   >
                     既読にする
                   </button>
                 )}
                 <button
-                  onClick={() => handleDelete(notification.id)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // 親のクリックイベントを防止
+                    handleDelete(notification.id);
+                  }}
                   className="bg-red-600 text-white px-3 py-1 rounded-md text-xs font-semibold hover:bg-red-700 flex items-center justify-center gap-1"
                 >
                   <Trash2 className="w-3 h-3" />
