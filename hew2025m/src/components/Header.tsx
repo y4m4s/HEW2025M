@@ -100,6 +100,9 @@ export default function Header() {
                     <Image
                       src={profile.photoURL}
                       alt="プロフィール画像"
+                      width={32}
+                      height={32}
+                      quality={90}
                       className="w-full h-full object-cover"
                     />
                   ) : (

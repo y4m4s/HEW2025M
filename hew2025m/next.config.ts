@@ -16,6 +16,22 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'thumbnail.image.rakuten.co.jp',
+      },
+      {
+        protocol: 'https',
+        hostname: 'image.rakuten.co.jp',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
+      },
     ],
   },
   webpack: (config, { isServer }) => {

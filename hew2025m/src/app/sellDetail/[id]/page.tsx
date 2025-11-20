@@ -375,6 +375,8 @@ export default function SellDetailPage() {
                         <Image
                           src={src}
                           alt={`商品画像${index + 1}`}
+                          width={800}
+                          height={600}
                           className="w-full h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity"
                           onClick={() => handleImageClick(index)}
                         />
@@ -504,6 +506,9 @@ export default function SellDetailPage() {
                   <Image
                     src={sellerProfile.photoURL}
                     alt={sellerProfile.displayName}
+                    width={64}
+                    height={64}
+                    quality={90}
                     className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
                   />
                 ) : (
@@ -579,6 +584,9 @@ export default function SellDetailPage() {
                     <Image
                       src={imageUrl}
                       alt={p.itemName}
+                      width={80}
+                      height={80}
+                      quality={90}
                       className="w-20 h-20 object-cover rounded border"
                     />
                     <div className="flex-1">

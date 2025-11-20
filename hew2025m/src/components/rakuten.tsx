@@ -86,6 +86,9 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
                 <Image
                   src={imageUrl} // 安全な変数を使用
                   alt={p.itemName}
+                  width={80}
+                  height={80}
+                  quality={90}
                   className="w-20 h-20 object-cover rounded border"
                 />
                 <div className="flex-1">

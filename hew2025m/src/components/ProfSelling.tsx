@@ -105,6 +105,8 @@ export default function ProfSelling({ onCountChange }: ProfSellingProps) {
               <Image
                 src={product.images[0]}
                 alt={product.title}
+                width={400}
+                height={300}
                 className="w-full h-full object-cover"
               />
             ) : (

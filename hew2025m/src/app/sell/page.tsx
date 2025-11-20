@@ -250,6 +250,8 @@ export default function SellPage() {
                         <Image
                           src={url}
                           alt={`プレビュー ${index + 1}`}
+                          width={200}
+                          height={200}
                           className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
                         />
                         <button

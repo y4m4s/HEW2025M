@@ -87,6 +87,8 @@ export default function ImageModal({
             <Image
               src={images[currentIndex]}
               alt={`画像 ${currentIndex + 1}`}
+              width={1200}
+              height={900}
               className="max-w-full max-h-[80vh] object-contain"
             />
 

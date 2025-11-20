@@ -105,6 +105,8 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
               <Image
                 src={bookmark.image}
                 alt={bookmark.title}
+                width={400}
+                height={300}
                 className="w-full h-full object-cover"
               />
             ) : (

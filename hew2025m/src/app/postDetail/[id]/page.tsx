@@ -155,6 +155,8 @@ export default function PostDetailPage() {
                       <Image
                         src={item.url}
                         alt={`投稿画像${index + 1}`}
+                        width={600}
+                        height={600}
                         className="w-full h-full object-cover"
                       />
                     ) : (

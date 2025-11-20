@@ -295,6 +295,8 @@ export default function Post() {
                       <Image
                         src={url}
                         alt={`プレビュー ${index + 1}`}
+                        width={200}
+                        height={150}
                         className="w-full h-24 object-cover rounded-lg border"
                       />
                       <button

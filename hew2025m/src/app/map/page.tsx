@@ -98,6 +98,8 @@ export default function MapPage() {
                       <Image
                         src={selectedPost.media.sort((a, b) => a.order - b.order)[0].url}
                         alt={selectedPost.title}
+                        width={400}
+                        height={300}
                         className="w-full h-full object-cover"
                       />
                     ) : (

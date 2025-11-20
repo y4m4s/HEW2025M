@@ -50,6 +50,9 @@ export default function CommentItem({ comment, currentUserId, onDelete }: Commen
             <Image
               src={comment.userPhotoURL}
               alt={comment.userName}
+              width={32}
+              height={32}
+              quality={90}
               className="w-8 h-8 rounded-full object-cover border border-gray-300"
               onError={() => {
                 console.error('画像読み込みエラー:', comment.userPhotoURL);

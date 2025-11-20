@@ -63,6 +63,9 @@ export default function ProfilePage() {
                     <Image
                       src={profile.photoURL}
                       alt="プロフィール画像"
+                      width={96}
+                      height={96}
+                      quality={90}
                       className="w-full h-full object-cover"
                     />
                   ) : (

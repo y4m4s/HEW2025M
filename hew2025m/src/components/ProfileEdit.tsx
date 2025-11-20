@@ -187,6 +187,9 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile }: Profile
               <Image
                 src={previewURL || editProfile.photoURL}
                 alt="プロフィール画像"
+                width={112}
+                height={112}
+                quality={90}
                 className="w-full h-full object-cover"
               />
             ) : (
