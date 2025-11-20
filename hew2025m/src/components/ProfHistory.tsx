@@ -1,5 +1,7 @@
 "use client";
+
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Fish } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 
@@ -108,9 +110,11 @@ export default function ProfHistory({ onCountChange }: ProfHistoryProps) {
         <div key={product._id} className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition opacity-75 cursor-pointer">
           <div className="h-36 bg-gray-200 flex items-center justify-center overflow-hidden">
             {product.images && product.images.length > 0 ? (
-              <img
+              <Image
                 src={product.images[0]}
                 alt={product.title}
+                width={400}
+                height={300}
                 className="w-full h-full object-cover"
               />
             ) : (
