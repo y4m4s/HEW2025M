@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { Fish, MapPin, Heart, MessageCircle, User, Calendar, ArrowLeft } from 'lucide-react';
 import Button from '@/components/Button';
@@ -151,7 +152,7 @@ export default function PostDetailPage() {
                 {post.media.map((item, index) => (
                   <div key={index} className="aspect-square bg-gray-200 rounded-lg overflow-hidden">
                     {item.mimeType.startsWith('image/') ? (
-                      <img
+                      <Image
                         src={item.url}
                         alt={`投稿画像${index + 1}`}
                         className="w-full h-full object-cover"

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { Upload, MapPin, X } from 'lucide-react';
 import Button from '@/components/Button';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -291,7 +292,7 @@ export default function Post() {
                 <div className="mt-4 grid grid-cols-3 gap-4">
                   {previewUrls.map((url, index) => (
                     <div key={index} className="relative group">
-                      <img
+                      <Image
                         src={url}
                         alt={`プレビュー ${index + 1}`}
                         className="w-full h-24 object-cover rounded-lg border"

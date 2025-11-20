@@ -1,5 +1,7 @@
 "use client";
+
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Fish } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
@@ -100,7 +102,7 @@ export default function ProfSelling({ onCountChange }: ProfSellingProps) {
         >
           <div className="h-36 bg-gray-200 flex items-center justify-center overflow-hidden">
             {product.images && product.images.length > 0 ? (
-              <img
+              <Image
                 src={product.images[0]}
                 alt={product.title}
                 className="w-full h-full object-cover"

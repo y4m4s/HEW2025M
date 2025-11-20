@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 
 // 1. APIの形式用インターフェース (formatVersion=2)
@@ -82,7 +83,7 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
                 <div className="text-2xl font-bold text-blue-600 w-8 text-center">
                   {idx + 1}.
                 </div>
-                <img
+                <Image
                   src={imageUrl} // 安全な変数を使用
                   alt={p.itemName}
                   className="w-20 h-20 object-cover rounded border"

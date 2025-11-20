@@ -1,10 +1,12 @@
 "use client";
+
 import { useState, useEffect } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Fish } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
-import { useRouter } from "next/navigation";
 
 interface Bookmark {
   id: string;
@@ -100,7 +102,7 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
         >
           <div className="h-36 bg-gray-200 flex items-center justify-center overflow-hidden">
             {bookmark.image ? (
-              <img
+              <Image
                 src={bookmark.image}
                 alt={bookmark.title}
                 className="w-full h-full object-cover"

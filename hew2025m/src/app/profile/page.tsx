@@ -1,5 +1,7 @@
 "use client";
+
 import { useState, useEffect } from "react";
+import Image from 'next/image';
 import { User } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -58,7 +60,7 @@ export default function ProfilePage() {
                 {/* Avatar */}
                 <div className="w-24 h-24 bg-gray-300 rounded-full mx-auto mb-4 overflow-hidden flex items-center justify-center">
                   {profile.photoURL ? (
-                    <img
+                    <Image
                       src={profile.photoURL}
                       alt="プロフィール画像"
                       className="w-full h-full object-cover"

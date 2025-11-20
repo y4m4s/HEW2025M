@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Fish, MapPin, Heart, MessageCircle, User } from 'lucide-react';
 
 export interface Post {
@@ -33,7 +34,7 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
             {/* 画像 */}
             <div className="w-32 h-32 flex-shrink-0 bg-gray-200 flex items-center justify-center">
               {post.imageUrl ? (
-                <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
+                <Image src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
               ) : (
                 <Fish size={24} className="text-gray-400" />
               )}
@@ -70,7 +71,7 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
           {/* 画像 */}
           {post.imageUrl && (
             <div className="h-64 bg-gray-200 flex items-center justify-center overflow-hidden">
-              <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
+              <Image src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
             </div>
           )}
 
@@ -107,7 +108,7 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
       <div className="relative">
         <div className="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center overflow-hidden">
           {post.imageUrl ? (
-            <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
+            <Image src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
           ) : (
             <>
               <Fish size={32} className="text-gray-400" />

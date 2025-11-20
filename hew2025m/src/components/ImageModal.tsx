@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 interface ImageModalProps {
@@ -83,7 +84,7 @@ export default function ImageModal({
         {/* 画像表示エリア */}
         <div className="relative flex-1 flex items-center justify-center">
           <div className="relative w-full h-full flex items-center justify-center">
-            <img
+            <Image
               src={images[currentIndex]}
               alt={`画像 ${currentIndex + 1}`}
               className="max-w-full max-h-[80vh] object-contain"

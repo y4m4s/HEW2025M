@@ -1,6 +1,8 @@
 "use client";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useState } from "react";
 import { Bell, Mail, User as UserIcon } from "lucide-react";
 import Button from "@/components/Button";
@@ -95,7 +97,7 @@ export default function Header() {
               >
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                   {profile.photoURL ? (
-                    <img
+                    <Image
                       src={profile.photoURL}
                       alt="プロフィール画像"
                       className="w-full h-full object-cover"

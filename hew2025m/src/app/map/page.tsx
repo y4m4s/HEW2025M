@@ -1,9 +1,12 @@
 'use client';
-import Map from "@/components/Map";
+
 import { useState } from 'react';
-import Button from '@/components/Button';
-import { MapPin, Navigation, Plus, Minus, ExternalLink, User, Fish } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
+import { MapPin, Navigation, Plus, Minus, ExternalLink, User, Fish } from 'lucide-react';
+import Map from "@/components/Map";
+import Button from '@/components/Button';
+
 
 interface SelectedPost {
   _id: string;
@@ -92,7 +95,7 @@ export default function MapPage() {
                 <div className="bg-white border rounded-lg overflow-hidden">
                   <div className="relative h-32 bg-gray-200 flex items-center justify-center">
                     {selectedPost.media && selectedPost.media.length > 0 ? (
-                      <img
+                      <Image
                         src={selectedPost.media.sort((a, b) => a.order - b.order)[0].url}
                         alt={selectedPost.title}
                         className="w-full h-full object-cover"

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { User, Trash2 } from 'lucide-react';
 import { Comment } from '@/types/comment';
 
@@ -46,7 +47,7 @@ export default function CommentItem({ comment, currentUserId, onDelete }: Commen
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           {comment.userPhotoURL && !imageError ? (
-            <img
+            <Image
               src={comment.userPhotoURL}
               alt={comment.userName}
               className="w-8 h-8 rounded-full object-cover border border-gray-300"

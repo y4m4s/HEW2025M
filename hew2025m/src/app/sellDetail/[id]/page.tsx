@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, ArrowLeft, MapPin, Calendar, User, Bookmark } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, Calendar, User, Bookmark } from 'lucide-react';
 import Button from '@/components/Button';
 import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
@@ -371,7 +372,7 @@ export default function SellDetailPage() {
                   >
                     {images.map((src, index) => (
                       <div key={index} className="w-full flex-shrink-0">
-                        <img
+                        <Image
                           src={src}
                           alt={`商品画像${index + 1}`}
                           className="w-full h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity"
@@ -500,7 +501,7 @@ export default function SellDetailPage() {
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 {sellerProfile.photoURL ? (
-                  <img
+                  <Image
                     src={sellerProfile.photoURL}
                     alt={sellerProfile.displayName}
                     className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
@@ -575,7 +576,7 @@ export default function SellDetailPage() {
                     <div className="text-2xl font-bold text-blue-600 w-8 text-center">
                       {idx + 1}.
                     </div>
-                    <img
+                    <Image
                       src={imageUrl}
                       alt={p.itemName}
                       className="w-20 h-20 object-cover rounded border"
