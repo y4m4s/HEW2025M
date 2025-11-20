@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react'; // --- 変更 --- (useEffect を追加)
+import { useAuth } from '@/lib/useAuth'; // --- 新規 ---
 import { Megaphone, JapaneseYen, MessageSquare, Trash2 } from 'lucide-react';
 import { db } from '@/lib/firebase'; // --- 新規 ---
 import {
@@ -13,11 +14,6 @@ import {
   deleteDoc,
   Timestamp, // --- 新規 ---
 } from 'firebase/firestore';
-
-// --- 新規 ---
-// チャットと同じユーザーIDです。
-// これを実際の認証フックに置き換えることを忘れないでください。
-const MY_USER_ID = 'eduardo';
 
 // --- 変更 ---
 // インターフェースはFirestoreから取得するデータと一致させる必要があります。
@@ -51,6 +47,7 @@ const getNotificationIcon = (iconType: string) => {
 
 // --- 通知ページのメインコンポーネント ---
 export default function NotificationPage() {
+  const { user, loading: authLoading } = useAuth(); // --- 新規 ---
   // --- 変更 ---
   // stateは空の配列で初期化します。
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -58,10 +55,12 @@ export default function NotificationPage() {
   // --- 新規 ---
   // Firestoreから通知を読み込みます
   useEffect(() => {
-    if (!MY_USER_ID) return;
+    // --- 変更 ---
+    if (!user) return;
 
     // 参照はユーザーのサブコレクションを指します
-    const notifRef = collection(db, 'users', MY_USER_ID, 'notifications');
+    // --- 変更 ---
+    const notifRef = collection(db, 'users', user.uid, 'notifications');
     const q = query(notifRef, orderBy('timestamp', 'desc')); // 新しい順に並べ替え
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -77,7 +76,8 @@ export default function NotificationPage() {
     });
 
     return () => unsubscribe();
-  }, [MY_USER_ID]); // MY_USER_IDに依存します
+    // --- 変更 ---
+  }, [user]); // userに依存します
 
   // --- 新規 ---
   // Timestampをフォーマットする関数
@@ -92,7 +92,8 @@ export default function NotificationPage() {
   // --- 変更 ---
   // 既読にする処理（Firestoreと連携）
   const handleMarkAsRead = async (id: string) => {
-    const docRef = doc(db, 'users', MY_USER_ID, 'notifications', id);
+    if (!user) return;
+    const docRef = doc(db, 'users', user.uid, 'notifications', id);
     try {
       await updateDoc(docRef, {
         isUnread: false,
@@ -105,7 +106,8 @@ export default function NotificationPage() {
   // --- 変更 ---
   // 削除処理（Firestoreと連携）
   const handleDelete = async (id: string) => {
-    const docRef = doc(db, 'users', MY_USER_ID, 'notifications', id);
+    if (!user) return;
+    const docRef = doc(db, 'users', user.uid, 'notifications', id);
     try {
       await deleteDoc(docRef);
     } catch (error) {
@@ -123,6 +125,14 @@ export default function NotificationPage() {
       }
     });
   };
+
+  if (authLoading) {
+    return <div className="flex h-screen items-center justify-center">読み込み中...</div>;
+  }
+
+  if (!user) {
+    return <div className="flex h-screen items-center justify-center">通知機能を利用するには<a href="/login" className="text-blue-500 underline ml-2">ログイン</a>が必要です。</div>;
+  }
 
   return (
     <div className="bg-gray-100 min-h-screen p-8">
