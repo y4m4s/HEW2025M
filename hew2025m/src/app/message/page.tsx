@@ -1,11 +1,11 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { User, Send, Star, Flag, Search } from 'lucide-react';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { db } from '@/lib/firebase';
-import { useAuth } from '@/lib/useAuth'; // 認証フックをインポート
+import { useAuth } from '@/lib/useAuth';
 import {
   collection,
   addDoc,
@@ -16,6 +16,8 @@ import {
   where,
   doc,
   getDocs,
+  setDoc,
+  getDoc,
 } from 'firebase/firestore';
 
 interface Message {
@@ -29,27 +31,20 @@ interface Message {
 interface AppUser {
   uid: string;
   displayName: string;
+  username: string;
   photoURL: string;
   email: string;
 }
 
-// --- 変更 ---
 // 会話IDは、実際の相手ユーザーのIDである必要があります
 interface Conversation {
-  id: string; // このIDは相手のユーザーIDを表します (例: 'tanaka-taro')
+  id: string;
   name: string;
   preview: string;
+  photoURL?: string;
+  lastMessageTime?: Date;
 }
 
-// --- 削除 ---
-// この静的なconversations配列は使わなくなります。
-// const conversations: Conversation[] = [
-//   { id: 'tanaka-taro', name: '田中太郎', preview: '商品について質問が...' },
-//   { id: 'sato-hanako', name: '佐藤花子', preview: 'ありがとうございました' },
-//   { id: 'yamada-jiro', name: '山田次郎', preview: '配送方法について' },
-// ];
-
-// --- 新規 ---
 // 一貫性のある一意のチャットルームIDを作成する関数
 const getChatRoomId = (userId1: string, userId2: string) => {
   if (userId1 < userId2) {
@@ -62,11 +57,11 @@ const getChatRoomId = (userId1: string, userId2: string) => {
 export default function MessagePage() {
   const { user, loading: authLoading } = useAuth(); // ログイン状態を取得
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // --- 新規 ---
   // 検索と会話リストの状態管理
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<AppUser[]>([]);
@@ -75,7 +70,61 @@ export default function MessagePage() {
 
   const addNotification = useNotificationStore(state => state.addNotification);
 
-  // --- 新規 ---
+  // URLクエリパラメータから userId を取得して、自動的にユーザーを選択
+  useEffect(() => {
+    const userId = searchParams.get('userId');
+    if (!userId || !user) return;
+
+    // 既にユーザーが選択されている場合はスキップ
+    if (selectedUser?.id === userId) return;
+
+    const fetchAndSelectUser = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setSelectedUser({
+            id: userId,
+            name: userData.displayName || '不明なユーザー',
+            preview: `@${userData.username} - ${userData.email}`,
+            photoURL: userData.photoURL || '',
+          });
+        }
+      } catch (error) {
+        console.error('ユーザー情報の取得エラー:', error);
+      }
+    };
+
+    fetchAndSelectUser();
+  }, [searchParams, user, selectedUser]);
+
+  // 既存の会話履歴を読み込む
+  useEffect(() => {
+    if (!user) {
+      setConversations([]);
+      return;
+    }
+
+    const conversationsRef = collection(db, 'users', user.uid, 'conversations');
+    const q = query(conversationsRef, orderBy('lastMessageTime', 'desc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const convos: Conversation[] = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id, // partnerのUID
+          name: data.partnerName || '不明なユーザー',
+          preview: data.lastMessage || '',
+          photoURL: data.partnerPhotoURL || '',
+          lastMessageTime: data.lastMessageTime?.toDate() || new Date(),
+        };
+      });
+      setConversations(convos);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
   // ユーザーを検索する機能
   useEffect(() => {
     const searchUsers = async () => {
@@ -83,24 +132,46 @@ export default function MessagePage() {
         setSearchResults([]);
         return;
       }
-      // Firestoreのusersコレクションを検索
+
       const usersRef = collection(db, 'users');
+      const searchLower = searchQuery.toLowerCase();
+
       // displayNameで前方一致検索
-      const q = query(
+      const qDisplayName = query(
         usersRef,
         where('displayName', '>=', searchQuery),
         where('displayName', '<=', searchQuery + '\uf8ff')
       );
 
-      const querySnapshot = await getDocs(q);
-      const users: AppUser[] = [];
-      querySnapshot.forEach((doc) => {
-        // 自分自身は検索結果に表示しない
+      // usernameで前方一致検索
+      const qUsername = query(
+        usersRef,
+        where('username', '>=', searchLower),
+        where('username', '<=', searchLower + '\uf8ff')
+      );
+
+      // 両方のクエリを実行
+      const [displayNameSnapshot, usernameSnapshot] = await Promise.all([
+        getDocs(qDisplayName),
+        getDocs(qUsername)
+      ]);
+
+      // 結果をマージ（重複を除去）
+      const usersMap = new Map<string, AppUser>();
+
+      displayNameSnapshot.forEach((doc) => {
         if (doc.id !== user.uid) {
-          users.push({ uid: doc.id, ...doc.data() } as AppUser);
+          usersMap.set(doc.id, { uid: doc.id, ...doc.data() } as AppUser);
         }
       });
-      setSearchResults(users);
+
+      usernameSnapshot.forEach((doc) => {
+        if (doc.id !== user.uid) {
+          usersMap.set(doc.id, { uid: doc.id, ...doc.data() } as AppUser);
+        }
+      });
+
+      setSearchResults(Array.from(usersMap.values()));
     };
 
     const debounceTimer = setTimeout(() => {
@@ -110,7 +181,6 @@ export default function MessagePage() {
     return () => clearTimeout(debounceTimer);
   }, [searchQuery, user]);
 
-  // --- 変更 ---
   // Firestoreとのリアルタイム同期
   useEffect(() => {
     // ユーザーが選択されていない場合は何もしません
@@ -119,13 +189,11 @@ export default function MessagePage() {
       return;
     };
 
-    // --- 新規 ---
     // 自分のIDと相手のIDに基づいてチャットルームIDを作成します
     const MY_USER_ID = user.uid;
     const partnerId = selectedUser.id;
     const chatRoomId = getChatRoomId(MY_USER_ID, partnerId);
 
-    // --- 新規 ---
     // 参照はチャットルーム内のサブコレクション 'messages' を指すようになります
     const messagesRef = collection(db, 'chatRooms', chatRoomId, 'messages');
     const q = query(messagesRef, orderBy('timestamp', 'asc'));
@@ -135,7 +203,7 @@ export default function MessagePage() {
         const data = doc.data();
         return {
           id: doc.id,
-          senderId: data.senderId, // --- 変更 ---
+          senderId: data.senderId,
           content: data.content,
           timestamp:
             data.timestamp instanceof Timestamp
@@ -153,19 +221,20 @@ export default function MessagePage() {
     return () => unsubscribe();
   }, [selectedUser, user]); // userも依存配列に追加
 
-  // --- 新規 ---
   // 表示する会話リストを決定
   const conversationList = useMemo(() => {
     if (searchQuery) {
-      return searchResults.map(u => ({ id: u.uid, name: u.displayName, preview: `ユーザー: ${u.email}` }));
+      return searchResults.map(u => ({
+        id: u.uid,
+        name: u.displayName,
+        preview: `@${u.username} - ${u.email}`,
+        photoURL: u.photoURL
+      }));
     }
-    // TODO: 既存の会話履歴をFirestoreから読み込むロジックをここに追加
-    // とりあえず空にしておく
     return conversations;
   }, [searchQuery, searchResults, conversations]);
 
 
-  // ... (o useEffect para auto-scroll continua o mesmo) ...
   const prevMessagesLength = useRef(messages.length);
   useEffect(() => {
     if (messages.length > prevMessagesLength.current) {
@@ -174,22 +243,18 @@ export default function MessagePage() {
     prevMessagesLength.current = messages.length;
   }, [messages]);
 
-  // --- 変更 ---
   // メッセージ送信処理
   const handleSendMessage = async () => {
     if (!inputValue.trim() || !selectedUser || !user) return;
 
-    // --- 新規 ---
     // 正しいチャットルームIDを取得します
     const MY_USER_ID = user.uid;
     const partnerId = selectedUser.id;
     const chatRoomId = getChatRoomId(MY_USER_ID, partnerId);
 
-    // --- 新規 ---
     // 正しいサブコレクションへの参照
     const messagesRef = collection(db, 'chatRooms', chatRoomId, 'messages');
 
-    // --- 変更 ---
     // 送信者の実際のIDを保存します
     const newMessage = {
       senderId: MY_USER_ID,
@@ -199,7 +264,6 @@ export default function MessagePage() {
 
     await addDoc(messagesRef, newMessage);
 
-    // --- 新規: 相手に通知を送信 ---
     // 相手の通知コレクションへの参照を作成
     const notificationRef = collection(db, 'users', partnerId, 'notifications');
     // 通知ドキュメントを作成
@@ -212,6 +276,46 @@ export default function MessagePage() {
       tag: 'メッセージ',
       isUnread: true,
     });
+
+    // --- 会話履歴を両方のユーザーに保存 ---
+    const messageContent = inputValue.trim();
+    const messageTime = new Date();
+
+    // 相手のユーザー情報を取得
+    const partnerDocRef = doc(db, 'users', partnerId);
+    const partnerDoc = await getDoc(partnerDocRef);
+    const partnerData = partnerDoc.data();
+
+    // 自分のユーザー情報を取得（Firestoreから）
+    const myDocRef = doc(db, 'users', MY_USER_ID);
+    const myDoc = await getDoc(myDocRef);
+    const myData = myDoc.data();
+
+    // 自分の会話リストを更新（相手の情報を保存）
+    await setDoc(
+      doc(db, 'users', MY_USER_ID, 'conversations', partnerId),
+      {
+        partnerName: partnerData?.displayName || selectedUser.name,
+        partnerUsername: partnerData?.username || '',
+        partnerPhotoURL: partnerData?.photoURL || '',
+        lastMessage: messageContent,
+        lastMessageTime: messageTime,
+      },
+      { merge: true }
+    );
+
+    // 相手の会話リストを更新（自分の情報を保存）
+    await setDoc(
+      doc(db, 'users', partnerId, 'conversations', MY_USER_ID),
+      {
+        partnerName: myData?.displayName || user.displayName || '不明なユーザー',
+        partnerUsername: myData?.username || '',
+        partnerPhotoURL: myData?.photoURL || user.photoURL || '',
+        lastMessage: messageContent,
+        lastMessageTime: messageTime,
+      },
+      { merge: true }
+    );
 
     setInputValue('');
 
@@ -233,7 +337,7 @@ export default function MessagePage() {
           <h1 className="text-xl font-bold text-gray-800">メッセージ履歴</h1>
         </div>
 
-        {/* --- 新規: 検索バー --- */}
+        {/* --- 検索バー --- */}
         <div className="p-4 border-b border-gray-200">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
@@ -288,8 +392,6 @@ export default function MessagePage() {
         {/* メッセージ表示エリア */}
         <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50">
           
-          {/* --- 変更 --- */}
-          {/* '自分' vs '相手' の表示ロジックが変更されました */}
           {messages.length === 0 && <p className="text-center text-gray-500">まだメッセージはありません。</p>}
           {messages.map((msg) => {
             if (!user) return null;

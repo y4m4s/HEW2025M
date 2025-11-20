@@ -92,7 +92,7 @@ export default function Header() {
               </Link>
 
               <Link
-                href="/profile"
+                href={user?.uid ? `/profile/${user.uid}` : "/profile"}
                 className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
               >
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
