@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { User, Send, Star, Flag, Search } from 'lucide-react';
-import { useNotificationStore } from '@/store/useNotificationStore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/useAuth'; // 認証フックをインポート
 import {
@@ -72,8 +71,6 @@ export default function MessagePage() {
   const [searchResults, setSearchResults] = useState<AppUser[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]); // 既存の会話リスト
   const [selectedUser, setSelectedUser] = useState<Conversation | null>(null);
-
-  const addNotification = useNotificationStore(state => state.addNotification);
 
   // --- 新規 ---
   // ユーザーを検索する機能
