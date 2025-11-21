@@ -7,6 +7,7 @@ export interface IComment {
   userName: string;
   userPhotoURL?: string;
   content: string;
+  parentId?: string; // 返信先のコメントID
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +37,11 @@ const CommentSchema = new Schema<IComment>(
       required: [true, 'コメント内容は必須です'],
       trim: true,
       maxlength: [140, 'コメントは140文字以内で入力してください'],
+    },
+    parentId: {
+      type: String,
+      required: false,
+      index: true,
     },
   },
   {

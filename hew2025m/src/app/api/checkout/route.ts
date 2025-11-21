@@ -1,11 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-// Stripeの初期化。シークレットキーは環境変数から取得します。
-// It is recommended to use environment variables for the secret key.
-console.log("Stripe Secret Key:", process.env.STRIPE_SECRET_KEY); // Check if the secret key is loaded
-
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
   typescript: true,
@@ -14,7 +9,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export async function POST(request: Request) {
   try {
     const { items } = await request.json();
-    console.log("Items received:", items); // Check if items are being received
 
     // Stripe Checkoutセッションの作成
     // Create a Stripe Checkout session

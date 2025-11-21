@@ -33,17 +33,13 @@ let db: Firestore;
 try {
   // 既に初期化されているか確認
   db = getFirestore(app);
-  console.log("既存のFirestoreインスタンスを使用");
 } catch (e) {
   // 新規初期化（最もシンプルな設定）
   db = initializeFirestore(app, {
     ignoreUndefinedProperties: true,
     experimentalForceLongPolling: false, // 高速接続のため無効化
   });
-  console.log("新規Firestoreインスタンス作成（高速モード）");
 }
-
-console.log("Firestore初期化完了 - プロジェクト:", app.options.projectId);
 
 // Firebase Storage
 const storage = getStorage(app);

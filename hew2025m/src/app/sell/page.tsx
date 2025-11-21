@@ -44,7 +44,6 @@ export default function SellPage() {
   // 認証チェック：未ログインならログインページへリダイレクト
   useEffect(() => {
     if (!authLoading && !user) {
-      alert('商品を出品するにはログインが必要です');
       router.push('/login');
     }
   }, [user, authLoading, router]);
@@ -102,17 +101,19 @@ export default function SellPage() {
     if (isSubmitting) return;
 
     if (title.length > 50) {
-      alert('商品名は50文字以内で入力してください');
       return;
     }
     if (description.length > 300) {
-      alert('商品説明は300文字以内で入力してください');
+      return;
+    }
+
+    // 価格チェック
+    if (!price || price <= 0) {
       return;
     }
 
     // 認証チェック
     if (!user) {
-      alert('商品を出品するにはログインが必要です');
       router.push('/login');
       return;
     }
@@ -174,12 +175,10 @@ export default function SellPage() {
         throw new Error(errorData.error || '商品の出品に失敗しました');
       }
 
-      alert('商品が出品されました！');
       previewUrls.forEach((url) => URL.revokeObjectURL(url));
       router.push('/search');
     } catch (error) {
       console.error('出品エラー:', error);
-      alert(error instanceof Error ? error.message : '出品に失敗しました');
       setIsSubmitting(false);
       setUploadProgress('');
     }
@@ -311,16 +310,21 @@ export default function SellPage() {
                       onChange={(e) => setPrice(e.target.value)}
                       className="w-full p-4 pl-8 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20 transition-all duration-300"
                       placeholder="0"
-                      min="0"
+                      min="1"
                       required
                       aria-required="true"
-                      aria-invalid={submitted && price === "" ? "true" : "false"}
+                      aria-invalid={submitted && (price === "" || Number(price) <= 0) ? "true" : "false"}
                       disabled={isSubmitting}
                     />
                   </div>
                   {submitted && price === "" && (
                     <p className="text-red-600 text-sm mt-2" role="alert">
                       価格は必須です。
+                    </p>
+                  )}
+                  {submitted && price !== "" && Number(price) <= 0 && (
+                    <p className="text-red-600 text-sm mt-2" role="alert">
+                      価格は1円以上で入力してください。
                     </p>
                   )}
                 </div>

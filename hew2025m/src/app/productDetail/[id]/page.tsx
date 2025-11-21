@@ -100,8 +100,6 @@ export default function SellDetailPage() {
       const response = await fetch(`/api/products/${params.id}`);
       if (!response.ok) throw new Error('商品の取得に失敗しました');
       const data = await response.json();
-      console.log('商品データ:', data.product);
-      console.log('出品者ID:', data.product?.sellerId);
       setProduct(data.product);
     } catch (err) {
       console.error(err);
@@ -115,20 +113,15 @@ export default function SellDetailPage() {
   const fetchSellerProfile = async (sellerId: string) => {
     try {
       setSellerProfileLoading(true);
-      console.log('出品者プロフィール取得開始:', sellerId);
 
       // sellerIdから "user-" プレフィックスを削除して実際のuidを取得
       const actualUid = sellerId.startsWith('user-') ? sellerId.replace('user-', '') : sellerId;
-      console.log('実際のUID:', actualUid);
 
       const docRef = doc(db, 'users', actualUid);
       const docSnap = await getDoc(docRef);
 
-      console.log('Firestore docSnap exists:', docSnap.exists());
-
       if (docSnap.exists()) {
         const data = docSnap.data();
-        console.log('出品者プロフィールデータ:', data);
         setSellerProfile({
           uid: actualUid,
           displayName: data.displayName || data.email?.split('@')[0] || product?.sellerName || '名無しユーザー',

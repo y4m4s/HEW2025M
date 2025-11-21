@@ -12,6 +12,8 @@ export interface Post {
   fishCount?: string;
   location: string;
   author: string;
+  authorId?: string;
+  authorPhotoURL?: string;
   date: string;
   likes: number;
   comments: number;
@@ -89,8 +91,12 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
 
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <User size={16} className="text-gray-600" />
+                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                  {post.authorPhotoURL ? (
+                    <Image src={post.authorPhotoURL} alt={post.author} width={32} height={32} className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={16} className="text-gray-600" />
+                  )}
                 </div>
                 <span className="text-sm font-medium">{post.author}</span>
               </div>
@@ -148,8 +154,12 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
 
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                <User size={12} className="text-gray-600" />
+              <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                {post.authorPhotoURL ? (
+                  <Image src={post.authorPhotoURL} alt={post.author} width={24} height={24} className="w-full h-full object-cover" />
+                ) : (
+                  <User size={12} className="text-gray-600" />
+                )}
               </div>
               <span className="text-sm font-medium">{post.author}</span>
             </div>

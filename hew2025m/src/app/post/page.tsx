@@ -6,11 +6,15 @@ import { Upload, MapPin, X } from 'lucide-react';
 import Button from '@/components/Button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import MapModal, { LocationData } from '@/components/MapModal';
+import { useAuth } from '@/lib/useAuth';
+import { useProfile } from '@/contexts/ProfileContext';
 
 
 export default function Post() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
+  const { profile } = useProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState('');
@@ -105,13 +109,17 @@ export default function Post() {
 
     if (isSubmitting) return;
 
+    // ログインチェック
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
     // 文字数チェック
     if (title.length > 50) {
-      alert('件名は50文字以内で入力してください');
       return;
     }
     if (content.length > 140) {
-      alert('本文は140文字以内で入力してください');
       return;
     }
 
@@ -119,9 +127,10 @@ export default function Post() {
     setUploadProgress('投稿を準備中...');
 
     try {
-      // 投稿作成日時とユーザーIDを生成
+      // 投稿作成日時とユーザー情報を取得
       const timestamp = new Date().toISOString();
-      const authorId = 'user-' + Date.now(); // TODO: 実際のユーザーIDに置き換え
+      const authorId = `user-${user.uid}`;
+      const authorName = profile.displayName || user.displayName || '名無しユーザー';
 
       let uploadedMedia: Array<{
         url: string;
@@ -168,7 +177,7 @@ export default function Post() {
           category: '一般',
           media: uploadedMedia,
           authorId,
-          authorName: 'テストユーザー', // TODO: 実際のユーザー名に置き換え
+          authorName,
           tags: address ? [address] : [],
           address: address || undefined,
           location: location || undefined,
@@ -180,17 +189,13 @@ export default function Post() {
         throw new Error(errorData.error || '投稿の作成に失敗しました');
       }
 
-      // 成功したらリダイレクト
-      alert('投稿が作成されました！');
-
       // プレビューURLを解放
       previewUrls.forEach((url) => URL.revokeObjectURL(url));
 
-      // コミュニティページにリダイレクト
-      router.push('/community');
+      // 投稿一覧ページにリダイレクト
+      router.push('/postList');
     } catch (error) {
       console.error('投稿エラー:', error);
-      alert(error instanceof Error ? error.message : '投稿に失敗しました');
       setIsSubmitting(false);
       setUploadProgress('');
     }

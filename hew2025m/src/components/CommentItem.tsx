@@ -2,17 +2,29 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { User, Trash2 } from 'lucide-react';
+import { User, Trash2, MessageCircle } from 'lucide-react';
 import { Comment } from '@/types/comment';
+import CommentInput from './CommentInput';
 
 interface CommentItemProps {
   comment: Comment;
   currentUserId?: string;
   onDelete: (commentId: string) => void;
+  onReply?: (parentId: string, content: string) => Promise<void>;
+  isReply?: boolean;
 }
 
-export default function CommentItem({ comment, currentUserId, onDelete }: CommentItemProps) {
+export default function CommentItem({
+  comment,
+  currentUserId,
+  onDelete,
+  onReply,
+  isReply = false
+}: CommentItemProps) {
   const [imageError, setImageError] = useState(false);
+  const [showReplyInput, setShowReplyInput] = useState(false);
+  const [showReplies, setShowReplies] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // コメントの日時をフォーマット
   const formatCommentDate = (dateString: string): string => {
@@ -42,8 +54,25 @@ export default function CommentItem({ comment, currentUserId, onDelete }: Commen
 
   const isOwner = currentUserId && currentUserId === comment.userId;
 
+  const handleReplySubmit = async (content: string) => {
+    if (!onReply) return;
+
+    setIsSubmitting(true);
+    try {
+      await onReply(comment._id, content);
+      setShowReplyInput(false);
+      setShowReplies(true); // 返信後、返信一覧を表示
+    } catch (error) {
+      console.error('返信エラー:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const replyCount = comment.replies?.length || 0;
+
   return (
-    <div className="border-b border-gray-200 pb-4 last:border-none">
+    <div className={`pb-4 last:border-none ${isReply ? 'ml-10 border-l-2 border-gray-200 pl-4' : 'border-b border-gray-200'}`}>
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           {comment.userPhotoURL && !imageError ? (
@@ -81,9 +110,62 @@ export default function CommentItem({ comment, currentUserId, onDelete }: Commen
           </button>
         )}
       </div>
-      <p className="text-gray-700 whitespace-pre-wrap ml-10">
+
+      <p className="text-gray-700 whitespace-pre-wrap ml-10 mb-2">
         {comment.content}
       </p>
+
+      {/* 返信ボタンと返信を見るボタン（親コメントの場合のみ） */}
+      {!isReply && (
+        <div className="ml-10 flex items-center gap-4">
+          {onReply && currentUserId && (
+            <button
+              onClick={() => setShowReplyInput(!showReplyInput)}
+              className="text-sm text-[#2FA3E3] hover:text-[#1d7bb8] transition-colors flex items-center gap-1"
+            >
+              <MessageCircle size={14} />
+              <span>{showReplyInput ? '返信をやめる' : '返信'}</span>
+            </button>
+          )}
+
+          {replyCount > 0 && (
+            <button
+              onClick={() => setShowReplies(!showReplies)}
+              className="text-sm text-gray-600 hover:text-[#2FA3E3] transition-colors flex items-center gap-1"
+            >
+              <MessageCircle size={14} />
+              <span>{showReplies ? '返信を隠す' : `返信を見る (${replyCount}件)`}</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* 返信入力フォーム */}
+      {showReplyInput && (
+        <div className="ml-10 mt-3">
+          <CommentInput
+            onSubmit={handleReplySubmit}
+            isSubmitting={isSubmitting}
+            maxLength={140}
+            placeholder={`${comment.userName}さんに返信...`}
+          />
+        </div>
+      )}
+
+      {/* 返信コメント一覧 */}
+      {showReplies && comment.replies && comment.replies.length > 0 && (
+        <div className="mt-4">
+          {comment.replies.map((reply) => (
+            <CommentItem
+              key={reply._id}
+              comment={reply}
+              currentUserId={currentUserId}
+              onDelete={onDelete}
+              isReply={true}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
