@@ -36,7 +36,7 @@ export default function SellDetailPage() {
   const router = useRouter();
   const { user } = useAuth();
   const addItemToCart = useCartStore((state) => state.addItem);
-  
+
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -272,7 +272,7 @@ export default function SellDetailPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <main className="flex-1 container mx-auto px-4 py-6">
-        
+
         {/* 戻るボタン */}
         <Button onClick={() => router.back()} variant="ghost" size="sm" icon={<ArrowLeft size={16} />} className="mb-6">
           戻る
@@ -280,132 +280,130 @@ export default function SellDetailPage() {
 
         {/* メイングリッド (商品情報) */}
         <div className="grid lg:grid-cols-2 gap-8 bg-white rounded-lg shadow-md p-6">
-          
+
           {/* 左側: 商品画像 */}
           <section className="space-y-6">
-             <div>
-                <h1 className="text-2xl font-bold mb-2">{product.title}</h1>
-                <div className="flex gap-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1"><Calendar size={14} /><span>{formatDate(product.createdAt)}</span></div>
-                  <div className="flex items-center gap-1"><User size={14} /><span>{product.sellerName}</span></div>
-                </div>
-                <div className="mt-2">
-                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${product.status === 'available' ? 'bg-green-100 text-green-800' : product.status === 'sold' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                    {getStatusLabel(product.status)}
-                  </span>
-                </div>
-             </div>
+            <div>
+              <h1 className="text-2xl font-bold mb-2">{product.title}</h1>
+              <div className="flex gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-1"><Calendar size={14} /><span>{formatDate(product.createdAt)}</span></div>
+                <div className="flex items-center gap-1"><User size={14} /><span>{product.sellerName}</span></div>
+              </div>
+              <div className="mt-2">
+                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${product.status === 'available' ? 'bg-green-100 text-green-800' : product.status === 'sold' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                  {getStatusLabel(product.status)}
+                </span>
+              </div>
+            </div>
 
-              <div className="relative">
-                {hasImages ? (
-                  <>
-                    <div className="relative overflow-hidden rounded-lg bg-gray-100">
-                      <div
-                        className="flex transition-transform duration-300 ease-in-out"
-                        style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-                      >
-                        {product.images.map((src, index) => (
-                          <div key={index} className="w-full flex-shrink-0">
-                            <Image
-                              src={src}
-                              alt={`商品画像${index + 1}`}
-                              width={800}
-                              height={600}
-                              className="w-full h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => handleImageClick(index)}
-                            />
-                          </div>
-                        ))}
-                      </div>
-
-                      {product.images.length > 1 && (
-                        <>
-                          <button
-                            onClick={prevSlide}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
-                          >
-                            <ChevronLeft size={20} />
-                          </button>
-                          <button
-                            onClick={nextSlide}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
-                          >
-                            <ChevronRight size={20} />
-                          </button>
-                        </>
-                      )}
+            <div className="relative">
+              {hasImages ? (
+                <>
+                  <div className="relative overflow-hidden rounded-lg bg-gray-100">
+                    <div
+                      className="flex transition-transform duration-300 ease-in-out"
+                      style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                    >
+                      {product.images.map((src, index) => (
+                        <div key={index} className="w-full flex-shrink-0">
+                          <Image
+                            src={src}
+                            alt={`商品画像${index + 1}`}
+                            width={800}
+                            height={600}
+                            className="w-full h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => handleImageClick(index)}
+                          />
+                        </div>
+                      ))}
                     </div>
 
                     {product.images.length > 1 && (
-                      <div className="flex justify-center mt-4 gap-2">
-                        {product.images.map((_, index) => (
-                          <button
-                            key={index}
-                            onClick={() => goToSlide(index)}
-                            className={`w-3 h-3 rounded-full transition-colors ${
-                              currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
+                      <>
+                        <button
+                          onClick={prevSlide}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
+                        >
+                          <ChevronLeft size={20} />
+                        </button>
+                        <button
+                          onClick={nextSlide}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
+                        >
+                          <ChevronRight size={20} />
+                        </button>
+                      </>
                     )}
-                  </>
-                ) : (
-                  <div className="relative overflow-hidden rounded-lg bg-gray-200">
-                    <div className="w-full h-80 flex items-center justify-center">
-                      <Fish size={120} className="text-gray-400" />
-                    </div>
                   </div>
-                )}
-             </div>
+
+                  {product.images.length > 1 && (
+                    <div className="flex justify-center mt-4 gap-2">
+                      {product.images.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => goToSlide(index)}
+                          className={`w-3 h-3 rounded-full transition-colors ${currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
+                            }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="relative overflow-hidden rounded-lg bg-gray-200">
+                  <div className="w-full h-80 flex items-center justify-center">
+                    <Fish size={120} className="text-gray-400" />
+                  </div>
+                </div>
+              )}
+            </div>
           </section>
 
           {/* 右側: 商品詳細 */}
           <section className="space-y-6">
-             <div className="border-b pb-4">
-                <h2 className="text-3xl font-bold text-[#2FA3E3] mb-2">{formatPrice(product.price)}</h2>
-                <p className="text-sm text-gray-600">{product.shippingPayer === 'seller' ? '送料込み' : '送料別'}</p>
-             </div>
-             <div>
-                <h3 className="text-xl font-semibold mb-3">商品詳細</h3>
-                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {product.description}
-                </p>
-              </div>
+            <div className="border-b pb-4">
+              <h2 className="text-3xl font-bold text-[#2FA3E3] mb-2">{formatPrice(product.price)}</h2>
+              <p className="text-sm text-gray-600">{product.shippingPayer === 'seller' ? '送料込み' : '送料別'}</p>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-3">商品詳細</h3>
+              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                {product.description}
+              </p>
+            </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-gray-600">カテゴリ</span>
-                  <span className="font-medium">{getCategoryLabel(product.category)}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-gray-600">商品の状態</span>
-                  <span className="font-medium">{getConditionLabel(product.condition)}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-gray-600">配送料の負担</span>
-                  <span className="font-medium">
-                    {product.shippingPayer === 'seller' ? '出品者負担' : '購入者負担'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-gray-600">発送までの日数</span>
-                  <span className="font-medium">
-                    {product.shippingDays === '1-2' ? '1-2日' :
-                      product.shippingDays === '2-3' ? '2-3日' : '4-7日'}で発送
-                  </span>
-                </div>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-gray-600">カテゴリ</span>
+                <span className="font-medium">{getCategoryLabel(product.category)}</span>
               </div>
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-gray-600">商品の状態</span>
+                <span className="font-medium">{getConditionLabel(product.condition)}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-gray-600">配送料の負担</span>
+                <span className="font-medium">
+                  {product.shippingPayer === 'seller' ? '出品者負担' : '購入者負担'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b">
+                <span className="text-gray-600">発送までの日数</span>
+                <span className="font-medium">
+                  {product.shippingDays === '1-2' ? '1-2日' :
+                    product.shippingDays === '2-3' ? '2-3日' : '4-7日'}で発送
+                </span>
+              </div>
+            </div>
 
-              <div className="flex gap-4 pt-4">
+            <div className="flex gap-4 pt-4">
               <Button
                 variant="ghost"
                 size="md"
-                className={`flex-1 ${
-                  isBookmarked
+                className={`flex-1 ${isBookmarked
                     ? 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
                     : 'bg-white text-[#2FA3E3] hover:bg-blue-50'
-                }`}
+                  }`}
                 onClick={handleBookmark}
                 disabled={bookmarkLoading}
                 icon={<Bookmark size={18} fill={isBookmarked ? 'white' : 'none'} />}
@@ -413,12 +411,7 @@ export default function SellDetailPage() {
                 {bookmarkLoading ? '処理中...' : isBookmarked ? 'ブックマーク済み' : 'ブックマーク'}
               </Button>
               <Button
-                variant="primary"
-                size="md"
-                className="flex-1"
-                disabled={product.status !== 'available'}
-              >
-                {product.status === 'available' ? '購入する' : '購入できません'}
+                onClick={handleAddToCart} variant="primary" size="md" className="flex-1" disabled={product.status !== 'available'}> {product.status === 'available' ? 'カートに追加' : '購入できません'}
               </Button>
             </div>
           </section>
