@@ -4,17 +4,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { Bell, Mail, User as UserIcon } from "lucide-react";
+import { Bell, Mail, User as UserIcon,  ShoppingCart } from "lucide-react";
 import Button from "@/components/Button";
 import LogoutModal from "@/components/LogoutModal";
 import { useAuth } from "@/lib/useAuth";
 import { useProfile } from "@/contexts/ProfileContext";
 import { auth, db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { useCartStore } from "@/components/useCartStore";
 
 export default function Header() {
   const { user } = useAuth();
   const { profile } = useProfile();
+  const cartItems = useCartStore((state) => state.items);
   const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
@@ -113,6 +115,15 @@ export default function Header() {
                 aria-label="メッセージ"
               >
                 <Mail size={18} />
+              </Link>
+
+              <Link href="/cart" className="relative flex justify-center items-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 text-lg transition-all duration-300 hover:bg-gray-200 hover:text-[#2FA3E3]" aria-label="カート">
+                <ShoppingCart size={18} />
+                {cartItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                    {cartItems.length}
+                  </span>
+                )}
               </Link>
 
               <Link

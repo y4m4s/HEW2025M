@@ -10,7 +10,9 @@ import ImageModal from '@/components/ImageModal';
 import RakutenProducts from '@/components/rakuten';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, getDoc, collection, addDoc } from 'firebase/firestore';
+import toast from 'react-hot-toast'; // toastをインポート
+import { useCartStore } from '@/components/useCartStore';
 
 interface ProductDetail {
   _id: string;
@@ -33,6 +35,8 @@ export default function SellDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const addItemToCart = useCartStore((state) => state.addItem);
+  
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,13 +81,12 @@ export default function SellDetailPage() {
 
   const checkBookmarkStatus = async () => {
     if (!user || !params.id) return;
-
     try {
       const bookmarkRef = doc(db, 'users', user.uid, 'bookmarks', params.id as string);
       const bookmarkSnap = await getDoc(bookmarkRef);
       setIsBookmarked(bookmarkSnap.exists());
     } catch (error) {
-      console.error('ブックマーク状態の取得エラー:', error);
+      console.error('ブックマーク状態の確認エラー:', error);
     }
   };
 
@@ -92,14 +95,12 @@ export default function SellDetailPage() {
       setLoading(true);
       setError(null);
       const response = await fetch(`/api/products/${params.id}`);
-      if (!response.ok) {
-        throw new Error('商品の取得に失敗しました');
-      }
+      if (!response.ok) throw new Error('商品の取得に失敗しました');
       const data = await response.json();
       setProduct(data.product);
     } catch (err) {
-      console.error('商品取得エラー:', err);
-      setError(err instanceof Error ? err.message : '商品の取得に失敗しました');
+      console.error(err);
+      setError(err instanceof Error ? err.message : '不明なエラーが発生しました');
     } finally {
       setLoading(false);
     }
@@ -146,62 +147,38 @@ export default function SellDetailPage() {
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const getConditionLabel = (condition: string): string => {
-    const conditionMap: Record<string, string> = {
-      'new': '新品・未使用',
-      'good': '目立った傷汚れなし',
-      'fair': 'やや傷や汚れあり',
-      'poor': '傷や汚れあり'
+    const map: Record<string, string> = {
+      'new': '新品・未使用', 'good': '目立った傷汚れなし', 'fair': 'やや傷や汚れあり', 'poor': '傷や汚れあり'
     };
-    return conditionMap[condition] || condition;
+    return map[condition] || condition;
   };
 
   const getStatusLabel = (status: string): string => {
-    const statusMap: Record<string, string> = {
-      'available': '販売中',
-      'sold': '売却済み',
-      'reserved': '予約済み'
+    const map: Record<string, string> = {
+      'available': '販売中', 'sold': '売却済み', 'reserved': '予約済み'
     };
-    return statusMap[status] || status;
+    return map[status] || status;
   };
 
   const getCategoryLabel = (category: string): string => {
-    const categoryMap: Record<string, string> = {
-      'rod': 'ロッド/竿',
-      'reel': 'リール',
-      'lure': 'ルアー',
-      'line': 'ライン/糸',
-      'hook': 'ハリ/針',
-      'bait': '餌',
-      'wear': 'ウェア',
-      'set': 'セット用品',
-      'service': 'サービス',
-      'other': 'その他'
+    const map: Record<string, string> = {
+      'rod': 'ロッド/竿', 'reel': 'リール', 'lure': 'ルアー', 'line': 'ライン/糸',
+      'hook': 'ハリ/針', 'bait': '餌', 'wear': 'ウェア', 'set': 'セット用品',
+      'service': 'サービス', 'other': 'その他'
     };
-    return categoryMap[category] || category;
+    return map[category] || category;
   };
 
   const nextSlide = () => {
-    if (product && product.images.length > 0) {
-      setCurrentSlide((prev) => (prev + 1) % product.images.length);
-    }
+    if (product && product.images.length > 0) setCurrentSlide((prev) => (prev + 1) % product.images.length);
   };
 
   const prevSlide = () => {
-    if (product && product.images.length > 0) {
-      setCurrentSlide((prev) => (prev - 1 + product.images.length) % product.images.length);
-    }
-  };
-
-  const goToSlide = (index: number) => {
-    setCurrentSlide(index);
+    if (product && product.images.length > 0) setCurrentSlide((prev) => (prev - 1 + product.images.length) % product.images.length);
   };
 
   // 画像クリック時の処理
@@ -225,19 +202,15 @@ export default function SellDetailPage() {
       router.push('/login');
       return;
     }
-
     if (!product) return;
 
     setBookmarkLoading(true);
     try {
       const bookmarkRef = doc(db, 'users', user.uid, 'bookmarks', product._id);
-
       if (isBookmarked) {
-        // ブックマーク解除
         await deleteDoc(bookmarkRef);
         setIsBookmarked(false);
       } else {
-        // ブックマーク追加
         await setDoc(bookmarkRef, {
           productId: product._id,
           title: product.title,
@@ -248,75 +221,80 @@ export default function SellDetailPage() {
         setIsBookmarked(true);
       }
     } catch (error) {
-      console.error('ブックマークエラー:', error);
-      alert('ブックマークの操作に失敗しました');
+      console.error(error);
+      alert('操作に失敗しました');
     } finally {
       setBookmarkLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex justify-center items-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2FA3E3]"></div>
-      </div>
-    );
-  }
+  // 「カートに追加」ボタンの処理
+  const handleAddToCart = async () => { // asyncを追加
+    if (!product) return;
+    if (product.status !== 'available') {
+      alert('この商品は現在購入できません。');
+      return;
+    }
+    addItemToCart({
+      id: product._id,
+      title: product.title,
+      price: product.price,
+      image: product.images[0] || '',
+    });
 
-  if (error || !product) {
-    return (
-      <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50">
-        <p className="text-red-600 mb-4">{error || '商品が見つかりませんでした'}</p>
-        <Button onClick={() => router.back()} variant="primary" size="md">
-          戻る
-        </Button>
-      </div>
-    );
-  }
+    // --- 新規: 自分自身に通知を送信 ---
+    if (user) {
+      try {
+        const notificationRef = collection(db, 'users', user.uid, 'notifications');
+        await addDoc(notificationRef, {
+          iconType: 'system', // システム通知のアイコン
+          iconBgColor: 'bg-blue-500',
+          title: '商品をカートに追加しました',
+          description: product.title,
+          timestamp: new Date(),
+          tag: 'カート',
+          isUnread: true,
+        });
+      } catch (error) {
+        console.error("カート通知の作成エラー:", error);
+      }
+    }
 
+    toast.success('商品をカートに追加しました！'); // 通知を表示
+    router.push('/cart'); // カートページへ移動
+  };
+
+  if (loading) return <div className="min-h-screen flex justify-center items-center bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2FA3E3]"></div></div>;
+  if (error || !product) return <div className="min-h-screen flex flex-col justify-center items-center"><p className="text-red-600 mb-4">{error || '商品が見つかりませんでした'}</p><Button onClick={() => router.back()} variant="primary" size="md">戻る</Button></div>;
 
   const hasImages = product.images && product.images.length > 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <main className="flex-1 container mx-auto px-4 py-6">
-        {/* ... (商品ボタンここから戻る) ... */}
-        <Button
-          onClick={() => router.back()}
-          variant="ghost"
-          size="sm"
-          icon={<ArrowLeft size={16} />}
-          className="mb-6"
-        >
+        
+        {/* 戻るボタン */}
+        <Button onClick={() => router.back()} variant="ghost" size="sm" icon={<ArrowLeft size={16} />} className="mb-6">
           戻る
         </Button>
 
+        {/* メイングリッド (商品情報) */}
         <div className="grid lg:grid-cols-2 gap-8 bg-white rounded-lg shadow-md p-6">
-          {/* 商品情報 */}
-          {/* 左側 */}
+          
+          {/* 左側: 商品画像 */}
           <section className="space-y-6">
-              <div>
+             <div>
                 <h1 className="text-2xl font-bold mb-2">{product.title}</h1>
                 <div className="flex gap-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <Calendar size={14} />
-                    <span>{formatDate(product.createdAt)}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <User size={14} />
-                    <span>{product.sellerName}</span>
-                  </div>
+                  <div className="flex items-center gap-1"><Calendar size={14} /><span>{formatDate(product.createdAt)}</span></div>
+                  <div className="flex items-center gap-1"><User size={14} /><span>{product.sellerName}</span></div>
                 </div>
                 <div className="mt-2">
-                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                    product.status === 'available' ? 'bg-green-100 text-green-800' :
-                    product.status === 'sold' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
+                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${product.status === 'available' ? 'bg-green-100 text-green-800' : product.status === 'sold' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
                     {getStatusLabel(product.status)}
                   </span>
                 </div>
-              </div>
+             </div>
 
               <div className="relative">
                 {hasImages ? (
@@ -379,21 +357,16 @@ export default function SellDetailPage() {
                     </div>
                   </div>
                 )}
-              </div>
-            </section>
+             </div>
+          </section>
 
-            {/* 右側 */}
-            <section className="space-y-6">
-              <div className="border-b pb-4">
-                <h2 className="text-3xl font-bold text-[#2FA3E3] mb-2">
-                  {formatPrice(product.price)}
-                </h2>
-                <p className="text-sm text-gray-600">
-                  {product.shippingPayer === 'seller' ? '送料込み' : '送料別'}
-                </p>
-              </div>
-
-              <div>
+          {/* 右側: 商品詳細 */}
+          <section className="space-y-6">
+             <div className="border-b pb-4">
+                <h2 className="text-3xl font-bold text-[#2FA3E3] mb-2">{formatPrice(product.price)}</h2>
+                <p className="text-sm text-gray-600">{product.shippingPayer === 'seller' ? '送料込み' : '送料別'}</p>
+             </div>
+             <div>
                 <h3 className="text-xl font-semibold mb-3">商品詳細</h3>
                 <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
                   {product.description}
@@ -450,7 +423,6 @@ export default function SellDetailPage() {
             </div>
           </section>
         </div>
-        
 
         {/* 出品者情報 */}
         <section className="mt-8 bg-white rounded-lg shadow-md p-6">
