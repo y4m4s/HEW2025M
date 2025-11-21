@@ -72,7 +72,7 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
   }, [user, onCountChange]);
 
   const handleProductClick = (productId: string) => {
-    router.push(`/sellDetail/${productId}`);
+    router.push(`/productDetail/${productId}`);
   };
 
   if (loading) {

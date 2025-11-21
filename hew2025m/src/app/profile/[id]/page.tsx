@@ -38,32 +38,33 @@ export default function UserProfilePage() {
   const [bookmarkCount, setBookmarkCount] = useState(0);
 
   // 対象ユーザーのプロフィールを取得
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!userId) return;
+  const fetchUserProfile = async () => {
+    if (!userId) return;
 
-      setLoading(true);
-      try {
-        const userDoc = await getDoc(doc(db, "users", userId));
-        if (userDoc.exists()) {
-          setTargetProfile({
-            uid: userDoc.id,
-            ...userDoc.data(),
-          } as UserProfile);
-        } else {
-          // ユーザーが存在しない場合
-          router.push("/");
-        }
-      } catch (error) {
-        console.error("プロフィール取得エラー:", error);
+    setLoading(true);
+    try {
+      const userDoc = await getDoc(doc(db, "users", userId));
+      if (userDoc.exists()) {
+        setTargetProfile({
+          uid: userDoc.id,
+          ...userDoc.data(),
+        } as UserProfile);
+      } else {
+        // ユーザーが存在しない場合
         router.push("/");
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error("プロフィール取得エラー:", error);
+      router.push("/");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchUserProfile();
-  }, [userId, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   // ログインしていない場合の処理
   useEffect(() => {
@@ -97,6 +98,7 @@ export default function UserProfilePage() {
           isOpen={editOpen}
           onClose={() => setEditOpen(false)}
           currentProfile={targetProfile}
+          onSaveSuccess={fetchUserProfile}
         />
       )}
 
@@ -152,7 +154,7 @@ export default function UserProfilePage() {
                 <h2 className="font-bold mb-2" style={{ fontFamily: "せのびゴシック" }}>
                   自己紹介
                 </h2>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 whitespace-pre-wrap break-words">
                   {targetProfile.bio || "自己紹介が設定されていません"}
                 </p>
               </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, ArrowLeft, Calendar, User, Bookmark, Fish } from 'lucide-react';
 import Button from '@/components/Button';
@@ -46,7 +47,9 @@ export default function SellDetailPage() {
 
   // 出品者のプロフィール情報
   const [sellerProfile, setSellerProfile] = useState<{
+    uid: string;
     displayName: string;
+    username: string;
     photoURL: string;
     bio: string;
   } | null>(null);
@@ -97,6 +100,8 @@ export default function SellDetailPage() {
       const response = await fetch(`/api/products/${params.id}`);
       if (!response.ok) throw new Error('商品の取得に失敗しました');
       const data = await response.json();
+      console.log('商品データ:', data.product);
+      console.log('出品者ID:', data.product?.sellerId);
       setProduct(data.product);
     } catch (err) {
       console.error(err);
@@ -110,20 +115,34 @@ export default function SellDetailPage() {
   const fetchSellerProfile = async (sellerId: string) => {
     try {
       setSellerProfileLoading(true);
-      const docRef = doc(db, 'users', sellerId);
+      console.log('出品者プロフィール取得開始:', sellerId);
+
+      // sellerIdから "user-" プレフィックスを削除して実際のuidを取得
+      const actualUid = sellerId.startsWith('user-') ? sellerId.replace('user-', '') : sellerId;
+      console.log('実際のUID:', actualUid);
+
+      const docRef = doc(db, 'users', actualUid);
       const docSnap = await getDoc(docRef);
+
+      console.log('Firestore docSnap exists:', docSnap.exists());
 
       if (docSnap.exists()) {
         const data = docSnap.data();
+        console.log('出品者プロフィールデータ:', data);
         setSellerProfile({
-          displayName: data.displayName || '名無しユーザー',
+          uid: actualUid,
+          displayName: data.displayName || data.email?.split('@')[0] || product?.sellerName || '名無しユーザー',
+          username: data.username || 'user',
           photoURL: data.photoURL || '',
           bio: data.bio || '',
         });
       } else {
-        // プロフィールが見つからない場合はデフォルト値
+        console.log('出品者プロフィールが見つかりません - 商品データのsellerNameを使用');
+        // プロフィールが見つからない場合は商品データのsellerNameを使用
         setSellerProfile({
-          displayName: '名無しユーザー',
+          uid: actualUid,
+          displayName: product?.sellerName || '名無しユーザー',
+          username: 'user',
           photoURL: '',
           bio: '',
         });
@@ -132,7 +151,9 @@ export default function SellDetailPage() {
       console.error('出品者プロフィール取得エラー:', err);
       // エラーの場合もデフォルト値を設定
       setSellerProfile({
+        uid: '',
         displayName: '名無しユーザー',
+        username: 'user',
         photoURL: '',
         bio: '',
       });
@@ -401,8 +422,8 @@ export default function SellDetailPage() {
                 variant="ghost"
                 size="md"
                 className={`flex-1 ${isBookmarked
-                    ? 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
-                    : 'bg-white text-[#2FA3E3] hover:bg-blue-50'
+                  ? 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
+                  : 'bg-white text-[#2FA3E3] hover:bg-blue-50'
                   }`}
                 onClick={handleBookmark}
                 disabled={bookmarkLoading}
@@ -429,8 +450,8 @@ export default function SellDetailPage() {
               </div>
             </div>
           ) : sellerProfile ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
+            <Link href={`/profile/${sellerProfile.uid}`}>
+              <div className="flex items-center gap-4 p-4 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-[#2FA3E3]">
                 {sellerProfile.photoURL ? (
                   <Image
                     src={sellerProfile.photoURL}
@@ -445,17 +466,17 @@ export default function SellDetailPage() {
                     <User size={32} className="text-gray-600" />
                   </div>
                 )}
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold text-lg">{sellerProfile.displayName}</p>
-                  <p className="text-sm text-gray-600">出品者</p>
+                  <p className="text-sm text-gray-500">@{sellerProfile.username}</p>
+                  {sellerProfile.bio && (
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap mt-2 line-clamp-2">
+                      {sellerProfile.bio}
+                    </p>
+                  )}
                 </div>
               </div>
-              {sellerProfile.bio && (
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{sellerProfile.bio}</p>
-                </div>
-              )}
-            </div>
+            </Link>
           ) : (
             <div className="flex items-center gap-3">
               <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">

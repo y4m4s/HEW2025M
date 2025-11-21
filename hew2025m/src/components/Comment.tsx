@@ -42,7 +42,6 @@ export default function Comment({ productId, postId }: CommentProps) {
         throw new Error('コメントの取得に失敗しました');
       }
       const data = await response.json();
-      console.log('取得したコメント:', data.comments);
       setComments(data.comments || []);
     } catch (err) {
       console.error('コメント取得エラー:', err);

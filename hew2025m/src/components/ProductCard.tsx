@@ -41,7 +41,7 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
 
   if (variant === 'featured') {
     return (
-      <Link href={`/sellDetail/${product.id}`}>
+      <Link href={`/productDetail/${product.id}`}>
         <div className="bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer">
           <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-4xl text-gray-400">
             {product.imageUrl ? (
@@ -68,7 +68,7 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
   }
 
   return (
-    <Link href={`/sellDetail/${product.id}`}>
+    <Link href={`/productDetail/${product.id}`}>
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg hover:transform hover:-translate-y-1 transition-all duration-300 cursor-pointer">
       <div className="h-48 bg-gray-200 flex items-center justify-center text-4xl text-gray-400">
         {product.imageUrl ? (
