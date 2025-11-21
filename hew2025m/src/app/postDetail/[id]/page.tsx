@@ -122,9 +122,8 @@ export default function PostDetailPage() {
           {/* ヘッダー */}
           <div className="p-6 border-b">
             <div className="flex items-center justify-between mb-4">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium text-white ${
-                post.category === 'sea' ? 'bg-blue-500' : 'bg-green-500'
-              }`}>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium text-white ${post.category === 'sea' ? 'bg-blue-500' : 'bg-green-500'
+                }`}>
                 {getCategoryLabel(post.category)}
               </span>
               <div className="flex items-center gap-2 text-gray-500 text-sm">
@@ -146,7 +145,7 @@ export default function PostDetailPage() {
           </div>
 
           {/* 画像ギャラリー */}
-          {post.media && post.media.length > 0 && (
+          {post.media && post.media.length > 0 ? (
             <div className="bg-gray-100">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-4">
                 {post.media.map((item, index) => (
@@ -167,6 +166,11 @@ export default function PostDetailPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          ) : (
+            <div className="aspect-video bg-gray-200 rounded-lg flex flex-col items-center justify-center">
+              <Fish size={64} className="text-gray-400 mb-3" />
+              <p className="text-gray-500 text-sm">画像がありません</p>
             </div>
           )}
 
@@ -202,9 +206,8 @@ export default function PostDetailPage() {
             <div className="flex items-center gap-6 pt-4 border-t">
               <button
                 onClick={() => setIsLiked(!isLiked)}
-                className={`flex items-center gap-2 ${
-                  isLiked ? 'text-red-500' : 'text-gray-600 hover:text-red-500'
-                } transition-colors`}
+                className={`flex items-center gap-2 ${isLiked ? 'text-red-500' : 'text-gray-600 hover:text-red-500'
+                  } transition-colors`}
               >
                 <Heart size={20} className={isLiked ? 'fill-current' : ''} />
                 <span>{(post.likes || 0) + (isLiked ? 1 : 0)}</span>
