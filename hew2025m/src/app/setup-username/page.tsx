@@ -62,6 +62,7 @@ export default function SetupUsernamePage() {
       await setDoc(doc(db, "users", user.uid), {
         displayName: displayName || user.displayName || "名無しユーザー",
         username: username,
+        email: user.email || "",
         bio: "",
         photoURL: user.photoURL || "",
         createdAt: new Date().toISOString(),

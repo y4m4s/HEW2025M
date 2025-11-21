@@ -6,13 +6,15 @@ import Product from '@/models/Product';
 // 商品のコメント一覧を取得
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
 
+    const { id } = await params;
+
     // 商品が存在するか確認
-    const product = await Product.findById(params.id);
+    const product = await Product.findById(id);
     if (!product) {
       return NextResponse.json(
         { error: '商品が見つかりませんでした' },
@@ -21,7 +23,7 @@ export async function GET(
     }
 
     // コメントを取得（新しい順）
-    const comments = await Comment.find({ productId: params.id })
+    const comments = await Comment.find({ productId: id })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -41,13 +43,15 @@ export async function GET(
 // 新しいコメントを投稿
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
 
+    const { id } = await params;
+
     // 商品が存在するか確認
-    const product = await Product.findById(params.id);
+    const product = await Product.findById(id);
     if (!product) {
       return NextResponse.json(
         { error: '商品が見つかりませんでした' },
@@ -82,7 +86,7 @@ export async function POST(
 
     // コメントを作成
     const comment = await Comment.create({
-      productId: params.id,
+      productId: id,
       userId,
       userName,
       userPhotoURL: userPhotoURL || '',

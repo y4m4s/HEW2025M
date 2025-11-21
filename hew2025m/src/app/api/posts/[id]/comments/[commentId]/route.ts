@@ -5,11 +5,12 @@ import Comment from '@/models/Comment';
 // コメントを削除
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; commentId: string } }
+  { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
   try {
     await dbConnect();
 
+    const { commentId } = await params;
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
@@ -21,7 +22,7 @@ export async function DELETE(
     }
 
     // コメントを取得
-    const comment = await Comment.findById(params.commentId);
+    const comment = await Comment.findById(commentId);
 
     if (!comment) {
       return NextResponse.json(
@@ -39,7 +40,7 @@ export async function DELETE(
     }
 
     // コメントを削除
-    await Comment.findByIdAndDelete(params.commentId);
+    await Comment.findByIdAndDelete(commentId);
 
     return NextResponse.json({
       success: true,

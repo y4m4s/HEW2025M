@@ -6,13 +6,15 @@ import Post from '@/models/Post';
 // 投稿のコメント一覧を取得
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
 
+    const { id } = await params;
+
     // 投稿が存在するか確認
-    const post = await Post.findById(params.id);
+    const post = await Post.findById(id);
     if (!post) {
       return NextResponse.json(
         { error: '投稿が見つかりませんでした' },
@@ -21,7 +23,7 @@ export async function GET(
     }
 
     // コメントを取得（新しい順）
-    const comments = await Comment.find({ productId: params.id })
+    const comments = await Comment.find({ productId: id })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -41,13 +43,15 @@ export async function GET(
 // 新しいコメントを投稿
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
 
+    const { id } = await params;
+
     // 投稿が存在するか確認
-    const post = await Post.findById(params.id);
+    const post = await Post.findById(id);
     if (!post) {
       return NextResponse.json(
         { error: '投稿が見つかりませんでした' },
@@ -82,7 +86,7 @@ export async function POST(
 
     // コメントを作成（productIdフィールドに投稿IDを保存）
     const comment = await Comment.create({
-      productId: params.id, // 投稿IDを保存（モデル名はproductIdだが、汎用的に使用）
+      productId: id, // 投稿IDを保存（モデル名はproductIdだが、汎用的に使用）
       userId,
       userName,
       userPhotoURL: userPhotoURL || '',

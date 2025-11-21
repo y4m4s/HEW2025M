@@ -3,7 +3,7 @@ import { Twitter, Facebook, Instagram, Youtube } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="bg-gradient-to-r from-[#2c3e50] to-[#34495e] text-white py-16 mt-20 relative">
+    <footer className="bg-gradient-to-r from-[#2c3e50] to-[#34495e] text-white py-16 relative">
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8]"></div>
 
       <div className="container mx-auto px-5">
