@@ -1,5 +1,7 @@
 "use client";
+
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Fish } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
@@ -15,9 +17,10 @@ interface Product {
 
 interface ProfSellingProps {
   onCountChange?: (count: number) => void;
+  userId?: string; // 表示対象のユーザーID（指定がない場合は自分）
 }
 
-export default function ProfSelling({ onCountChange }: ProfSellingProps) {
+export default function ProfSelling({ onCountChange, userId }: ProfSellingProps) {
   const { user } = useAuth();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
@@ -25,13 +28,16 @@ export default function ProfSelling({ onCountChange }: ProfSellingProps) {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      if (!user) {
+      // 表示対象のユーザーIDを決定（指定があればそれを使用、なければ自分のID）
+      const targetUserId = userId || user?.uid;
+
+      if (!targetUserId) {
         setLoading(false);
         return;
       }
 
       try {
-        const sellerId = `user-${user.uid}`;
+        const sellerId = `user-${targetUserId}`;
         const response = await fetch(`/api/products?sellerId=${sellerId}&status=available`);
 
         if (!response.ok) {
@@ -57,7 +63,7 @@ export default function ProfSelling({ onCountChange }: ProfSellingProps) {
     };
 
     fetchProducts();
-  }, [user, onCountChange]);
+  }, [user, userId, onCountChange]);
 
   // 相対時間を計算する関数
   const getRelativeTime = (dateString: string) => {
@@ -100,9 +106,11 @@ export default function ProfSelling({ onCountChange }: ProfSellingProps) {
         >
           <div className="h-36 bg-gray-200 flex items-center justify-center overflow-hidden">
             {product.images && product.images.length > 0 ? (
-              <img
+              <Image
                 src={product.images[0]}
                 alt={product.title}
+                width={400}
+                height={300}
                 className="w-full h-full object-cover"
               />
             ) : (

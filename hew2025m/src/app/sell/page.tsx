@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { Camera, Fish, X } from 'lucide-react';
 import Button from '@/components/Button';
 import { useRouter } from 'next/navigation';
@@ -246,9 +247,11 @@ export default function SellPage() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                     {previewUrls.map((url, index) => (
                       <div key={index} className="relative group">
-                        <img
+                        <Image
                           src={url}
                           alt={`プレビュー ${index + 1}`}
+                          width={200}
+                          height={200}
                           className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
                         />
                         <button

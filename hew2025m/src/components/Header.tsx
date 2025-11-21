@@ -1,13 +1,16 @@
 "use client";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Bell, Mail, User as UserIcon, ShoppingCart } from "lucide-react";
+import Image from "next/image";
+import { useState, useEffect } from "react";
+import { Bell, Mail, User as UserIcon,  ShoppingCart } from "lucide-react";
 import Button from "@/components/Button";
 import LogoutModal from "@/components/LogoutModal";
 import { useAuth } from "@/lib/useAuth";
 import { useProfile } from "@/contexts/ProfileContext";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { useCartStore } from "@/components/useCartStore";
 
 export default function Header() {
@@ -16,6 +19,24 @@ export default function Header() {
   const cartItems = useCartStore((state) => state.items);
   const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+  // 未読通知数を取得
+  useEffect(() => {
+    if (!user) {
+      setUnreadNotificationCount(0);
+      return;
+    }
+
+    const notificationsRef = collection(db, 'users', user.uid, 'notifications');
+    const q = query(notificationsRef, where('isUnread', '==', true));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUnreadNotificationCount(snapshot.size);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
@@ -43,7 +64,7 @@ export default function Header() {
 
   return (
     <header className="bg-white py-4 px-10 border-b border-gray-200">
-      <div className="flex justify-around items-center mb-5">
+      <div className="flex justify-around items-center">
         <h1
           className="text-7xl font-bold text-[#2FA3E3]"
           style={{ fontFamily: "せのびゴシック, sans-serif" }}
@@ -77,10 +98,15 @@ export default function Header() {
             <>
               <Link
                 href="/notification"
-                className="flex justify-center items-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 text-lg transition-all duration-300 hover:bg-gray-200 hover:text-[#2FA3E3]"
+                className="relative flex justify-center items-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 text-lg transition-all duration-300 hover:bg-gray-200 hover:text-[#2FA3E3]"
                 aria-label="通知"
               >
                 <Bell size={18} />
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                  </span>
+                )}
               </Link>
 
               <Link
@@ -101,14 +127,17 @@ export default function Header() {
               </Link>
 
               <Link
-                href="/profile"
+                href={user?.uid ? `/profile/${user.uid}` : "/profile"}
                 className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
               >
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                   {profile.photoURL ? (
-                    <img
+                    <Image
                       src={profile.photoURL}
                       alt="プロフィール画像"
+                      width={32}
+                      height={32}
+                      quality={90}
                       className="w-full h-full object-cover"
                     />
                   ) : (

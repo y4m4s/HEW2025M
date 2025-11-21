@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useImperativeHandle, forwardRef } from "react";
 import { GoogleMap, Marker, InfoWindow, useJsApiLoader } from "@react-google-maps/api";
 
 const containerStyle = {
   width: "100%",
-  height: "400px",
+  height: "100%",
 };
 
-const center = {
+const defaultCenter = {
   lat: 35.6895,
   lng: 139.6917,
 };
@@ -16,13 +16,22 @@ interface MapProps {
   onMapClick?: (lat: number, lng: number) => void;
 }
 
-const Map: React.FC<MapProps> = ({ onMarkerClick, onMapClick }) => {
+export interface MapRef {
+  moveToCurrentLocation: () => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+}
+
+const Map = forwardRef<MapRef, MapProps>(({ onMarkerClick, onMapClick }, ref) => {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
   });
 
   const [posts, setPosts] = useState<any[]>([]);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [center, setCenter] = useState(defaultCenter);
+  const [zoom, setZoom] = useState(7);
 
   const handleMarkerClick = (post: any) => {
     setSelectedPost(post);
@@ -38,6 +47,50 @@ const Map: React.FC<MapProps> = ({ onMarkerClick, onMapClick }) => {
       onMapClick(lat, lng);
     }
   };
+
+  // 親コンポーネントから呼び出せるメソッドを公開
+  useImperativeHandle(ref, () => ({
+    moveToCurrentLocation: () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const newCenter = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            setCenter(newCenter);
+            setZoom(15); // 現在地に移動時はズームを拡大
+            if (map) {
+              map.panTo(newCenter);
+              map.setZoom(15);
+            }
+          },
+          (error) => {
+            console.error('位置情報の取得に失敗しました:', error);
+            alert('位置情報の取得に失敗しました。ブラウザの位置情報へのアクセスを許可してください。');
+          }
+        );
+      } else {
+        alert('このブラウザは位置情報に対応していません。');
+      }
+    },
+    zoomIn: () => {
+      if (map) {
+        const currentZoom = map.getZoom() || 7;
+        const newZoom = Math.min(currentZoom + 1, 20); // 最大ズーム20
+        setZoom(newZoom);
+        map.setZoom(newZoom);
+      }
+    },
+    zoomOut: () => {
+      if (map) {
+        const currentZoom = map.getZoom() || 7;
+        const newZoom = Math.max(currentZoom - 1, 1); // 最小ズーム1
+        setZoom(newZoom);
+        map.setZoom(newZoom);
+      }
+    },
+  }));
 
   useEffect(() => {
     fetch("/api/posts")
@@ -59,8 +112,9 @@ const Map: React.FC<MapProps> = ({ onMarkerClick, onMapClick }) => {
     <GoogleMap
       mapContainerStyle={containerStyle}
       center={center}
-      zoom={7}
+      zoom={zoom}
       onClick={handleMapClick}
+      onLoad={(map) => setMap(map)}
     >
       {posts.map((post, idx) => (
         <Marker
@@ -90,6 +144,8 @@ const Map: React.FC<MapProps> = ({ onMarkerClick, onMapClick }) => {
       )}
     </GoogleMap>
   );
-};
+});
+
+Map.displayName = 'Map';
 
 export default Map;

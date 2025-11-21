@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { Fish, MapPin, Heart, MessageCircle, User, Calendar, ArrowLeft } from 'lucide-react';
 import Button from '@/components/Button';
+import Comment from '@/components/Comment';
 
 interface PostDetail {
   _id: string;
@@ -150,9 +152,11 @@ export default function PostDetailPage() {
                 {post.media.map((item, index) => (
                   <div key={index} className="aspect-square bg-gray-200 rounded-lg overflow-hidden">
                     {item.mimeType.startsWith('image/') ? (
-                      <img
+                      <Image
                         src={item.url}
                         alt={`投稿画像${index + 1}`}
+                        width={600}
+                        height={600}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -215,26 +219,7 @@ export default function PostDetailPage() {
           {/* コメントセクション */}
           <div className="p-6 bg-gray-50 border-t">
             <h3 className="text-xl font-bold mb-4">コメント</h3>
-            {post.comments && post.comments.length > 0 ? (
-              <div className="space-y-4">
-                {post.comments.map((comment, index) => (
-                  <div key={index} className="bg-white p-4 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                        <User size={14} className="text-gray-600" />
-                      </div>
-                      <span className="font-medium">{comment.userName}</span>
-                      <span className="text-sm text-gray-500">
-                        {formatDate(comment.createdAt.toString())}
-                      </span>
-                    </div>
-                    <p className="text-gray-700 ml-10">{comment.content}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">まだコメントがありません</p>
-            )}
+            <Comment postId={params.id as string} />
           </div>
         </article>
       </div>

@@ -5,12 +5,13 @@ import Post from '@/models/Post';
 // 個別投稿を取得
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
 
-    const post = await Post.findById(params.id);
+    const { id } = await params;
+    const post = await Post.findById(id);
 
     if (!post) {
       return NextResponse.json(

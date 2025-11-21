@@ -1,5 +1,7 @@
 "use client";
+
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { User, X } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
@@ -182,9 +184,12 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile }: Profile
           {/* Avatar Preview */}
           <div className="w-28 h-28 mb-3 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
             {previewURL || editProfile.photoURL ? (
-              <img
+              <Image
                 src={previewURL || editProfile.photoURL}
                 alt="プロフィール画像"
+                width={112}
+                height={112}
+                quality={90}
                 className="w-full h-full object-cover"
               />
             ) : (

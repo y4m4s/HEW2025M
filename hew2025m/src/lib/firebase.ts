@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, initializeFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, Firestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics } from "firebase/analytics";
 
@@ -29,7 +29,7 @@ provider.setCustomParameters({
 const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 
 // Firestoreの初期化（シンプル化・高速化）
-let db;
+let db: Firestore;
 try {
   // 既に初期化されているか確認
   db = getFirestore(app);

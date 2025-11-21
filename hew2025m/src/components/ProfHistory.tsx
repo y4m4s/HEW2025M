@@ -1,5 +1,7 @@
 "use client";
+
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Fish } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 
@@ -14,22 +16,26 @@ interface Product {
 
 interface ProfHistoryProps {
   onCountChange?: (count: number) => void;
+  userId?: string; // 表示対象のユーザーID（指定がない場合は自分）
 }
 
-export default function ProfHistory({ onCountChange }: ProfHistoryProps) {
+export default function ProfHistory({ onCountChange, userId }: ProfHistoryProps) {
   const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
-      if (!user) {
+      // 表示対象のユーザーIDを決定（指定があればそれを使用、なければ自分のID）
+      const targetUserId = userId || user?.uid;
+
+      if (!targetUserId) {
         setLoading(false);
         return;
       }
 
       try {
-        const sellerId = `user-${user.uid}`;
+        const sellerId = `user-${targetUserId}`;
         // 出品履歴は販売済み(sold)と予約済み(reserved)を含む
         const response = await fetch(`/api/products?sellerId=${sellerId}`);
 
@@ -60,7 +66,7 @@ export default function ProfHistory({ onCountChange }: ProfHistoryProps) {
     };
 
     fetchProducts();
-  }, [user, onCountChange]);
+  }, [user, userId, onCountChange]);
 
   // 相対時間を計算する関数
   const getRelativeTime = (dateString: string) => {
@@ -108,9 +114,11 @@ export default function ProfHistory({ onCountChange }: ProfHistoryProps) {
         <div key={product._id} className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition opacity-75 cursor-pointer">
           <div className="h-36 bg-gray-200 flex items-center justify-center overflow-hidden">
             {product.images && product.images.length > 0 ? (
-              <img
+              <Image
                 src={product.images[0]}
                 alt={product.title}
+                width={400}
+                height={300}
                 className="w-full h-full object-cover"
               />
             ) : (
