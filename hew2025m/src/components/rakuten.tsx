@@ -10,7 +10,8 @@ interface RakutenItem {
   itemUrl: string;
   itemPrice: number;
   shopName: string;
-  mediumImageUrls: { imageUrl: string }[];
+  mediumImageUrls?: { imageUrl: string }[] | string[];
+  imageUrl?: string; // 代替画像URL
 }
 
 // 2. コンポーネントが受け取るpropsのインターフェース
@@ -42,8 +43,8 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
         }
         const data = await response.json();
         // formatVersion=2のAPIは、'Items'配列に直接商品を返します。
-        // 配列の各要素がすでに商品オブジェクトです。
-        // 'item.Item'にマッピングする必要はありません。
+        console.log('Rakuten API Response:', data);
+        console.log('First item:', data.Items?.[0]);
         setRakutenProducts(data.Items || []);
       } catch (err) {
         console.error('Rakuten API error:', err);
@@ -62,18 +63,38 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
       <h2 className="text-2xl font-bold mb-6 text-center text-blue-700 tracking-wide">
         Rakuten 関連商品ランキング 🛍️
       </h2>
-      
 
       <div className="space-y-6">
         {rakutenLoading ? (
-          <p className="text-center text-gray-500">関連商品を検索中...</p>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 animate-pulse">
+                <div className="w-20 h-20 bg-gray-200 rounded"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : rakutenProducts.length > 0 ? (
           rakutenProducts.map((p, idx) => {
-
             // --- 画像の安全性チェック ---
-            const imageUrl = (p.mediumImageUrls && p.mediumImageUrls.length > 0 && p.mediumImageUrls[0])
-              ? p.mediumImageUrls[0].imageUrl.replace('?_ex=128x128', '') // すべて存在する場合は楽天の画像を使用
-              : 'https://placehold.co/80x80/e9ecef/6c757d?text=画像なし'; // 安全なプレースホルダーを使用
+            let imageUrl = 'https://placehold.co/80x80/e9ecef/6c757d?text=画像なし';
+
+            if (p.mediumImageUrls && p.mediumImageUrls.length > 0) {
+              const firstImage = p.mediumImageUrls[0];
+              if (typeof firstImage === 'string') {
+                // 文字列の場合
+                imageUrl = firstImage.split('?')[0];
+              } else if (firstImage && typeof firstImage === 'object' && 'imageUrl' in firstImage) {
+                // オブジェクトの場合
+                imageUrl = firstImage.imageUrl.replace('?_ex=128x128', '');
+              }
+            } else if (p.imageUrl) {
+              // 代替のimageUrlフィールドがある場合
+              imageUrl = p.imageUrl.split('?')[0];
+            }
 
             return (
               <div
@@ -84,7 +105,7 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
                   {idx + 1}.
                 </div>
                 <Image
-                  src={imageUrl} // 安全な変数を使用
+                  src={imageUrl}
                   alt={p.itemName}
                   width={80}
                   height={80}

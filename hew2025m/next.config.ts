@@ -26,6 +26,14 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'tshop.r10s.jp',
+      },
+      {
+        protocol: 'https',
+        hostname: 'item.rakuten.co.jp',
+      },
+      {
+        protocol: 'https',
         hostname: 'placehold.co',
       },
       {

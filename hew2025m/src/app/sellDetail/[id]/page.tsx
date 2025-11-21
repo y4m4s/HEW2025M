@@ -3,23 +3,14 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, ArrowLeft, Calendar, User, Bookmark } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, Calendar, User, Bookmark, Fish } from 'lucide-react';
 import Button from '@/components/Button';
 import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
+import RakutenProducts from '@/components/rakuten';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
-
-// 楽天インターフェース
-interface RakutenItem {
-  itemCode: string;
-  itemName: string;
-  itemUrl: string;
-  itemPrice: number;
-  shopName: string;
-  mediumImageUrls?: string[];
-}
 
 interface ProductDetail {
   _id: string;
@@ -46,10 +37,6 @@ export default function SellDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
-
-  // --- 楽天のロジックをここに移動 ---
-  const [rakutenProducts, setRakutenProducts] = useState<RakutenItem[]>([]);
-  const [rakutenLoading, setRakutenLoading] = useState(true);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
@@ -80,19 +67,12 @@ export default function SellDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product]);
 
-  // useEffect から楽天APIを呼び出す
-  // productが取得できたらキーワードで検索
-  useEffect(() => {
-    if (product) {
-      const keyword = getCategoryLabel(product.category);
-      fetchRakutenProducts(keyword);
-    }
-  }, [product]); // 依存配列: 'product'
   // ブックマーク状態をチェック
   useEffect(() => {
     if (user && params.id) {
       checkBookmarkStatus();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, params.id]);
 
   const checkBookmarkStatus = async () => {
@@ -160,30 +140,6 @@ export default function SellDetailPage() {
     }
   };
 
-  // --- 楽天APIを呼び出す関数 ---
-  const fetchRakutenProducts = async (keyword: string) => {
-    if (!keyword) {
-      setRakutenLoading(false);
-      return;
-    }
-    setRakutenLoading(true);
-    try {
-      const response = await fetch(
-        `https://app.rakuten.co.jp/services/api/IchibaItem/Search/20170706?applicationId=${process.env.NEXT_PUBLIC_RAKUTEN_APP_ID}&keyword=${encodeURIComponent(keyword)}&hits=6&formatVersion=2`
-      );
-      if (!response.ok) {
-        throw new Error('Rakuten API fetch failed');
-      }
-      const data = await response.json();
-      setRakutenProducts(data.Items || []);
-    } catch (err) {
-      console.error('Rakuten API error:', err);
-      setRakutenProducts([]);
-    } finally {
-      setRakutenLoading(false);
-    }
-  };
-  
   const formatPrice = (price: number) => {
     return `¥${price.toLocaleString()}`;
   };
@@ -319,9 +275,7 @@ export default function SellDetailPage() {
   }
 
 
-  const images = product.images.length > 0
-    ? product.images
-    : ["https://via.placeholder.com/400x300/e9ecef/6c757d?text=画像なし"];
+  const hasImages = product.images && product.images.length > 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -365,54 +319,64 @@ export default function SellDetailPage() {
               </div>
 
               <div className="relative">
-                <div className="relative overflow-hidden rounded-lg bg-gray-100">
-                  <div
-                    className="flex transition-transform duration-300 ease-in-out"
-                    style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-                  >
-                    {images.map((src, index) => (
-                      <div key={index} className="w-full flex-shrink-0">
-                        <Image
-                          src={src}
-                          alt={`商品画像${index + 1}`}
-                          width={800}
-                          height={600}
-                          className="w-full h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => handleImageClick(index)}
-                        />
+                {hasImages ? (
+                  <>
+                    <div className="relative overflow-hidden rounded-lg bg-gray-100">
+                      <div
+                        className="flex transition-transform duration-300 ease-in-out"
+                        style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                      >
+                        {product.images.map((src, index) => (
+                          <div key={index} className="w-full flex-shrink-0">
+                            <Image
+                              src={src}
+                              alt={`商品画像${index + 1}`}
+                              width={800}
+                              height={600}
+                              className="w-full h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => handleImageClick(index)}
+                            />
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
 
-                  {images.length > 1 && (
-                    <>
-                      <button
-                        onClick={prevSlide}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
-                      >
-                        <ChevronLeft size={20} />
-                      </button>
-                      <button
-                        onClick={nextSlide}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
-                      >
-                        <ChevronRight size={20} />
-                      </button>
-                    </>
-                  )}
-                </div>
+                      {product.images.length > 1 && (
+                        <>
+                          <button
+                            onClick={prevSlide}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
+                          >
+                            <ChevronLeft size={20} />
+                          </button>
+                          <button
+                            onClick={nextSlide}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
+                          >
+                            <ChevronRight size={20} />
+                          </button>
+                        </>
+                      )}
+                    </div>
 
-                {images.length > 1 && (
-                  <div className="flex justify-center mt-4 gap-2">
-                    {images.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => goToSlide(index)}
-                        className={`w-3 h-3 rounded-full transition-colors ${
-                          currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
-                        }`}
-                      />
-                    ))}
+                    {product.images.length > 1 && (
+                      <div className="flex justify-center mt-4 gap-2">
+                        {product.images.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => goToSlide(index)}
+                            className={`w-3 h-3 rounded-full transition-colors ${
+                              currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="relative overflow-hidden rounded-lg bg-gray-200">
+                    <div className="w-full h-80 flex items-center justify-center">
+                      <Fish size={120} className="text-gray-400" />
+                    </div>
                   </div>
                 )}
               </div>
@@ -546,82 +510,20 @@ export default function SellDetailPage() {
           <Comment productId={params.id as string} />
         </section>
 
-        {/* 楽天セクション */}
-        <section className="mt-16 bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-          <h2 className="text-2xl font-bold mb-6 text-center text-blue-700 tracking-wide">
-            Rakuten 関連商品ランキング 🛍️
-          </h2>
-          <div className="space-y-6">
-            {rakutenLoading ? (
-              // 楽天ローディング中
-              <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-4 animate-pulse">
-                    <div className="w-20 h-20 bg-gray-200 rounded"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : rakutenProducts.length > 0 ? (
-              rakutenProducts.map((p, idx) => {
+        {/* 楽天関連商品セクション */}
+        <RakutenProducts keyword={product ? getCategoryLabel(product.category) : ''} />
 
-                // 画像URLの取得
-                const imageUrl = (p.mediumImageUrls && p.mediumImageUrls.length > 0 && p.mediumImageUrls[0])
-                  ? p.mediumImageUrls[0].split('?')[0] // p.mediumImageUrls[0] に直接アクセス
-                  : 'https://placehold.co/80x80/e9ecef/6c757d?text=画像なし'; // フォールバック画像
-
-                return (
-                  <div
-                    key={p.itemCode}
-                    className="flex items-start gap-4 border-b pb-4 last:border-none"
-                  >
-                    <div className="text-2xl font-bold text-blue-600 w-8 text-center">
-                      {idx + 1}.
-                    </div>
-                    <Image
-                      src={imageUrl}
-                      alt={p.itemName}
-                      width={80}
-                      height={80}
-                      quality={90}
-                      className="w-20 h-20 object-cover rounded border"
-                    />
-                    <div className="flex-1">
-                      <a
-                        href={p.itemUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-semibold text-blue-600 hover:underline text-sm"
-                      >
-                        {p.itemName}
-                      </a>
-                      <div className="text-sm text-gray-500 mt-1">
-                        ショップ: {p.shopName}
-                      </div>
-                      <div className="text-lg font-bold text-gray-800 mt-1">
-                        ¥{p.itemPrice.toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-center text-gray-500">関連する商品が見つかりませんでした。</p>
-            )}
-          </div>
-        </section>
       </main>
 
       {/* 画像モーダル */}
-      <ImageModal
-        images={images}
-        initialIndex={modalImageIndex}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      />
+      {hasImages && (
+        <ImageModal
+          images={product.images}
+          initialIndex={modalImageIndex}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        />
+      )}
     </div>
   );
 }
