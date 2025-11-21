@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { User, Send, Search, Menu, X } from 'lucide-react';
 import Image from 'next/image';
-import { useNotificationStore } from '@/store/useNotificationStore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/useAuth';
 import {
@@ -74,8 +73,6 @@ export default function MessagePage() {
   // レスポンシブ対応: モバイル用のサイドバー表示制御
   const [showSidebar, setShowSidebar] = useState(false);
   const [showProfileSidebar, setShowProfileSidebar] = useState(false);
-
-  const addNotification = useNotificationStore(state => state.addNotification);
 
   // URLクエリパラメータから userId を取得して、自動的にユーザーを選択（初回のみ）
   const hasLoadedFromUrl = useRef(false);
