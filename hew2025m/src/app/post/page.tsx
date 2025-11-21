@@ -6,7 +6,6 @@ import { Upload, MapPin, X } from 'lucide-react';
 import Button from '@/components/Button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import MapModal, { LocationData } from '@/components/MapModal';
-import WeatherWidget from '@/components/WeatherWidget';
 
 
 export default function Post() {
@@ -371,13 +370,6 @@ export default function Post() {
                 </div>
               )}
             </div>
-
-            {/* 天気情報ウィジェット */}
-            {location && (
-              <div>
-                <WeatherWidget latitude={location.lat} longitude={location.lng} />
-              </div>
-            )}
 
             {/* 進行状況表示 */}
             {uploadProgress && (
