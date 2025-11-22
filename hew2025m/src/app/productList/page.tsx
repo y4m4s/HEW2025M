@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ProductCard, { Product } from '@/components/ProductCard';
 import Button from '@/components/Button';
-import { Fish, Search } from 'lucide-react';
+import { Fish, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
@@ -19,6 +21,10 @@ export default function SearchPage() {
   const [sortBy, setSortBy] = useState('newest');
   const [keyword, setKeyword] = useState('');
 
+  // ページネーション
+  const [currentPage, setCurrentPage] = useState(1);
+  const PRODUCTS_PER_PAGE = 12;
+
   // URLパラメータが変更された時にカテゴリを更新
   useEffect(() => {
     const categoryParam = searchParams.get('category') || '';
@@ -27,9 +33,30 @@ export default function SearchPage() {
 
   // フィルター変更時にデータ取得
   useEffect(() => {
+    setCurrentPage(1); // Reset to first page when filters change
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, condition, priceRange, sortBy, keyword]);
+
+  // Firestoreからユーザー情報を取得
+  const fetchUserProfile = async (sellerId: string) => {
+    try {
+      const uid = sellerId.startsWith('user-') ? sellerId.replace('user-', '') : sellerId;
+      const userDocRef = doc(db, 'users', uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        return {
+          displayName: userData.displayName || undefined,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('ユーザー情報取得エラー:', error);
+      return null;
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -48,24 +75,36 @@ export default function SearchPage() {
 
       const data = await response.json();
 
-      // データベースのデータをProduct型に変換
-      const formattedProducts: Product[] = data.products.map((product: {
-        _id: string;
-        title: string;
-        price: number;
-        condition: string;
-        images?: string[];
-        sellerName?: string;
-        createdAt: string;
-      }) => ({
-        id: product._id, // ObjectIDをそのまま使用
-        name: product.title,
-        price: product.price,
-        location: product.sellerName || '出品者未設定',
-        condition: formatCondition(product.condition),
-        postedDate: formatDate(product.createdAt),
-        imageUrl: product.images?.[0]
-      }));
+      // データベースのデータをProduct型に変換 + Firestoreからユーザー情報取得
+      const formattedProducts: Product[] = await Promise.all(
+        data.products.map(async (product: {
+          _id: string;
+          title: string;
+          price: number;
+          condition: string;
+          images?: string[];
+          sellerId?: string;
+          sellerName?: string;
+          createdAt: string;
+        }) => {
+          // Firestoreから最新のユーザー情報を取得
+          let sellerDisplayName: string = product.sellerName || '出品者未設定';
+          if (product.sellerId) {
+            const userProfile = await fetchUserProfile(product.sellerId);
+            sellerDisplayName = userProfile?.displayName || product.sellerName || '出品者未設定';
+          }
+
+          return {
+            id: product._id,
+            name: product.title,
+            price: product.price,
+            location: sellerDisplayName,
+            condition: formatCondition(product.condition),
+            postedDate: formatDate(product.createdAt),
+            imageUrl: product.images?.[0]
+          };
+        })
+      );
 
       // フィルタリング（価格帯とキーワード）
       let filtered = formattedProducts;
@@ -161,6 +200,43 @@ export default function SearchPage() {
     // 'newest' と 'popular' はAPIでソート済み
 
     return sorted;
+  };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+  const endIndex = startIndex + PRODUCTS_PER_PAGE;
+  const paginatedProducts = products.slice(startIndex, endIndex);
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) {
+      // Show all pages if 7 or fewer
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Always show first page
+      pages.push(1);
+
+      if (currentPage > 3) {
+        pages.push('...');
+      }
+
+      // Show pages around current page
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+        pages.push(i);
+      }
+
+      if (currentPage < totalPages - 2) {
+        pages.push('...');
+      }
+
+      // Always show last page
+      pages.push(totalPages);
+    }
+    return pages;
   };
 
   return (
@@ -284,11 +360,57 @@ export default function SearchPage() {
                 <p className="text-gray-500 text-sm">条件を変えて検索してみてください</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+                  {paginatedProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+
+                {products.length > PRODUCTS_PER_PAGE && (
+                  <div className="flex justify-center items-center gap-4 mt-8">
+                    <Button
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(prev => prev - 1)}
+                      variant="ghost"
+                      size="md"
+                      className={currentPage === 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}
+                      icon={<ChevronLeft size={16} />}
+                    >
+                      前へ
+                    </Button>
+
+                    <div className="flex gap-2">
+                      {getPageNumbers().map((page, index) => (
+                        page === '...' ? (
+                          <span key={`ellipsis-${index}`} className="px-2 flex items-center">...</span>
+                        ) : (
+                          <Button
+                            key={page}
+                            onClick={() => setCurrentPage(page as number)}
+                            variant={currentPage === page ? "primary" : "ghost"}
+                            size="sm"
+                            className={currentPage === page ? "w-8 h-8 p-0" : "w-8 h-8 p-0 bg-gray-100 hover:bg-gray-200"}
+                          >
+                            {page}
+                          </Button>
+                        )
+                      ))}
+                    </div>
+
+                    <Button
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(prev => prev + 1)}
+                      variant={currentPage === totalPages ? "ghost" : "primary"}
+                      size="md"
+                      className={currentPage === totalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""}
+                      icon={<ChevronRight size={16} />}
+                    >
+                      次へ
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
