@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useCartStore } from '@/components/useCartStore';
 import Button from '@/components/Button';
 import { Trash2, ShoppingCart } from 'lucide-react';
-import { loadStripe } from '@stripe/stripe-js';
 
 
 export default function CartPage() {
@@ -17,7 +17,6 @@ export default function CartPage() {
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
     setIsMounted(true);
-    console.log("Public Stripe Key:", process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY)
   }, []);
 
   // サーバーサイドレンダリングとクライアントの表示の差異によるエラーを防ぎます
@@ -55,15 +54,27 @@ export default function CartPage() {
             <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md space-y-4">
               {items.map((item) => (
                 <div key={item.id} className="flex items-center gap-4 border-b pb-4 last:border-b-0 last:pb-0">
-                  <img src={item.image || "https://via.placeholder.com/150"} alt={item.title} className="w-24 h-24 object-cover rounded-md border" />
+                  <div className="relative w-24 h-24 flex-shrink-0">
+                    <Image
+                      src={item.image || "https://via.placeholder.com/150"}
+                      alt={item.title}
+                      width={96}
+                      height={96}
+                      className="object-cover rounded-md border"
+                    />
+                  </div>
                   <div className="flex-1">
                     <h3 className="font-semibold">{item.title}</h3>
                     <p className="text-lg font-bold text-[#2FA3E3]">¥{item.price.toLocaleString()}</p>
                   </div>
                   {/* ここが削除ボタンです */}
-                  <Button onClick={() => removeItem(item.id)} variant="ghost" size="icon">
+                  <button
+                    onClick={() => removeItem(item.id)}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    aria-label="カートから削除"
+                  >
                     <Trash2 size={20} className="text-red-500" />
-                  </Button>
+                  </button>
                 </div>
               ))}
             </div>

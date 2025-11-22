@@ -1,11 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { Fish, MapPin, Heart, MessageCircle, User, Calendar, ArrowLeft } from 'lucide-react';
+import { Fish, MapPin, Heart, MessageCircle, User, Calendar, ArrowLeft, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '@/components/Button';
 import Comment from '@/components/Comment';
+import ImageModal from '@/components/ImageModal';
+import CancelModal from '@/components/CancelModal';
+import { useAuth } from '@/lib/useAuth';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import toast from 'react-hot-toast';
 
 interface PostDetail {
   _id: string;
@@ -38,18 +45,19 @@ interface PostDetail {
 export default function PostDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [post, setPost] = useState<PostDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalImageIndex, setModalImageIndex] = useState(0);
+  const [authorPhotoURL, setAuthorPhotoURL] = useState<string | undefined>(undefined);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  useEffect(() => {
-    if (params.id) {
-      fetchPost();
-    }
-  }, [params.id]);
-
-  const fetchPost = async () => {
+  const fetchPost = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -61,13 +69,37 @@ export default function PostDetailPage() {
 
       const data = await response.json();
       setPost(data.post);
+
+      // 投稿者のアイコン画像を取得
+      if (data.post.authorId) {
+        const uid = data.post.authorId.startsWith('user-')
+          ? data.post.authorId.replace('user-', '')
+          : data.post.authorId;
+
+        try {
+          const userDocRef = doc(db, 'users', uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            setAuthorPhotoURL(userData.photoURL || undefined);
+          }
+        } catch (error) {
+          console.error('ユーザー情報取得エラー:', error);
+        }
+      }
     } catch (err) {
       console.error('投稿取得エラー:', err);
       setError(err instanceof Error ? err.message : '投稿の取得に失敗しました');
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    if (params.id) {
+      fetchPost();
+    }
+  }, [params.id, fetchPost]);
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -85,6 +117,78 @@ export default function PostDetailPage() {
     if (category === 'river') return '川釣り';
     return 'その他';
   };
+
+  const handleDelete = () => {
+    if (!post || !user) return;
+
+    // 自分の投稿かどうか確認
+    if (post.authorId !== user.uid && post.authorId !== `user-${user.uid}`) {
+      alert('自分の投稿のみ削除できます');
+      return;
+    }
+
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!post || !user) return;
+
+    try {
+      setDeleting(true);
+      const response = await fetch(`/api/posts/${params.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('投稿の削除に失敗しました');
+      }
+
+      toast.success('投稿を削除しました');
+      setShowDeleteModal(false);
+      router.push('/community');
+    } catch (err) {
+      console.error('投稿削除エラー:', err);
+      alert(err instanceof Error ? err.message : '投稿の削除に失敗しました');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // カルーセルのナビゲーション
+    const nextSlide = () => {
+      if (post?.media && post.media.length > 0) {
+        const len = post.media.length;
+        setCurrentSlide((prev) => (prev + 1) % len);
+      }
+    };
+  
+    const prevSlide = () => {
+      if (post?.media && post.media.length > 0) {
+        const len = post.media.length;
+        setCurrentSlide((prev) => (prev - 1 + len) % len);
+      }
+    };
+  
+    const goToSlide = (index: number) => {
+      setCurrentSlide(index);
+    };
+
+  // 画像クリック時にモーダルを開く
+  const handleImageClick = (index: number) => {
+    setModalImageIndex(index);
+    setIsModalOpen(true);
+  };
+
+  // モーダルを閉じる
+  const handleCloseModal = (finalIndex?: number) => {
+    setIsModalOpen(false);
+    if (finalIndex !== undefined) {
+      setCurrentSlide(finalIndex);
+    }
+  };
+
+  // 自分の投稿かどうかを判定
+  const isOwnPost = user && post && (post.authorId === user.uid || post.authorId === `user-${user.uid}`);
 
   if (loading) {
     return (
@@ -122,9 +226,8 @@ export default function PostDetailPage() {
           {/* ヘッダー */}
           <div className="p-6 border-b">
             <div className="flex items-center justify-between mb-4">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium text-white ${
-                post.category === 'sea' ? 'bg-blue-500' : 'bg-green-500'
-              }`}>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium text-white ${post.category === 'sea' ? 'bg-blue-500' : 'bg-green-500'
+                }`}>
                 {getCategoryLabel(post.category)}
               </span>
               <div className="flex items-center gap-2 text-gray-500 text-sm">
@@ -133,40 +236,104 @@ export default function PostDetailPage() {
               </div>
             </div>
 
-            <h1 className="text-3xl font-bold text-gray-800 mb-4">{post.title}</h1>
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-3xl font-bold text-gray-800">{post.title}</h1>
+              {isOwnPost && (
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="投稿を削除"
+                >
+                  <Trash2 size={20} />
+                  <span className="text-sm font-medium">{deleting ? '削除中...' : '削除'}</span>
+                </button>
+              )}
+            </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                <User size={20} className="text-gray-600" />
+            <Link
+              href={`/profile/${post.authorId.startsWith('user-') ? post.authorId.replace('user-', '') : post.authorId}`}
+              className="flex items-center gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors cursor-pointer"
+            >
+              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                {authorPhotoURL ? (
+                  <Image src={authorPhotoURL} alt={post.authorName} width={40} height={40} className="w-full h-full object-cover" />
+                ) : (
+                  <User size={20} className="text-gray-600" />
+                )}
               </div>
               <div>
-                <p className="font-medium text-gray-800">{post.authorName}</p>
+                <p className="font-medium text-gray-800 hover:text-[#2FA3E3] transition-colors">{post.authorName}</p>
               </div>
-            </div>
+            </Link>
           </div>
 
-          {/* 画像ギャラリー */}
-          {post.media && post.media.length > 0 && (
-            <div className="bg-gray-100">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-4">
-                {post.media.map((item, index) => (
-                  <div key={index} className="aspect-square bg-gray-200 rounded-lg overflow-hidden">
-                    {item.mimeType.startsWith('image/') ? (
-                      <Image
-                        src={item.url}
-                        alt={`投稿画像${index + 1}`}
-                        width={600}
-                        height={600}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Fish size={48} className="text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-                ))}
+          {/* 画像ギャラリー - カルーセル */}
+          {post.media && post.media.length > 0 ? (
+            <div className="bg-gray-100 p-4">
+              <div className="relative overflow-hidden rounded-lg bg-gray-200">
+                <div
+                  className="flex transition-transform duration-300 ease-in-out"
+                  style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                >
+                  {post.media.map((item, index) => (
+                    <div key={index} className="w-full flex-shrink-0">
+                      {item.mimeType.startsWith('image/') ? (
+                        <Image
+                          src={item.url}
+                          alt={`投稿画像${index + 1}`}
+                          width={800}
+                          height={600}
+                          className="w-full h-96 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => handleImageClick(index)}
+                        />
+                      ) : (
+                        <div className="w-full h-96 flex items-center justify-center">
+                          <Fish size={64} className="text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* ナビゲーションボタン（複数画像がある場合のみ） */}
+                {post.media && post.media.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevSlide}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <button
+                      onClick={nextSlide}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  </>
+                )}
               </div>
+
+              {/* インジケーター（複数画像がある場合のみ） */}
+              {post.media && post.media.length > 1 && (
+                <div className="flex justify-center mt-4 gap-2">
+                  {post.media.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => goToSlide(index)}
+                      className={`w-3 h-3 rounded-full transition-colors ${
+                        currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="aspect-video bg-gray-200 rounded-lg flex flex-col items-center justify-center">
+              <Fish size={64} className="text-gray-400 mb-3" />
+              <p className="text-gray-500 text-sm">画像がありません</p>
             </div>
           )}
 
@@ -202,9 +369,8 @@ export default function PostDetailPage() {
             <div className="flex items-center gap-6 pt-4 border-t">
               <button
                 onClick={() => setIsLiked(!isLiked)}
-                className={`flex items-center gap-2 ${
-                  isLiked ? 'text-red-500' : 'text-gray-600 hover:text-red-500'
-                } transition-colors`}
+                className={`flex items-center gap-2 ${isLiked ? 'text-red-500' : 'text-gray-600 hover:text-red-500'
+                  } transition-colors`}
               >
                 <Heart size={20} className={isLiked ? 'fill-current' : ''} />
                 <span>{(post.likes || 0) + (isLiked ? 1 : 0)}</span>
@@ -223,6 +389,62 @@ export default function PostDetailPage() {
           </div>
         </article>
       </div>
+
+      {/* 画像モーダル */}
+      {post.media && post.media.length > 0 && (
+        <ImageModal
+          images={post.media.filter(item => item.mimeType.startsWith('image/')).map(item => item.url)}
+          initialIndex={modalImageIndex}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        />
+      )}
+
+      {/* 削除確認モーダル */}
+      <CancelModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="投稿の削除"
+        message="この投稿を本当に削除しますか？この操作は取り消せません。"
+        isDeleting={deleting}
+      >
+        <div className="bg-white rounded-lg shadow-md overflow-hidden max-w-md w-full">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium text-white ${post.category === 'sea' ? 'bg-blue-500' : 'bg-green-500'}`}>
+                {getCategoryLabel(post.category)}
+              </span>
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <Calendar size={16} />
+                <span>{formatDate(post.createdAt)}</span>
+              </div>
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-3 line-clamp-2">{post.title}</h3>
+            {post.media && post.media.length > 0 && post.media[0].mimeType.startsWith('image/') ? (
+              <Image
+                src={post.media[0].url}
+                alt={post.title}
+                width={400}
+                height={300}
+                className="w-full h-48 object-cover rounded-lg mb-3"
+              />
+            ) : (
+              <div className="w-full h-48 bg-gray-200 rounded-lg flex flex-col items-center justify-center mb-3">
+                <Fish size={64} className="text-gray-400 mb-3" />
+                <p className="text-gray-500 text-sm">画像がありません</p>
+              </div>
+            )}
+            <p className="text-gray-700 text-sm line-clamp-3 mb-3">{post.content}</p>
+            {post.address && (
+              <div className="flex items-center gap-2 text-gray-600 text-sm">
+                <MapPin size={16} />
+                <span className="truncate">{post.address}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </CancelModal>
     </div>
   );
 }

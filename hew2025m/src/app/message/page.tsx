@@ -317,16 +317,6 @@ export default function MessagePage() {
     const myDoc = await getDoc(myDocRef);
     const myData = myDoc.data();
 
-    // デバッグ用ログ
-    console.log('=== 通知作成デバッグ ===');
-    console.log('MY_USER_ID:', MY_USER_ID);
-    console.log('partnerId:', partnerId);
-    console.log('myDoc exists:', myDoc.exists());
-    console.log('myData:', myData);
-    console.log('myData?.displayName:', myData?.displayName);
-    console.log('user.displayName (Google Auth):', user.displayName);
-    console.log('使用される displayName:', myData?.displayName || user.displayName || '不明なユーザー');
-
     // 相手の通知コレクションへの参照を作成
     const notificationRef = collection(db, 'users', partnerId, 'notifications');
 
@@ -342,12 +332,8 @@ export default function MessagePage() {
       linkUserId: MY_USER_ID, // 送信者のIDを保存（メッセージページで使用）
     };
 
-    console.log('通知データ (保存前):', notificationData);
-
     // 通知ドキュメントを作成
-    const docRef = await addDoc(notificationRef, notificationData);
-    console.log('通知作成完了 docRef.id:', docRef.id);
-    console.log('======================');
+    await addDoc(notificationRef, notificationData);
 
     // 自分の会話リストを更新（相手の情報を保存）
     await setDoc(

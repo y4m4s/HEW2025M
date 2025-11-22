@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import PostCard, { Post } from '@/components/PostCard';
 import Button from '@/components/Button';
 import { Fish, Plus, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function PostList() {
   const [activeFilter, setActiveFilter] = useState('all');
@@ -33,37 +35,58 @@ export default function PostList() {
 
       const data = await response.json();
 
-      // データベースのデータをPost型に変換
-      const formattedPosts: Post[] = data.posts.map((post: {
+      // データベースのデータをPost型に変換（authorPhotoURLを取得）
+      const formattedPosts: Post[] = await Promise.all(data.posts.map(async (post: {
         _id: string;
         title: string;
         content: string;
         tags?: string[];
         address?: string;
+        authorId: string;
         authorName: string;
         createdAt: string;
         likes?: number;
         comments?: unknown[];
         category?: string;
         media?: Array<{ url: string; order: number }>;
-      }) => ({
-        id: post._id,
-        title: post.title,
-        excerpt: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
-        fishName: extractFishName(post.tags),
-        fishSize: extractFishSize(post.tags),
-        fishWeight: extractFishWeight(post.tags),
-        fishCount: extractFishCount(post.tags),
-        location: post.address || '場所未設定',
-        author: post.authorName,
-        date: formatDate(post.createdAt),
-        likes: post.likes || 0,
-        comments: post.comments?.length || 0,
-        category: post.category || 'other',
-        isLiked: false,
-        imageUrl: post.media && post.media.length > 0
-          ? post.media.sort((a, b) => a.order - b.order)[0].url
-          : undefined
+      }) => {
+        // authorIdから "user-" プレフィックスを削除してFirestoreのuidを取得
+        const uid = post.authorId.startsWith('user-') ? post.authorId.replace('user-', '') : post.authorId;
+
+        // Firestoreからユーザー情報を取得
+        let authorPhotoURL: string | undefined;
+        try {
+          const userDocRef = doc(db, 'users', uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            authorPhotoURL = userData.photoURL || undefined;
+          }
+        } catch (error) {
+          console.error('ユーザー情報取得エラー:', error);
+        }
+
+        return {
+          id: post._id,
+          title: post.title,
+          excerpt: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
+          fishName: extractFishName(post.tags),
+          fishSize: extractFishSize(post.tags),
+          fishWeight: extractFishWeight(post.tags),
+          fishCount: extractFishCount(post.tags),
+          location: post.address || '場所未設定',
+          author: post.authorName,
+          authorId: post.authorId,
+          authorPhotoURL,
+          date: formatDate(post.createdAt),
+          likes: post.likes || 0,
+          comments: post.comments?.length || 0,
+          category: post.category || 'other',
+          isLiked: false,
+          imageUrl: post.media && post.media.length > 0
+            ? post.media.sort((a, b) => a.order - b.order)[0].url
+            : undefined
+        };
       }));
 
       setPosts(formattedPosts);

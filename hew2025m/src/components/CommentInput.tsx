@@ -7,12 +7,14 @@ interface CommentInputProps {
   onSubmit: (content: string) => Promise<void>;
   isSubmitting: boolean;
   maxLength?: number;
+  placeholder?: string;
 }
 
 export default function CommentInput({
   onSubmit,
   isSubmitting,
   maxLength = 140,
+  placeholder,
 }: CommentInputProps) {
   const [commentText, setCommentText] = useState('');
 
@@ -26,11 +28,12 @@ export default function CommentInput({
   };
 
   const isOverLimit = commentText.length > maxLength;
+  const defaultPlaceholder = `コメントを入力... (${maxLength}文字まで)`;
 
   return (
     <div className="mb-6">
       <textarea
-        placeholder={`コメントを入力... (${maxLength}文字まで)`}
+        placeholder={placeholder || defaultPlaceholder}
         value={commentText}
         onChange={(e) => setCommentText(e.target.value)}
         className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:border-[#2FA3E3] transition-colors"

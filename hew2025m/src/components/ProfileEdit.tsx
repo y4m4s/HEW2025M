@@ -18,9 +18,10 @@ interface ProfileEditProps {
   isOpen: boolean;
   onClose: () => void;
   currentProfile: UserProfile;
+  onSaveSuccess?: () => void; // 保存成功時のコールバック
 }
 
-export default function ProfileEdit({ isOpen, onClose, currentProfile }: ProfileEditProps) {
+export default function ProfileEdit({ isOpen, onClose, currentProfile, onSaveSuccess }: ProfileEditProps) {
   const { user } = useAuth();
   const [editProfile, setEditProfile] = useState<UserProfile>(currentProfile);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -72,6 +73,17 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile }: Profile
   const handleSaveProfile = async () => {
     if (!user) {
       alert("ユーザーが認証されていません");
+      return;
+    }
+
+    // 文字数チェック
+    if (editProfile.displayName.length > 15) {
+      alert("表示名は15文字以内で入力してください");
+      return;
+    }
+
+    if (editProfile.bio.length > 140) {
+      alert("自己紹介は140文字以内で入力してください");
       return;
     }
 
@@ -135,6 +147,11 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile }: Profile
         setPreviewURL("");
       }
       setSelectedFile(null);
+
+      // 保存成功時のコールバックを呼び出し
+      if (onSaveSuccess) {
+        onSaveSuccess();
+      }
 
       // モーダルを閉じる
       onClose();
@@ -212,9 +229,19 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile }: Profile
             type="text"
             value={editProfile.displayName}
             onChange={(e) => setEditProfile({ ...editProfile, displayName: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+              editProfile.displayName.length > 15
+                ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                : 'border-gray-300 focus:ring-[#2FA3E3]'
+            }`}
             placeholder="表示名を入力"
           />
+          <div className={`text-right text-sm mt-1 ${editProfile.displayName.length > 15 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+            {editProfile.displayName.length}/15文字
+            {editProfile.displayName.length > 15 && (
+              <span className="ml-2">({editProfile.displayName.length - 15}文字超過)</span>
+            )}
+          </div>
         </div>
 
         {/* ユーザー名（読み取り専用） */}
@@ -240,10 +267,24 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile }: Profile
           <textarea
             value={editProfile.bio}
             onChange={(e) => setEditProfile({ ...editProfile, bio: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2FA3E3] resize-none"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 resize-none transition-colors ${
+              editProfile.bio.length > 140
+                ? "border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500"
+                : "border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]"
+            }`}
             rows={4}
-            placeholder="自己紹介を入力"
+            placeholder="自己紹介を140字以内で入力してください。"
           />
+          <div
+            className={`text-right text-sm mt-1 ${
+              editProfile.bio.length > 140 ? "text-red-600 font-semibold" : "text-gray-500"
+            }`}
+          >
+            {editProfile.bio.length}/140文字
+            {editProfile.bio.length > 140 && (
+              <span className="ml-2">({editProfile.bio.length - 140}文字超過)</span>
+            )}
+          </div>
         </div>
 
         <button

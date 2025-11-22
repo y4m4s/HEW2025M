@@ -3,6 +3,32 @@ import dbConnect from '@/lib/mongodb';
 import Comment from '@/models/Comment';
 import Post from '@/models/Post';
 
+// コメントを階層構造に変換するヘルパー関数
+function organizeComments(comments: any[]) {
+  const commentMap = new Map();
+  const rootComments: any[] = [];
+
+  // まずすべてのコメントをマップに格納
+  comments.forEach((comment) => {
+    commentMap.set(comment._id.toString(), { ...comment, replies: [] });
+  });
+
+  // 親子関係を構築
+  comments.forEach((comment) => {
+    const commentWithReplies = commentMap.get(comment._id.toString());
+    if (comment.parentId) {
+      const parent = commentMap.get(comment.parentId);
+      if (parent) {
+        parent.replies.push(commentWithReplies);
+      }
+    } else {
+      rootComments.push(commentWithReplies);
+    }
+  });
+
+  return rootComments;
+}
+
 // 投稿のコメント一覧を取得
 export async function GET(
   request: NextRequest,
@@ -23,9 +49,12 @@ export async function GET(
     }
 
     // コメントを取得（新しい順）
-    const comments = await Comment.find({ productId: id })
+    const allComments = await Comment.find({ productId: id })
       .sort({ createdAt: -1 })
       .lean();
+
+    // コメントを階層構造に変換
+    const comments = organizeComments(allComments);
 
     return NextResponse.json({
       success: true,
@@ -60,7 +89,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { userId, userName, userPhotoURL, content } = body;
+    const { userId, userName, userPhotoURL, content, parentId } = body;
 
     // バリデーション
     if (!userId || !userName || !content) {
@@ -84,6 +113,17 @@ export async function POST(
       );
     }
 
+    // 返信の場合、親コメントが存在するか確認
+    if (parentId) {
+      const parentComment = await Comment.findById(parentId);
+      if (!parentComment) {
+        return NextResponse.json(
+          { error: '返信先のコメントが見つかりませんでした' },
+          { status: 404 }
+        );
+      }
+    }
+
     // コメントを作成（productIdフィールドに投稿IDを保存）
     const comment = await Comment.create({
       productId: id, // 投稿IDを保存（モデル名はproductIdだが、汎用的に使用）
@@ -91,6 +131,7 @@ export async function POST(
       userName,
       userPhotoURL: userPhotoURL || '',
       content: content.trim(),
+      parentId: parentId || undefined,
     });
 
     return NextResponse.json(

@@ -42,7 +42,6 @@ export default function Comment({ productId, postId }: CommentProps) {
         throw new Error('コメントの取得に失敗しました');
       }
       const data = await response.json();
-      console.log('取得したコメント:', data.comments);
       setComments(data.comments || []);
     } catch (err) {
       console.error('コメント取得エラー:', err);
@@ -52,7 +51,7 @@ export default function Comment({ productId, postId }: CommentProps) {
   };
 
   // コメントを投稿
-  const handleSubmitComment = async (content: string) => {
+  const handleSubmitComment = async (content: string, parentId?: string) => {
     if (!user) {
       alert('コメントするにはログインが必要です');
       router.push('/login');
@@ -76,9 +75,8 @@ export default function Comment({ productId, postId }: CommentProps) {
         userName: profile.displayName || user.displayName || 'ゲスト',
         userPhotoURL: profile.photoURL || user.photoURL || '',
         content: content,
+        parentId: parentId || undefined,
       };
-      console.log('送信するコメントデータ:', commentData);
-      console.log('プロフィール情報:', profile);
 
       const response = await fetch(`/api/${apiBasePath}/${targetId}/comments`, {
         method: 'POST',
@@ -100,6 +98,11 @@ export default function Comment({ productId, postId }: CommentProps) {
     } finally {
       setCommentSubmitting(false);
     }
+  };
+
+  // 返信を投稿
+  const handleReplyComment = async (parentId: string, content: string) => {
+    await handleSubmitComment(content, parentId);
   };
 
   // コメントを削除
@@ -146,6 +149,7 @@ export default function Comment({ productId, postId }: CommentProps) {
         loading={commentsLoading}
         currentUserId={user?.uid}
         onDeleteComment={handleDeleteComment}
+        onReply={handleReplyComment}
       />
     </div>
   );

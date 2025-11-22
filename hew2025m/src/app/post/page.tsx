@@ -6,11 +6,16 @@ import { Upload, MapPin, X } from 'lucide-react';
 import Button from '@/components/Button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import MapModal, { LocationData } from '@/components/MapModal';
+import { useAuth } from '@/lib/useAuth';
+import { useProfile } from '@/contexts/ProfileContext';
+import toast from 'react-hot-toast';
 
 
 export default function Post() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
+  const { profile } = useProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState('');
@@ -40,14 +45,26 @@ export default function Post() {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
+    // 最大4つまでの制限をチェック
+    const remainingSlots = 4 - selectedFiles.length;
+    if (remainingSlots <= 0) {
+      toast.error('メディアは最大4つまで添付できます');
+      return;
+    }
+
+    // 5つ以上選択された場合の警告
+    if (files.length > remainingSlots) {
+      toast.error(`メディアは最大4つまでです。選択された${files.length}個のうち、${remainingSlots}個のみ追加されます。`);
+    }
+
     // ファイルサイズとタイプのバリデーション
-    const validFiles = files.filter((file) => {
+    const validFiles = files.slice(0, remainingSlots).filter((file) => {
       if (file.size > 10 * 1024 * 1024) { // 10MB制限
-        alert(`${file.name} は10MBを超えています`);
+        toast.error(`${file.name} は10MBを超えています`);
         return false;
       }
       if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-        alert(`${file.name} は画像または動画ファイルではありません`);
+        toast.error(`${file.name} は画像または動画ファイルではありません`);
         return false;
       }
       return true;
@@ -55,7 +72,7 @@ export default function Post() {
 
     setSelectedFiles([...selectedFiles, ...validFiles]);
 
-    // プレビューURLを生成
+    // プレビURLを生成
     const newPreviewUrls = validFiles.map((file) => URL.createObjectURL(file));
     setPreviewUrls([...previewUrls, ...newPreviewUrls]);
   };
@@ -78,6 +95,12 @@ export default function Post() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // 最大4つまでの制限をチェック
+    if (selectedFiles.length >= 4) {
+      toast.error('メディアは最大4つまで添付できます');
+      return;
+    }
 
     const files = Array.from(e.dataTransfer.files);
     if (fileInputRef.current) {
@@ -105,13 +128,40 @@ export default function Post() {
 
     if (isSubmitting) return;
 
-    // 文字数チェック
-    if (title.length > 50) {
-      alert('件名は50文字以内で入力してください');
+    // ログインチェック
+    if (!user) {
+      router.push('/login');
       return;
     }
-    if (content.length > 140) {
-      alert('本文は140文字以内で入力してください');
+
+    // バリデーションチェック - エラーメッセージを収集
+    const errors: string[] = [];
+
+    if (!title) {
+      errors.push('件名を入力してください');
+    } else if (title.length > 50) {
+      errors.push('件名は50文字以内で入力してください');
+    }
+
+    if (!content) {
+      errors.push('本文を入力してください');
+    } else if (content.length > 140) {
+      errors.push('本文は140文字以内で入力してください');
+    }
+
+    // エラーがある場合はtoastで表示
+    if (errors.length > 0) {
+      toast.error(
+        <div className="flex flex-col">
+          <div className="font-bold mb-2">入力内容に不備があります</div>
+          <ul className="list-disc list-inside space-y-1 ml-1">
+            {errors.map((error, index) => (
+              <li key={index} className="text-sm">{error}</li>
+            ))}
+          </ul>
+        </div>,
+        { duration: 5000 }
+      );
       return;
     }
 
@@ -119,9 +169,10 @@ export default function Post() {
     setUploadProgress('投稿を準備中...');
 
     try {
-      // 投稿作成日時とユーザーIDを生成
+      // 投稿作成日時とユーザー情報を取得
       const timestamp = new Date().toISOString();
-      const authorId = 'user-' + Date.now(); // TODO: 実際のユーザーIDに置き換え
+      const authorId = `user-${user.uid}`;
+      const authorName = profile.displayName || user.displayName || '名無しユーザー';
 
       let uploadedMedia: Array<{
         url: string;
@@ -168,7 +219,7 @@ export default function Post() {
           category: '一般',
           media: uploadedMedia,
           authorId,
-          authorName: 'テストユーザー', // TODO: 実際のユーザー名に置き換え
+          authorName,
           tags: address ? [address] : [],
           address: address || undefined,
           location: location || undefined,
@@ -180,17 +231,19 @@ export default function Post() {
         throw new Error(errorData.error || '投稿の作成に失敗しました');
       }
 
-      // 成功したらリダイレクト
-      alert('投稿が作成されました！');
-
       // プレビューURLを解放
       previewUrls.forEach((url) => URL.revokeObjectURL(url));
 
-      // コミュニティページにリダイレクト
-      router.push('/community');
+      // トーストを表示してから画面遷移
+      toast.success('投稿しました');
+
+      // 少し待ってから遷移（トーストが表示されるように）
+      setTimeout(() => {
+        router.push('/postList');
+      }, 500);
     } catch (error) {
       console.error('投稿エラー:', error);
-      alert(error instanceof Error ? error.message : '投稿に失敗しました');
+      toast.error(error instanceof Error ? error.message : '投稿の作成に失敗しました');
       setIsSubmitting(false);
       setUploadProgress('');
     }
@@ -258,11 +311,11 @@ export default function Post() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                メディアをアップロード（任意）
+                メディアをアップロード（任意） ({selectedFiles.length}/4)
               </label>
               <div
                 className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => selectedFiles.length < 4 && fileInputRef.current?.click()}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
               >
@@ -274,7 +327,7 @@ export default function Post() {
                   ファイルをドラッグ&ドロップするか、クリックして選択
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  (最大10MB、複数選択可)
+                  (最大10MB、最大4つまで)
                 </p>
                 <input
                   ref={fileInputRef}
@@ -283,7 +336,7 @@ export default function Post() {
                   multiple
                   className="hidden"
                   onChange={handleFileSelect}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || selectedFiles.length >= 4}
                 />
               </div>
 

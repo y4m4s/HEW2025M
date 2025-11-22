@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Somente incluir locationData se estiver completo
+    // 投稿データを作成
     const postData: any = {
       title,
       content,
@@ -77,18 +77,16 @@ export async function POST(request: NextRequest) {
       authorId,
       authorName,
       tags: tags || [],
-      address: address || undefined,
-      location: location || undefined,
       likes: 0,
       comments: [],
     };
-    if (
-      locationData &&
-      typeof locationData.lat === 'number' &&
-      typeof locationData.lng === 'number' &&
-      typeof locationData.address === 'string' && locationData.address.trim() !== ''
-    ) {
-      postData.locationData = locationData;
+
+    // locationとaddressが存在する場合のみ追加
+    if (address) {
+      postData.address = address;
+    }
+    if (location && typeof location.lat === 'number' && typeof location.lng === 'number') {
+      postData.location = location;
     }
 
     // 投稿を作成

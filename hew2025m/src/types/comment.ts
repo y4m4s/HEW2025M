@@ -7,4 +7,6 @@ export interface Comment {
   content: string;
   createdAt: string;
   updatedAt: string;
+  parentId?: string; // 返信先のコメントID
+  replies?: Comment[]; // 返信コメントの配列
 }

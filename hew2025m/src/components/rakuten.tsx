@@ -43,8 +43,6 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
         }
         const data = await response.json();
         // formatVersion=2のAPIは、'Items'配列に直接商品を返します。
-        console.log('Rakuten API Response:', data);
-        console.log('First item:', data.Items?.[0]);
         setRakutenProducts(data.Items || []);
       } catch (err) {
         console.error('Rakuten API error:', err);

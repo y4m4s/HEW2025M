@@ -102,7 +102,7 @@ export default function ProfSelling({ onCountChange, userId }: ProfSellingProps)
         <div
           key={product._id}
           className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition cursor-pointer"
-          onClick={() => router.push(`/sellDetail/${product._id}`)}
+          onClick={() => router.push(`/productDetail/${product._id}`)}
         >
           <div className="h-36 bg-gray-200 flex items-center justify-center overflow-hidden">
             {product.images && product.images.length > 0 ? (

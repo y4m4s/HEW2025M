@@ -70,14 +70,12 @@ export default function NotificationPage() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const notifData: NotificationItem[] = snapshot.docs.map((doc) => {
         const data = doc.data();
-        console.log('通知ドキュメント取得:', doc.id, data); // デバッグ用
         return {
           id: doc.id,
           ...data,
           timestamp: data.timestamp, // timestampをそのまま保持します (または必要に応じてフォーマットします)
         } as NotificationItem;
       });
-      console.log('通知一覧 (変換後):', notifData); // デバッグ用
       setNotifications(notifData);
     });
 
@@ -135,13 +133,9 @@ export default function NotificationPage() {
   // --- 新規 ---
   // 通知をクリックした際の処理（遷移先に移動して既読にする）
   const handleNotificationClick = async (notification: NotificationItem) => {
-    console.log('通知クリック:', notification);
-    console.log('linkUserId:', notification.linkUserId);
-    console.log('link:', notification.link);
 
     // リンクがない場合は何もしない
     if (!notification.linkUserId && !notification.link) {
-      console.log('リンクがありません');
       return;
     }
 
@@ -153,11 +147,9 @@ export default function NotificationPage() {
     // 遷移先がある場合は移動
     if (notification.linkUserId) {
       // メッセージ通知の場合
-      console.log('メッセージページへ遷移:', notification.linkUserId);
       router.push(`/message?userId=${notification.linkUserId}`);
     } else if (notification.link) {
       // その他のリンクがある場合
-      console.log('リンク先へ遷移:', notification.link);
       router.push(notification.link);
     }
   };
