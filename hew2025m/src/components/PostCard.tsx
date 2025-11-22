@@ -32,7 +32,7 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
     return (
       <Link href={`/postDetail/${post.id}`}>
         <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer overflow-hidden h-[180px]">
-          <div className="flex gap-4 h-full">
+          <div className="flex h-full">
             {/* 画像 */}
             <div className="w-44 h-full flex-shrink-0 bg-gray-200 flex items-center justify-center">
               {post.imageUrl ? (
@@ -46,19 +46,23 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
             <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
               <div className="flex-1 min-h-0">
                 <h3 className="font-semibold text-lg mb-2 line-clamp-1">{post.title}</h3>
-                <p className="text-gray-600 text-sm mb-2 line-clamp-2">{post.excerpt}</p>
+                <p className="text-gray-600 text-sm m-1 line-clamp-2">{post.excerpt}</p>
 
-                {/* 位置情報 - 常に表示（スペースを確保） */}
-                <div className="flex items-center text-xs text-gray-500 mb-2 h-4">
-                  {post.location && post.location !== '場所未設定' ? (
-                    <>
-                      <MapPin size={12} className="mr-1 flex-shrink-0" />
-                      <span className="truncate">{post.location}</span>
-                    </>
-                  ) : (
+              </div>
+
+              {/* 位置情報 - 常に表示（スペースを確保） */}
+              <div className="flex items-center text-xs text-gray-500 mx-1 mb-2 h-4">
+                {post.location && post.location !== '場所未設定' ? (
+                  <>
+                    <MapPin size={12} className="mr-1 flex-shrink-0" />
+                    <span className="truncate">{post.location}</span>
+                  </>
+                ) : (
+                  <>
+                    <MapPin size={14} className="mr-1 flex-shrink-0 text-gray-400" />
                     <span className="text-gray-400">位置情報なし</span>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
 
               <div className="flex justify-between items-center text-sm text-gray-500 mt-auto">
@@ -99,17 +103,20 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
 
           <div className="p-8 flex flex-col flex-1">
             <h3 className="font-semibold text-xl mb-3 line-clamp-2">{post.title}</h3>
-            <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
+            <p className="text-gray-600 ml-2 mb-4 line-clamp-3">{post.excerpt}</p>
 
             {/* 位置情報 - 常に表示（スペースを確保） */}
-            <div className="flex items-center text-sm text-gray-600 mb-4 h-5">
+            <div className="flex items-center text-sm text-gray-600 ml-2 mb-4 h-5">
               {post.location && post.location !== '場所未設定' ? (
                 <>
                   <MapPin size={14} className="mr-1 flex-shrink-0" />
                   <span className="truncate">{post.location}</span>
                 </>
               ) : (
-                <span className="text-gray-400">位置情報なし</span>
+                <>
+                  <MapPin size={14} className="mr-1 flex-shrink-0 text-gray-400" />
+                  <span className="text-gray-400">位置情報なし</span>
+                </>
               )}
             </div>
 
@@ -153,8 +160,8 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
         </div>
 
         <div className="p-4 flex flex-col flex-1 min-h-0">
-          <h3 className="font-semibold text-lg mb-2 line-clamp-2">{post.title}</h3>
-          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{post.excerpt}</p>
+          <h3 className="font-semibold text-lg mb-1 line-clamp-2">{post.title}</h3>
+          <p className="text-gray-600 text-sm ml-1 mb-3 line-clamp-3">{post.excerpt}</p>
 
           <div className="space-y-2 mb-3 flex-shrink-0">
             <div className="flex flex-wrap gap-2 text-sm min-h-[28px]">
@@ -167,17 +174,20 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
                 <span className="bg-gray-100 px-2 py-1 rounded">{post.fishCount}</span>
               )}
             </div>
+          </div>
 
-            <div className="flex items-center text-sm text-gray-600 h-5">
-              {post.location && post.location !== '場所未設定' ? (
-                <>
-                  <MapPin size={14} className="mr-1 flex-shrink-0" />
-                  <span className="truncate">{post.location}</span>
-                </>
-              ) : (
+          <div className="flex items-center text-sm text-gray-600 h-5 mt-auto">
+            {post.location && post.location !== '場所未設定' ? (
+              <>
+                <MapPin size={14} className="mr-1 flex-shrink-0" />
+                <span className="truncate">{post.location}</span>
+              </>
+            ) : (
+              <>
+                <MapPin size={14} className="mr-1 flex-shrink-0 text-gray-400" />
                 <span className="text-gray-400">位置情報なし</span>
-              )}
-            </div>
+              </>
+            )}
           </div>
 
           <div className="flex justify-between items-center mt-auto pt-3 border-t">

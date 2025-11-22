@@ -534,11 +534,12 @@ export default function SellDetailPage() {
               id: product._id,
               name: product.title,
               price: product.price,
-              location: product.sellerName,
+              location: sellerProfile?.displayName || product.sellerName,
               condition: getConditionLabel(product.condition),
               postedDate: formatDate(product.createdAt),
               imageUrl: product.images[0] || undefined,
               status: product.status,
+              sellerPhotoURL: sellerProfile?.photoURL,
             }}
           />
         </div>

@@ -5,6 +5,8 @@ import Link from 'next/link';
 import ProductCard, { Product } from '@/components/ProductCard';
 import Button from '@/components/Button';
 import { Fish, Search, MapPin, Users, ArrowRight, Circle, Bug, Package, Shirt, Ship, Zap, Info } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -13,6 +15,27 @@ export default function Home() {
   useEffect(() => {
     fetchFeaturedProducts();
   }, []);
+
+  // Firestoreからユーザー情報を取得
+  const fetchUserProfile = async (sellerId: string) => {
+    try {
+      const uid = sellerId.startsWith('user-') ? sellerId.replace('user-', '') : sellerId;
+      const userDocRef = doc(db, 'users', uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        return {
+          displayName: userData.displayName || undefined,
+          photoURL: userData.photoURL || undefined,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('ユーザー情報取得エラー:', error);
+      return null;
+    }
+  };
 
   const fetchFeaturedProducts = async () => {
     try {
@@ -25,26 +48,41 @@ export default function Home() {
 
       const data = await response.json();
 
-      // 最新4件を取得
-      const formattedProducts: Product[] = data.products
-        .slice(0, 4)
-        .map((product: {
-          _id: string;
-          title: string;
-          price: number;
-          condition: string;
-          images?: string[];
-          sellerName?: string;
-          createdAt: string;
-        }) => ({
-          id: product._id,
-          name: product.title,
-          price: product.price,
-          location: product.sellerName || '出品者未設定',
-          condition: formatCondition(product.condition),
-          postedDate: formatDate(product.createdAt),
-          imageUrl: product.images?.[0]
-        }));
+      // 最新4件を取得 + Firestoreからユーザー情報取得
+      const formattedProducts: Product[] = await Promise.all(
+        data.products
+          .slice(0, 4)
+          .map(async (product: {
+            _id: string;
+            title: string;
+            price: number;
+            condition: string;
+            images?: string[];
+            sellerId?: string;
+            sellerName?: string;
+            createdAt: string;
+          }) => {
+            // Firestoreから最新のユーザー情報を取得
+            let sellerDisplayName: string = product.sellerName || '出品者未設定';
+            let sellerPhotoURL: string | undefined;
+            if (product.sellerId) {
+              const userProfile = await fetchUserProfile(product.sellerId);
+              sellerDisplayName = userProfile?.displayName || product.sellerName || '出品者未設定';
+              sellerPhotoURL = userProfile?.photoURL;
+            }
+
+            return {
+              id: product._id,
+              name: product.title,
+              price: product.price,
+              location: sellerDisplayName,
+              condition: formatCondition(product.condition),
+              postedDate: formatDate(product.createdAt),
+              imageUrl: product.images?.[0],
+              sellerPhotoURL,
+            };
+          })
+      );
 
       setFeaturedProducts(formattedProducts);
     } catch (err) {

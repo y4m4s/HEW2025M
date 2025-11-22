@@ -49,6 +49,7 @@ export default function SearchPage() {
         const userData = userDocSnap.data();
         return {
           displayName: userData.displayName || undefined,
+          photoURL: userData.photoURL || undefined,
         };
       }
       return null;
@@ -89,9 +90,11 @@ export default function SearchPage() {
         }) => {
           // Firestoreから最新のユーザー情報を取得
           let sellerDisplayName: string = product.sellerName || '出品者未設定';
+          let sellerPhotoURL: string | undefined;
           if (product.sellerId) {
             const userProfile = await fetchUserProfile(product.sellerId);
             sellerDisplayName = userProfile?.displayName || product.sellerName || '出品者未設定';
+            sellerPhotoURL = userProfile?.photoURL;
           }
 
           return {
@@ -101,7 +104,8 @@ export default function SearchPage() {
             location: sellerDisplayName,
             condition: formatCondition(product.condition),
             postedDate: formatDate(product.createdAt),
-            imageUrl: product.images?.[0]
+            imageUrl: product.images?.[0],
+            sellerPhotoURL,
           };
         })
       );

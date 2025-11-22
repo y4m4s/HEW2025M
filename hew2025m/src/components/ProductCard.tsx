@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Fish, MapPin } from 'lucide-react';
+import { Fish, User } from 'lucide-react';
 
 export interface Product {
   id: string;
@@ -11,6 +11,7 @@ export interface Product {
   postedDate: string;
   imageUrl?: string;
   status?: 'available' | 'sold' | 'reserved';
+  sellerPhotoURL?: string;
 }
 
 interface ProductCardProps {
@@ -84,10 +85,16 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
             <p className="text-xl font-bold text-[#2FA3E3] mb-3 break-words">
               {formatPrice(product.price)}
             </p>
-            <p className="flex items-center gap-1 text-gray-600 text-sm">
-              <MapPin size={16} />
-              {product.location}
-            </p>
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                {product.sellerPhotoURL ? (
+                  <Image src={product.sellerPhotoURL} alt={product.location} width={24} height={24} className="w-full h-full object-cover" />
+                ) : (
+                  <User size={12} className="text-gray-600" />
+                )}
+              </div>
+              <span className="text-gray-600 text-sm truncate">{product.location}</span>
+            </div>
           </div>
         </div>
       </Link>
@@ -118,8 +125,15 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
           <p className="text-xl font-bold text-[#2FA3E3] mb-2 break-words">
             {formatPrice(product.price)}
           </p>
-          <div className="flex items-center gap-1 text-sm text-gray-500 mb-2">
-            <MapPin size={16} /> <span className="truncate">{product.location}</span>
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+            <div className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+              {product.sellerPhotoURL ? (
+                <Image src={product.sellerPhotoURL} alt={product.location} width={20} height={20} className="w-full h-full object-cover" />
+              ) : (
+                <User size={10} className="text-gray-600" />
+              )}
+            </div>
+            <span className="truncate">{product.location}</span>
           </div>
           <div className="flex items-center justify-between gap-2">
             <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${getConditionColor(product.condition)}`}>
