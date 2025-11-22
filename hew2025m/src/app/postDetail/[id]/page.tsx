@@ -8,9 +8,11 @@ import { Fish, MapPin, Heart, MessageCircle, User, Calendar, ArrowLeft, Trash2, 
 import Button from '@/components/Button';
 import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
+import CancelModal from '@/components/CancelModal';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import toast from 'react-hot-toast';
 
 interface PostDetail {
   _id: string;
@@ -53,6 +55,7 @@ export default function PostDetailPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalImageIndex, setModalImageIndex] = useState(0);
   const [authorPhotoURL, setAuthorPhotoURL] = useState<string | undefined>(undefined);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const fetchPost = useCallback(async () => {
     try {
@@ -115,7 +118,7 @@ export default function PostDetailPage() {
     return 'その他';
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!post || !user) return;
 
     // 自分の投稿かどうか確認
@@ -124,9 +127,11 @@ export default function PostDetailPage() {
       return;
     }
 
-    if (!confirm('この投稿を削除しますか？この操作は取り消せません。')) {
-      return;
-    }
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!post || !user) return;
 
     try {
       setDeleting(true);
@@ -138,7 +143,8 @@ export default function PostDetailPage() {
         throw new Error('投稿の削除に失敗しました');
       }
 
-      alert('投稿を削除しました');
+      toast.success('投稿を削除しました');
+      setShowDeleteModal(false);
       router.push('/community');
     } catch (err) {
       console.error('投稿削除エラー:', err);
@@ -393,6 +399,52 @@ export default function PostDetailPage() {
           onClose={handleCloseModal}
         />
       )}
+
+      {/* 削除確認モーダル */}
+      <CancelModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="投稿の削除"
+        message="この投稿を本当に削除しますか？この操作は取り消せません。"
+        isDeleting={deleting}
+      >
+        <div className="bg-white rounded-lg shadow-md overflow-hidden max-w-md w-full">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium text-white ${post.category === 'sea' ? 'bg-blue-500' : 'bg-green-500'}`}>
+                {getCategoryLabel(post.category)}
+              </span>
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
+                <Calendar size={16} />
+                <span>{formatDate(post.createdAt)}</span>
+              </div>
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-3 line-clamp-2">{post.title}</h3>
+            {post.media && post.media.length > 0 && post.media[0].mimeType.startsWith('image/') ? (
+              <Image
+                src={post.media[0].url}
+                alt={post.title}
+                width={400}
+                height={300}
+                className="w-full h-48 object-cover rounded-lg mb-3"
+              />
+            ) : (
+              <div className="w-full h-48 bg-gray-200 rounded-lg flex flex-col items-center justify-center mb-3">
+                <Fish size={64} className="text-gray-400 mb-3" />
+                <p className="text-gray-500 text-sm">画像がありません</p>
+              </div>
+            )}
+            <p className="text-gray-700 text-sm line-clamp-3 mb-3">{post.content}</p>
+            {post.address && (
+              <div className="flex items-center gap-2 text-gray-600 text-sm">
+                <MapPin size={16} />
+                <span className="truncate">{post.address}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </CancelModal>
     </div>
   );
 }

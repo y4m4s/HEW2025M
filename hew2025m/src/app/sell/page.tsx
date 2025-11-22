@@ -7,6 +7,7 @@ import Button from '@/components/Button';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { useProfile } from '@/contexts/ProfileContext';
+import toast from 'react-hot-toast';
 
 // カテゴリの定義（表示名とDB保存用の値のマッピング）
 const CATEGORIES = [
@@ -52,14 +53,25 @@ export default function SellPage() {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
+    // 最大4つまでの制限をチェック
+    const remainingSlots = 4 - selectedFiles.length;
+    if (remainingSlots <= 0) {
+      toast.error('画像は最大4つまで添付できます');
+      return;
+    }
 
-    const validFiles = files.filter((file) => {
+    // 5つ以上選択された場合の警告
+    if (files.length > remainingSlots) {
+      toast.error(`画像は最大4つまでです。選択された${files.length}枚のうち、${remainingSlots}枚のみ追加されます。`);
+    }
+
+    const validFiles = files.slice(0, remainingSlots).filter((file) => {
       if (file.size > 10 * 1024 * 1024) {
-        alert(`${file.name} は10MBを超えています`);
+        toast.error(`${file.name} は10MBを超えています`);
         return false;
       }
       if (!file.type.startsWith('image/')) {
-        alert(`${file.name} は画像ファイルではありません`);
+        toast.error(`${file.name} は画像ファイルではありません`);
         return false;
       }
       return true;
@@ -85,32 +97,62 @@ export default function SellPage() {
 
     setSubmitted(true);
 
-    // バリデーションチェック
-    if (
-      !title ||
-      !price ||
-      !category ||
-      !condition ||
-      !description ||
-      !shippingPayer ||
-      !shippingDays
-    ) {
+    // バリデーションチェック - エラーメッセージを収集
+    const errors: string[] = [];
+
+    if (!title) {
+      errors.push('商品名を入力してください');
+    } else if (title.length > 50) {
+      errors.push('商品名は50文字以内で入力してください');
+    }
+
+    if (!price) {
+      errors.push('価格を入力してください');
+    } else if (Number(price) <= 0) {
+      errors.push('価格は1円以上で入力してください');
+    } else if (Number(price) > 99999999) {
+      errors.push('価格は99,999,999円以下で入力してください');
+    }
+
+    if (!category) {
+      errors.push('カテゴリーを選択してください');
+    }
+
+    if (!condition) {
+      errors.push('商品の状態を選択してください');
+    }
+
+    if (!description) {
+      errors.push('商品の説明を入力してください');
+    } else if (description.length > 300) {
+      errors.push('商品の説明は300文字以内で入力してください');
+    }
+
+    if (!shippingPayer) {
+      errors.push('配送料の負担を選択してください');
+    }
+
+    if (!shippingDays) {
+      errors.push('発送までの日数を選択してください');
+    }
+
+    // エラーがある場合はtoastで表示
+    if (errors.length > 0) {
+      toast.error(
+        <div className="flex flex-col">
+          <div className="font-bold mb-2">入力内容に不備があります</div>
+          <ul className="list-disc list-inside space-y-1 ml-1">
+            {errors.map((error, index) => (
+              <li key={index} className="text-sm">{error}</li>
+            ))}
+          </ul>
+        </div>,
+        { duration: 5000 }
+      );
       return;
     }
 
     if (isSubmitting) return;
-
-    if (title.length > 50) {
-      return;
-    }
-    if (description.length > 300) {
-      return;
-    }
-
-    // 価格チェック
-    if (!price || price <= 0) {
-      return;
-    }
 
     // 認証チェック
     if (!user) {
@@ -176,9 +218,17 @@ export default function SellPage() {
       }
 
       previewUrls.forEach((url) => URL.revokeObjectURL(url));
-      router.push('/search');
+
+      // トーストを表示してから画面遷移
+      toast.success('商品を出品しました');
+
+      // 少し待ってから遷移（トーストが表示されるように）
+      setTimeout(() => {
+        router.push('/productList');
+      }, 500);
     } catch (error) {
       console.error('出品エラー:', error);
+      toast.error(error instanceof Error ? error.message : '商品の出品に失敗しました');
       setIsSubmitting(false);
       setUploadProgress('');
     }
@@ -217,7 +267,7 @@ export default function SellPage() {
               {/* 商品の画像 */}
               <div>
                 <label className="block text-lg font-semibold text-gray-700 mb-3">
-                  商品画像
+                  商品画像 ({selectedFiles.length}/4)
                 </label>
                 <div
                   className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-[#2FA3E3] transition-colors duration-300 cursor-pointer"
@@ -227,7 +277,8 @@ export default function SellPage() {
                     <Camera size={64} />
                   </div>
                   <p className="text-gray-500 mb-4">画像をドラッグ&ドロップまたはクリックして選択</p>
-                  <Button type="button" variant="primary" size="md">
+                  <p className="text-sm text-gray-400 mb-4">最大4枚まで</p>
+                  <Button type="button" variant="primary" size="md" disabled={selectedFiles.length >= 4 || isSubmitting}>
                     画像を選択
                   </Button>
                   <input
@@ -237,7 +288,7 @@ export default function SellPage() {
                     multiple
                     className="hidden"
                     onChange={handleFileSelect}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || selectedFiles.length >= 4}
                   />
                 </div>
 
@@ -311,9 +362,10 @@ export default function SellPage() {
                       className="w-full p-4 pl-8 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20 transition-all duration-300"
                       placeholder="0"
                       min="1"
+                      max="99999999"
                       required
                       aria-required="true"
-                      aria-invalid={submitted && (price === "" || Number(price) <= 0) ? "true" : "false"}
+                      aria-invalid={submitted && (price === "" || Number(price) <= 0 || Number(price) > 99999999) ? "true" : "false"}
                       disabled={isSubmitting}
                     />
                   </div>
@@ -325,6 +377,11 @@ export default function SellPage() {
                   {submitted && price !== "" && Number(price) <= 0 && (
                     <p className="text-red-600 text-sm mt-2" role="alert">
                       価格は1円以上で入力してください。
+                    </p>
+                  )}
+                  {submitted && price !== "" && Number(price) > 99999999 && (
+                    <p className="text-red-600 text-sm mt-2" role="alert">
+                      価格は99,999,999円以下で入力してください。
                     </p>
                   )}
                 </div>

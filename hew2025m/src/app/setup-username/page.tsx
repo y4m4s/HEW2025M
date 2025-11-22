@@ -50,8 +50,18 @@ export default function SetupUsernamePage() {
       return;
     }
 
+    if (username.length > 15) {
+      setError("ユーザーネームは15文字以内で入力してください");
+      return;
+    }
+
     if (!/^[a-zA-Z0-9_]+$/.test(username)) {
       setError("ユーザーネームは英数字とアンダースコアのみ使用できます");
+      return;
+    }
+
+    if (displayName.length > 15) {
+      setError("表示名は15文字以内で入力してください");
       return;
     }
 
@@ -112,10 +122,20 @@ export default function SetupUsernamePage() {
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full p-4 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20"
+                className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                  displayName.length > 15
+                    ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                    : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
+                }`}
                 placeholder="表示名を入力"
                 required
               />
+              <div className={`text-right text-sm mt-1 ${displayName.length > 15 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                {displayName.length}/15文字
+                {displayName.length > 15 && (
+                  <span className="ml-2">({displayName.length - 15}文字超過)</span>
+                )}
+              </div>
             </div>
 
             {/* ユーザーネーム */}
@@ -129,15 +149,25 @@ export default function SetupUsernamePage() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                  className="w-full p-4 pl-8 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20"
+                  className={`w-full p-4 pl-8 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                    username.length > 15
+                      ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                      : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
+                  }`}
                   placeholder="username"
                   required
                   minLength={3}
                   pattern="[a-zA-Z0-9_]+"
                 />
               </div>
+              <div className={`text-right text-sm mt-1 ${username.length > 15 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                {username.length}/15文字
+                {username.length > 15 && (
+                  <span className="ml-2">({username.length - 15}文字超過)</span>
+                )}
+              </div>
               <p className="text-xs text-gray-500 mt-1">
-                3文字以上、英数字とアンダースコアのみ使用可能
+                3〜15文字、英数字とアンダースコアのみ使用可能
               </p>
               <p className="text-xs text-red-600 font-semibold mt-1">
                 ⚠ 一度設定したユーザーIDは変更することができません。

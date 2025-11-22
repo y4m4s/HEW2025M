@@ -77,6 +77,11 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile, onSaveSuc
     }
 
     // 文字数チェック
+    if (editProfile.displayName.length > 15) {
+      alert("表示名は15文字以内で入力してください");
+      return;
+    }
+
     if (editProfile.bio.length > 140) {
       alert("自己紹介は140文字以内で入力してください");
       return;
@@ -224,9 +229,19 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile, onSaveSuc
             type="text"
             value={editProfile.displayName}
             onChange={(e) => setEditProfile({ ...editProfile, displayName: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+              editProfile.displayName.length > 15
+                ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                : 'border-gray-300 focus:ring-[#2FA3E3]'
+            }`}
             placeholder="表示名を入力"
           />
+          <div className={`text-right text-sm mt-1 ${editProfile.displayName.length > 15 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+            {editProfile.displayName.length}/15文字
+            {editProfile.displayName.length > 15 && (
+              <span className="ml-2">({editProfile.displayName.length - 15}文字超過)</span>
+            )}
+          </div>
         </div>
 
         {/* ユーザー名（読み取り専用） */}

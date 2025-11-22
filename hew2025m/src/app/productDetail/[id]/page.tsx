@@ -8,6 +8,8 @@ import { ChevronLeft, ChevronRight, ArrowLeft, Calendar, User, Bookmark, Fish } 
 import Button from '@/components/Button';
 import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
+import CancelModal from '@/components/CancelModal';
+import ProductCard from '@/components/ProductCard';
 import RakutenProducts from '@/components/rakuten';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
@@ -44,6 +46,8 @@ export default function SellDetailPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // 出品者のプロフィール情報
   const [sellerProfile, setSellerProfile] = useState<{
@@ -173,7 +177,7 @@ export default function SellDetailPage() {
 
   const getStatusLabel = (status: string): string => {
     const map: Record<string, string> = {
-      'available': '販売中', 'sold': '売却済み', 'reserved': '予約済み'
+      'available': '販売中', 'sold': '売り切れ', 'reserved': '売り切れ'
     };
     return map[status] || status;
   };
@@ -278,6 +282,45 @@ export default function SellDetailPage() {
     router.push('/cart'); // カートページへ移動
   };
 
+  // 出品取り消しボタンの処理（モーダル表示）
+  const handleDeleteProduct = () => {
+    if (!product || !user) return;
+
+    // 自分の商品かどうか確認
+    const actualUserId = `user-${user.uid}`;
+    if (product.sellerId !== actualUserId && product.sellerId !== user.uid) {
+      alert('自分の商品のみ削除できます');
+      return;
+    }
+
+    setShowDeleteModal(true);
+  };
+
+  // 実際の削除処理
+  const confirmDeleteProduct = async () => {
+    if (!product || !user) return;
+
+    try {
+      setDeleting(true);
+      const response = await fetch(`/api/products/${params.id}?userId=${user.uid}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('商品の削除に失敗しました');
+      }
+
+      toast.success('商品を削除しました');
+      setShowDeleteModal(false);
+      router.push('/productList');
+    } catch (err) {
+      console.error('商品削除エラー:', err);
+      alert(err instanceof Error ? err.message : '商品の削除に失敗しました');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) return <div className="min-h-screen flex justify-center items-center bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2FA3E3]"></div></div>;
   if (error || !product) return <div className="min-h-screen flex flex-col justify-center items-center"><p className="text-red-600 mb-4">{error || '商品が見つかりませんでした'}</p><Button onClick={() => router.back()} variant="primary" size="md">戻る</Button></div>;
 
@@ -304,7 +347,7 @@ export default function SellDetailPage() {
                 <div className="flex items-center gap-1"><User size={14} /><span>{product.sellerName}</span></div>
               </div>
               <div className="mt-2">
-                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${product.status === 'available' ? 'bg-green-100 text-green-800' : product.status === 'sold' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${product.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                   {getStatusLabel(product.status)}
                 </span>
               </div>
@@ -410,24 +453,39 @@ export default function SellDetailPage() {
               </div>
             </div>
 
-            <div className="flex gap-4 pt-4">
-              <Button
-                variant="ghost"
-                size="md"
-                className={`flex-1 ${isBookmarked
-                  ? 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
-                  : 'bg-white text-[#2FA3E3] hover:bg-blue-50'
-                  }`}
-                onClick={handleBookmark}
-                disabled={bookmarkLoading}
-                icon={<Bookmark size={18} fill={isBookmarked ? 'white' : 'none'} />}
-              >
-                {bookmarkLoading ? '処理中...' : isBookmarked ? 'ブックマーク済み' : 'ブックマーク'}
-              </Button>
-              <Button
-                onClick={handleAddToCart} variant="primary" size="md" className="flex-1" disabled={product.status !== 'available'}> {product.status === 'available' ? 'カートに追加' : '購入できません'}
-              </Button>
-            </div>
+            {/* 自分の商品の場合は削除ボタン、他人の商品の場合はブックマーク・カートボタン */}
+            {user && (product.sellerId === user.uid || product.sellerId === `user-${user.uid}`) ? (
+              <div className="pt-4">
+                <Button
+                  variant="ghost"
+                  size="md"
+                  className="w-full bg-red-50 text-red-600 hover:bg-red-100"
+                  onClick={handleDeleteProduct}
+                  disabled={deleting}
+                >
+                  {deleting ? '削除中...' : '出品を取り消す'}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-4 pt-4">
+                <Button
+                  variant="ghost"
+                  size="md"
+                  className={`flex-1 ${isBookmarked
+                    ? 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
+                    : 'bg-white text-[#2FA3E3] hover:bg-blue-50'
+                    }`}
+                  onClick={handleBookmark}
+                  disabled={bookmarkLoading}
+                  icon={<Bookmark size={18} fill={isBookmarked ? 'white' : 'none'} />}
+                >
+                  {bookmarkLoading ? '処理中...' : isBookmarked ? 'ブックマーク済み' : 'ブックマーク'}
+                </Button>
+                <Button
+                  onClick={handleAddToCart} variant="primary" size="md" className="flex-1" disabled={product.status !== 'available'}> {product.status === 'available' ? 'カートに追加' : '購入できません'}
+                </Button>
+              </div>
+            )}
           </section>
         </div>
 
@@ -503,6 +561,32 @@ export default function SellDetailPage() {
           onClose={handleCloseModal}
         />
       )}
+
+      {/* 削除確認モーダル */}
+      <CancelModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDeleteProduct}
+        title="出品の取り消し"
+        message="この出品情報を本当に削除しますか？この操作は取り消せません。"
+        isDeleting={deleting}
+      >
+        {/* ProductCardを表示 */}
+        <div className="max-w-xs">
+          <ProductCard
+            product={{
+              id: product._id,
+              name: product.title,
+              price: product.price,
+              location: product.sellerName,
+              condition: getConditionLabel(product.condition),
+              postedDate: formatDate(product.createdAt),
+              imageUrl: product.images[0] || undefined,
+              status: product.status,
+            }}
+          />
+        </div>
+      </CancelModal>
     </div>
   );
 }

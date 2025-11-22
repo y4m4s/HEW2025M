@@ -41,7 +41,7 @@ export default function Footer() {
                 <Link href="/sell" className="text-gray-400 text-sm transition-colors duration-300 hover:text-[#2FA3E3]">商品を出品</Link>
               </li>
               <li className="mb-3">
-                <Link href="/search" className="text-gray-400 text-sm transition-colors duration-300 hover:text-[#2FA3E3]">商品を探す</Link>
+                <Link href="/productList" className="text-gray-400 text-sm transition-colors duration-300 hover:text-[#2FA3E3]">商品を探す</Link>
               </li>
               <li className="mb-3">
                 <Link href="/community" className="text-gray-400 text-sm transition-colors duration-300 hover:text-[#2FA3E3]">コミュニティ</Link>
