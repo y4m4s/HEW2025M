@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { Fish, MapPin, Heart, MessageCircle, User, Calendar, ArrowLeft, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Fish, MapPin, Heart, MessageCircle, Calendar, ArrowLeft, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '@/components/Button';
 import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
 import CancelModal from '@/components/CancelModal';
+import UserInfoCard from '@/components/UserInfoCard';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -54,8 +54,39 @@ export default function PostDetailPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalImageIndex, setModalImageIndex] = useState(0);
-  const [authorPhotoURL, setAuthorPhotoURL] = useState<string | undefined>(undefined);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [authorProfile, setAuthorProfile] = useState<{
+    uid: string;
+    username: string;
+    displayName: string;
+    bio?: string;
+    photoURL?: string;
+  } | null>(null);
+  const [authorProfileLoading, setAuthorProfileLoading] = useState(false);
+
+  const fetchAuthorProfile = async (authorId: string) => {
+    try {
+      setAuthorProfileLoading(true);
+      const uid = authorId.startsWith('user-') ? authorId.replace('user-', '') : authorId;
+      const userDocRef = doc(db, 'users', uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        setAuthorProfile({
+          uid: uid,
+          username: userData.username || '',
+          displayName: userData.displayName || '',
+          bio: userData.bio || '',
+          photoURL: userData.photoURL || undefined,
+        });
+      }
+    } catch (error) {
+      console.error('投稿者プロフィール取得エラー:', error);
+    } finally {
+      setAuthorProfileLoading(false);
+    }
+  };
 
   const fetchPost = useCallback(async () => {
     try {
@@ -70,22 +101,9 @@ export default function PostDetailPage() {
       const data = await response.json();
       setPost(data.post);
 
-      // 投稿者のアイコン画像を取得
+      // 投稿者のプロフィール情報を取得
       if (data.post.authorId) {
-        const uid = data.post.authorId.startsWith('user-')
-          ? data.post.authorId.replace('user-', '')
-          : data.post.authorId;
-
-        try {
-          const userDocRef = doc(db, 'users', uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            setAuthorPhotoURL(userData.photoURL || undefined);
-          }
-        } catch (error) {
-          console.error('ユーザー情報取得エラー:', error);
-        }
+        fetchAuthorProfile(data.post.authorId);
       }
     } catch (err) {
       console.error('投稿取得エラー:', err);
@@ -236,7 +254,7 @@ export default function PostDetailPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between">
               <h1 className="text-3xl font-bold text-gray-800">{post.title}</h1>
               {isOwnPost && (
                 <button
@@ -250,22 +268,6 @@ export default function PostDetailPage() {
                 </button>
               )}
             </div>
-
-            <Link
-              href={`/profile/${post.authorId.startsWith('user-') ? post.authorId.replace('user-', '') : post.authorId}`}
-              className="flex items-center gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors cursor-pointer"
-            >
-              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-                {authorPhotoURL ? (
-                  <Image src={authorPhotoURL} alt={post.authorName} width={40} height={40} className="w-full h-full object-cover" />
-                ) : (
-                  <User size={20} className="text-gray-600" />
-                )}
-              </div>
-              <div>
-                <p className="font-medium text-gray-800 hover:text-[#2FA3E3] transition-colors">{post.authorName}</p>
-              </div>
-            </Link>
           </div>
 
           {/* 画像ギャラリー - カルーセル */}
@@ -382,12 +384,21 @@ export default function PostDetailPage() {
             </div>
           </div>
 
-          {/* コメントセクション */}
-          <div className="p-6 bg-gray-50 border-t">
-            <h3 className="text-xl font-bold mb-4">コメント</h3>
-            <Comment postId={params.id as string} />
-          </div>
         </article>
+
+        {/* 投稿者情報 */}
+        <UserInfoCard
+          title="投稿者情報"
+          userProfile={authorProfile}
+          loading={authorProfileLoading}
+          fallbackName={post.authorName}
+        />
+
+        {/* コメントセクション */}
+        <section className="mt-8 bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-xl font-bold mb-4">コメント</h3>
+          <Comment postId={params.id as string} />
+        </section>
       </div>
 
       {/* 画像モーダル */}
