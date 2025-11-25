@@ -102,8 +102,8 @@ export default function SellPage() {
 
     if (!title) {
       errors.push('商品名を入力してください');
-    } else if (title.length > 50) {
-      errors.push('商品名は50文字以内で入力してください');
+    } else if (title.length > 30) {
+      errors.push('商品名は30文字以内で入力してください');
     }
 
     if (!price) {
@@ -342,10 +342,10 @@ export default function SellPage() {
                       商品名は必須です。
                 </p>
                                   )}
-                  <div className={`text-right text-sm mt-1 ${title.length > 50 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                    {title.length}/50文字
-                    {title.length > 50 && (
-                      <span className="ml-2">({title.length - 50}文字超過)</span>
+                  <div className={`text-right text-sm mt-1 ${title.length > 30 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                    {title.length}/30文字
+                    {title.length > 30 && (
+                      <span className="ml-2">({title.length - 30}文字超過)</span>
                     )}
                   </div>
                 </div>

@@ -79,9 +79,11 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
             </div>
           </div>
           <div className="p-5">
-            <h5 className="text-lg font-bold mb-3 text-gray-800 line-clamp-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
-              {product.name}
-            </h5>
+            <div className="h-14 mb-3">
+              <h5 className="text-lg font-bold text-gray-800 line-clamp-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+                {product.name}
+              </h5>
+            </div>
             <p className="text-xl font-bold text-[#2FA3E3] mb-3 break-words">
               {formatPrice(product.price)}
             </p>
@@ -119,9 +121,11 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
           </div>
         </div>
         <div className="p-4">
-          <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">
-            {product.name}
-          </h3>
+          <div className="h-12 mb-2">
+            <h3 className="font-semibold text-gray-800 line-clamp-2">
+              {product.name}
+            </h3>
+          </div>
           <p className="text-xl font-bold text-[#2FA3E3] mb-2 break-words">
             {formatPrice(product.price)}
           </p>

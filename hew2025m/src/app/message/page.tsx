@@ -63,6 +63,7 @@ export default function MessagePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // 検索と会話リストの状態管理
   const [searchQuery, setSearchQuery] = useState('');
@@ -116,6 +117,45 @@ export default function MessagePage() {
     setShowSidebar(false); // モバイルでユーザー選択時にサイドバーを閉じる
   };
 
+  // 選択されたユーザーの情報をリアルタイムで更新
+  useEffect(() => {
+    if (!selectedUser) return;
+
+    const userId = selectedUser.id;
+
+    const fetchLatestUserInfo = async () => {
+      try {
+        const userDocRef = doc(db, 'users', userId);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setSelectedUser(prev => {
+            if (!prev || prev.id !== userId) return prev;
+            return {
+              ...prev,
+              name: userData.displayName || prev.name,
+              photoURL: userData.photoURL || '',
+              username: userData.username || prev.username,
+              bio: userData.bio || '',
+            };
+          });
+        }
+      } catch (error) {
+        console.error('選択ユーザー情報の更新エラー:', error);
+      }
+    };
+
+    // 初回読み込み
+    fetchLatestUserInfo();
+
+    // 30秒ごとに更新（リアルタイム性を保つため）
+    const interval = setInterval(fetchLatestUserInfo, 30000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUser?.id]); // selectedUser.idが変わった時のみ再実行
+
   // 既存の会話履歴を読み込む
   useEffect(() => {
     if (!user) {
@@ -126,19 +166,46 @@ export default function MessagePage() {
     const conversationsRef = collection(db, 'users', user.uid, 'conversations');
     const q = query(conversationsRef, orderBy('lastMessageTime', 'desc'));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const convos: Conversation[] = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id, // partnerのUID
-          name: data.partnerName || '不明なユーザー',
-          preview: data.lastMessage || '',
-          photoURL: data.partnerPhotoURL || '',
-          username: data.partnerUsername || '',
-          bio: data.partnerBio || '',
-          lastMessageTime: data.lastMessageTime?.toDate() || new Date(),
-        };
-      });
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      // 各会話の相手の最新情報をFirestoreから取得
+      const convos: Conversation[] = await Promise.all(
+        snapshot.docs.map(async (docSnap) => {
+          const data = docSnap.data();
+          const partnerId = docSnap.id;
+
+          // Firestoreから最新のユーザー情報を取得
+          try {
+            const partnerDocRef = doc(db, 'users', partnerId);
+            const partnerDoc = await getDoc(partnerDocRef);
+
+            if (partnerDoc.exists()) {
+              const partnerData = partnerDoc.data();
+              return {
+                id: partnerId,
+                name: partnerData.displayName || data.partnerName || '不明なユーザー',
+                preview: data.lastMessage || '',
+                photoURL: partnerData.photoURL || '',
+                username: partnerData.username || '',
+                bio: partnerData.bio || '',
+                lastMessageTime: data.lastMessageTime?.toDate() || new Date(),
+              };
+            }
+          } catch (error) {
+            console.error('パートナー情報取得エラー:', error);
+          }
+
+          // Firestoreから取得できなかった場合はconversationsの古いデータを使用
+          return {
+            id: partnerId,
+            name: data.partnerName || '不明なユーザー',
+            preview: data.lastMessage || '',
+            photoURL: data.partnerPhotoURL || '',
+            username: data.partnerUsername || '',
+            bio: data.partnerBio || '',
+            lastMessageTime: data.lastMessageTime?.toDate() || new Date(),
+          };
+        })
+      );
       setConversations(convos);
     });
 
@@ -256,31 +323,12 @@ export default function MessagePage() {
     return conversations;
   }, [searchQuery, searchResults, conversations]);
 
-
-  // 新しいメッセージが追加された時のみスクロール(初回ロードではスクロールしない)
-  const prevMessagesLength = useRef(0);
-  const isInitialLoad = useRef(true);
-
+  // メッセージが追加された時にメッセージウィンドウを最下部にスクロール
   useEffect(() => {
-    // 初回ロード時はスクロールしない
-    if (isInitialLoad.current && messages.length > 0) {
-      isInitialLoad.current = false;
-      prevMessagesLength.current = messages.length;
-      return;
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
-
-    // メッセージが増えた時のみスクロール
-    if (messages.length > prevMessagesLength.current && !isInitialLoad.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-    prevMessagesLength.current = messages.length;
   }, [messages]);
-
-  // selectedUserが変わった時は初回ロードフラグをリセット
-  useEffect(() => {
-    isInitialLoad.current = true;
-    prevMessagesLength.current = 0;
-  }, [selectedUser]);
 
   // メッセージ送信処理
   const handleSendMessage = async () => {
@@ -496,7 +544,7 @@ export default function MessagePage() {
             </div>
 
             {/* メッセージ表示エリア */}
-            <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50 min-h-0">
+            <div ref={messagesContainerRef} className="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50 min-h-0">
 
               {messages.length === 0 && <p className="text-center text-gray-500">まだメッセージはありません。</p>}
               {messages.map((msg) => {
