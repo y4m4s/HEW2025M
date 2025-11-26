@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { User, Send, Search, Menu, X } from 'lucide-react';
 import Image from 'next/image';
 import { db } from '@/lib/firebase';
@@ -63,6 +63,8 @@ export default function MessagePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [isMessagesReady, setIsMessagesReady] = useState(false);
 
   // 検索と会話リストの状態管理
   const [searchQuery, setSearchQuery] = useState('');
@@ -257,30 +259,55 @@ export default function MessagePage() {
   }, [searchQuery, searchResults, conversations]);
 
 
-  // 新しいメッセージが追加された時のみスクロール(初回ロードではスクロールしない)
+  // メッセージの自動スクロール処理
   const prevMessagesLength = useRef(0);
   const isInitialLoad = useRef(true);
-
-  useEffect(() => {
-    // 初回ロード時はスクロールしない
-    if (isInitialLoad.current && messages.length > 0) {
-      isInitialLoad.current = false;
-      prevMessagesLength.current = messages.length;
-      return;
-    }
-
-    // メッセージが増えた時のみスクロール
-    if (messages.length > prevMessagesLength.current && !isInitialLoad.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-    prevMessagesLength.current = messages.length;
-  }, [messages]);
 
   // selectedUserが変わった時は初回ロードフラグをリセット
   useEffect(() => {
     isInitialLoad.current = true;
     prevMessagesLength.current = 0;
+    setIsMessagesReady(false); // メッセージを非表示にする
   }, [selectedUser]);
+
+  // useLayoutEffectを使用してDOMの描画前にスクロール
+  useLayoutEffect(() => {
+    const scrollToBottom = (smooth = false) => {
+      if (messagesContainerRef.current) {
+        const container = messagesContainerRef.current;
+        if (smooth) {
+          container.scrollTo({
+            top: container.scrollHeight,
+            behavior: 'smooth'
+          });
+        } else {
+          // 即座にスクロール（アニメーションなし）
+          container.scrollTop = container.scrollHeight;
+        }
+      }
+    };
+
+    // 初回ロード時は即座に最新メッセージへスクロール
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      prevMessagesLength.current = messages.length;
+
+      if (messages.length > 0) {
+        // 同期的にスクロール（DOM更新前）
+        scrollToBottom(false);
+      }
+
+      // スクロール完了後、メッセージを表示
+      setIsMessagesReady(true);
+      return;
+    }
+
+    // メッセージが増えた時はスムーズにスクロール
+    if (messages.length > prevMessagesLength.current) {
+      scrollToBottom(true);
+    }
+    prevMessagesLength.current = messages.length;
+  }, [messages]);
 
   // メッセージ送信処理
   const handleSendMessage = async () => {
@@ -496,31 +523,46 @@ export default function MessagePage() {
             </div>
 
             {/* メッセージ表示エリア */}
-            <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50 min-h-0">
+            <div
+              ref={messagesContainerRef}
+              className="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50 min-h-0 relative"
+              style={{ overflowAnchor: 'none' }}
+            >
+              {/* ローディングオーバーレイ */}
+              {!isMessagesReady && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
+                  {messages.length > 0 && (
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2FA3E3]"></div>
+                  )}
+                </div>
+              )}
 
-              {messages.length === 0 && <p className="text-center text-gray-500">まだメッセージはありません。</p>}
-              {messages.map((msg) => {
-                if (!user) return null;
-                const isMe = msg.senderId === user.uid;
+              {/* メッセージコンテンツ（常にDOMに配置、visibility で制御） */}
+              <div style={{ visibility: isMessagesReady ? 'visible' : 'hidden' }}>
+                {messages.length === 0 && isMessagesReady && <p className="text-center text-gray-500">まだメッセージはありません。</p>}
+                {messages.map((msg) => {
+                  if (!user) return null;
+                  const isMe = msg.senderId === user.uid;
 
-                return (
-                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                    <div className="flex flex-col max-w-[70%] md:max-w-[60%] lg:max-w-md">
-                      <div className={`rounded-lg px-4 py-3 shadow-sm break-words ${isMe
-                        ? 'bg-[#2FA3E3] text-white'
-                        : 'bg-white text-gray-800 border border-gray-200'
-                        }`}>
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  return (
+                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                      <div className="flex flex-col max-w-[70%] md:max-w-[60%] lg:max-w-md">
+                        <div className={`rounded-lg px-4 py-3 shadow-sm break-words ${isMe
+                          ? 'bg-[#2FA3E3] text-white'
+                          : 'bg-white text-gray-800 border border-gray-200'
+                          }`}>
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                        <span className={`m-2 text-xs mt-1 text-gray-400 ${isMe ? 'text-right' : 'text-left'}`}>
+                          {msg.timestamp}
+                        </span>
                       </div>
-                      <span className={`m-2 text-xs mt-1 text-gray-400 ${isMe ? 'text-right' : 'text-left'}`}>
-                        {msg.timestamp}
-                      </span>
                     </div>
-                  </div>
 
-                );
-              })}
-              <div ref={messagesEndRef} />
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
             </div>
 
             {/* 入力エリア */}

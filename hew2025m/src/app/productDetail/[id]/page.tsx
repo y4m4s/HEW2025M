@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, ArrowLeft, Calendar, User, Bookmark, Fish } from 'lucide-react';
 import Button from '@/components/Button';
@@ -11,6 +10,7 @@ import ImageModal from '@/components/ImageModal';
 import CancelModal from '@/components/CancelModal';
 import ProductCard from '@/components/ProductCard';
 import RakutenProducts from '@/components/rakuten';
+import SellerInfo from '@/components/SellerInfo';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, deleteDoc, getDoc, collection, addDoc } from 'firebase/firestore';
@@ -490,56 +490,14 @@ export default function SellDetailPage() {
         </div>
 
         {/* 出品者情報 */}
-        <section className="mt-8 bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-xl font-bold mb-4">出品者情報</h3>
-          {sellerProfileLoading ? (
-            <div className="flex items-center gap-3">
-              <div className="w-16 h-16 bg-gray-200 rounded-full animate-pulse" />
-              <div className="flex-1 space-y-2">
-                <div className="h-6 bg-gray-200 rounded w-1/3 animate-pulse" />
-                <div className="h-4 bg-gray-200 rounded w-1/4 animate-pulse" />
-              </div>
-            </div>
-          ) : sellerProfile ? (
-            <Link href={`/profile/${sellerProfile.uid}`}>
-              <div className="flex items-center gap-4 p-4 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-[#2FA3E3]">
-                {sellerProfile.photoURL ? (
-                  <Image
-                    src={sellerProfile.photoURL}
-                    alt={sellerProfile.displayName}
-                    width={64}
-                    height={64}
-                    quality={90}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
-                  />
-                ) : (
-                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-                    <User size={32} className="text-gray-600" />
-                  </div>
-                )}
-                <div className="flex-1">
-                  <p className="font-semibold text-lg">{sellerProfile.displayName}</p>
-                  <p className="text-sm text-gray-500">@{sellerProfile.username}</p>
-                  {sellerProfile.bio && (
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap mt-2 line-clamp-2">
-                      {sellerProfile.bio}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </Link>
-          ) : (
-            <div className="flex items-center gap-3">
-              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-                <User size={32} className="text-gray-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-lg">{product.sellerName}</p>
-                <p className="text-sm text-gray-600">出品者</p>
-              </div>
-            </div>
-          )}
-        </section>
+        <div className="mt-8">
+          <SellerInfo
+            sellerProfile={sellerProfile}
+            loading={sellerProfileLoading}
+            fallbackName={product.sellerName}
+            isOwnProduct={!!(user && (product.sellerId === user.uid || product.sellerId === `user-${user.uid}`))}
+          />
+        </div>
 
         {/* コメントセクション */}
         <section className="mt-8 bg-white rounded-lg shadow-md p-6">

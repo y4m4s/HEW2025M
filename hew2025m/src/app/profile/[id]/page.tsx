@@ -11,6 +11,7 @@ import ProfileEdit from "@/components/ProfileEdit";
 import ProfSelling from "@/components/ProfSelling";
 import ProfHistory from "@/components/ProfHistory";
 import ProfBookmark from "@/components/ProfBookmark";
+import UserRating from "@/components/UserRating";
 
 type TabType = "selling" | "history" | "bookmarks";
 
@@ -158,6 +159,9 @@ export default function UserProfilePage() {
                   {targetProfile.bio || "自己紹介が設定されていません"}
                 </p>
               </div>
+
+              {/* 評価カード */}
+              <UserRating targetUserId={userId} isOwnProfile={isOwnProfile} />
             </div>
 
             {/* 商品タブ */}
