@@ -6,11 +6,13 @@ import { useRouter, useParams } from "next/navigation";
 import { User } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, addDoc, deleteDoc, Timestamp } from "firebase/firestore";
 import ProfileEdit from "@/components/ProfileEdit";
 import ProfSelling from "@/components/ProfSelling";
 import ProfHistory from "@/components/ProfHistory";
 import ProfBookmark from "@/components/ProfBookmark";
+import UserRating from "@/components/UserRating";
+import FollowListModal from "@/components/FollowListModal";
 
 type TabType = "selling" | "history" | "bookmarks";
 
@@ -36,6 +38,12 @@ export default function UserProfilePage() {
   const [sellingCount, setSellingCount] = useState(0);
   const [historyCount, setHistoryCount] = useState(0);
   const [bookmarkCount, setBookmarkCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followModalOpen, setFollowModalOpen] = useState(false);
+  const [followModalType, setFollowModalType] = useState<'following' | 'followers'>('following');
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followDocId, setFollowDocId] = useState<string | null>(null);
 
   // 対象ユーザーのプロフィールを取得
   const fetchUserProfile = async () => {
@@ -61,10 +69,62 @@ export default function UserProfilePage() {
     }
   };
 
+  // フォロー/フォロワー数を取得
+  const fetchFollowCounts = async () => {
+    if (!userId) return;
+
+    try {
+      const followsRef = collection(db, 'follows');
+
+      // フォロー数を取得
+      const followingQuery = query(followsRef, where('followingUserId', '==', userId));
+      const followingSnapshot = await getDocs(followingQuery);
+      setFollowingCount(followingSnapshot.size);
+
+      // フォロワー数を取得
+      const followersQuery = query(followsRef, where('followedUserId', '==', userId));
+      const followersSnapshot = await getDocs(followersQuery);
+      setFollowersCount(followersSnapshot.size);
+    } catch (error) {
+      console.error('フォロー数取得エラー:', error);
+    }
+  };
+
+  // 現在のユーザーがこのプロフィールをフォローしているか確認
+  const checkFollowStatus = async () => {
+    if (!user || !userId || user.uid === userId) {
+      setIsFollowing(false);
+      setFollowDocId(null);
+      return;
+    }
+
+    try {
+      const followsRef = collection(db, 'follows');
+      const q = query(
+        followsRef,
+        where('followingUserId', '==', user.uid),
+        where('followedUserId', '==', userId)
+      );
+      const snapshot = await getDocs(q);
+
+      if (!snapshot.empty) {
+        setIsFollowing(true);
+        setFollowDocId(snapshot.docs[0].id);
+      } else {
+        setIsFollowing(false);
+        setFollowDocId(null);
+      }
+    } catch (error) {
+      console.error('フォロー状態確認エラー:', error);
+    }
+  };
+
   useEffect(() => {
     fetchUserProfile();
+    fetchFollowCounts();
+    checkFollowStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [userId, user]);
 
   // ログインしていない場合の処理
   useEffect(() => {
@@ -75,6 +135,35 @@ export default function UserProfilePage() {
 
   // 自分のプロフィールかどうかを判定
   const isOwnProfile = user?.uid === userId;
+
+  // フォロー/フォロー解除処理
+  const handleFollowToggle = async () => {
+    if (!user || !targetProfile) return;
+
+    try {
+      if (isFollowing && followDocId) {
+        // フォロー解除
+        await deleteDoc(doc(db, 'follows', followDocId));
+        setIsFollowing(false);
+        setFollowDocId(null);
+        setFollowersCount(prev => prev - 1);
+      } else {
+        // フォロー
+        const followData = {
+          followingUserId: user.uid,
+          followedUserId: targetProfile.uid,
+          createdAt: Timestamp.now(),
+        };
+        const docRef = await addDoc(collection(db, 'follows'), followData);
+        setIsFollowing(true);
+        setFollowDocId(docRef.id);
+        setFollowersCount(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('フォロー処理エラー:', error);
+      alert('フォロー処理に失敗しました');
+    }
+  };
 
   // メッセージページへ遷移
   const handleSendMessage = () => {
@@ -101,6 +190,14 @@ export default function UserProfilePage() {
           onSaveSuccess={fetchUserProfile}
         />
       )}
+
+      {/* Follow List Modal */}
+      <FollowListModal
+        isOpen={followModalOpen}
+        onClose={() => setFollowModalOpen(false)}
+        userId={userId}
+        type={followModalType}
+      />
 
       {/* ページ */}
       <div className="bg-gray-50 min-h-screen">
@@ -131,23 +228,66 @@ export default function UserProfilePage() {
                 </h1>
                 <p className="text-gray-600 mb-4">@{targetProfile.username || "user"}</p>
 
-                {/* 自分のプロフィールの場合: プロフィール編集ボタンのみ */}
-                {isOwnProfile ? (
+                {/* フォロー/フォロワー表示 */}
+                <div className="flex justify-center gap-6 mb-4 text-sm">
                   <button
-                    className="w-full bg-[#2FA3E3] text-white py-3 rounded-lg hover:bg-[#1d7bb8] transition-colors"
-                    onClick={() => setEditOpen(true)}
+                    onClick={() => {
+                      setFollowModalType('following');
+                      setFollowModalOpen(true);
+                    }}
+                    className="hover:text-[#2FA3E3] transition-colors"
                   >
-                    プロフィール編集
+                    <span className="font-bold">{followingCount}</span>
+                    <span className="text-gray-600 ml-1">フォロー</span>
                   </button>
-                ) : (
-                  // 他人のプロフィールの場合: メッセージボタンのみ
                   <button
-                    className="w-full border border-[#2FA3E3] text-[#2FA3E3] py-3 rounded-lg hover:bg-[#2FA3E3] hover:text-white transition-colors"
-                    onClick={handleSendMessage}
+                    onClick={() => {
+                      setFollowModalType('followers');
+                      setFollowModalOpen(true);
+                    }}
+                    className="hover:text-[#2FA3E3] transition-colors"
                   >
-                    メッセージ
+                    <span className="font-bold">{followersCount}</span>
+                    <span className="text-gray-600 ml-1">フォロワー</span>
                   </button>
-                )}
+                </div>
+
+                {/* ボタンエリア - 高さを統一 */}
+                <div className="space-y-3">
+                  {isOwnProfile ? (
+                    // 自分のプロフィールの場合: プロフィール編集ボタンのみ
+                    <>
+                      <button
+                        className="w-full bg-[#2FA3E3] text-white py-3 rounded-lg hover:bg-[#1d7bb8] transition-colors"
+                        onClick={() => setEditOpen(true)}
+                      >
+                        プロフィール編集
+                      </button>
+                      {/* スペーサー - カードの高さを揃えるため */}
+                      <div className="h-12"></div>
+                    </>
+                  ) : (
+                    // 他人のプロフィールの場合: フォローボタンとメッセージボタン
+                    <>
+                      <button
+                        className={`w-full py-3 rounded-lg transition-colors ${
+                          isFollowing
+                            ? 'border border-gray-300 text-gray-700 hover:bg-red-50 hover:border-red-300 hover:text-red-600'
+                            : 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
+                        }`}
+                        onClick={handleFollowToggle}
+                      >
+                        {isFollowing ? 'フォロー解除' : 'フォローする'}
+                      </button>
+                      <button
+                        className="w-full border border-[#2FA3E3] text-[#2FA3E3] py-3 rounded-lg hover:bg-[#2FA3E3] hover:text-white transition-colors"
+                        onClick={handleSendMessage}
+                      >
+                        メッセージ
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div className="bg-white rounded-xl shadow-lg p-6">
@@ -158,6 +298,9 @@ export default function UserProfilePage() {
                   {targetProfile.bio || "自己紹介が設定されていません"}
                 </p>
               </div>
+
+              {/* 評価カード */}
+              <UserRating targetUserId={userId} isOwnProfile={isOwnProfile} />
             </div>
 
             {/* 商品タブ */}
