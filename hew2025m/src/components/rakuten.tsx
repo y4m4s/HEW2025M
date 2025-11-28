@@ -1,140 +1,199 @@
 'use client';
 
-import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Star, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
 
-// 1. APIの形式用インターフェース (formatVersion=2)
+// 楽天APIの型定義 (formatVersion=2)
 interface RakutenItem {
   itemCode: string;
   itemName: string;
   itemUrl: string;
   itemPrice: number;
   shopName: string;
-  mediumImageUrls?: { imageUrl: string }[] | string[];
-  imageUrl?: string; // 代替画像URL
+  mediumImageUrls?: string[]; // v2では文字列の配列になります
+  reviewAverage?: number;
+  reviewCount?: number;
+  postageFlag?: number; // 0 = 送料無料
 }
 
-// 2. コンポーネントが受け取るpropsのインターフェース
 interface RakutenProductsProps {
-  keyword: string; // 例: "ロッド/竿"
+  keyword: string;
 }
 
 export default function RakutenProducts({ keyword }: RakutenProductsProps) {
-  // 3. このコンポーネントのローカルステート
-  const [rakutenProducts, setRakutenProducts] = useState<RakutenItem[]>([]);
-  const [rakutenLoading, setRakutenLoading] = useState(true);
+  const [products, setProducts] = useState<RakutenItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // 4. APIを呼び出すuseEffect
   useEffect(() => {
-    // keywordが空でない場合のみ検索を実行
-    if (!keyword) {
-      setRakutenLoading(false);
-      return;
-    }
+    // 🔍 デバッグ用: 実際に楽天APIに渡されるキーワードをコンソールに表示
+    console.log("--------------------------------------------------");
+    console.log("🛒 Rakuten Component Received Keyword:", keyword);
+    console.log("--------------------------------------------------");
 
-    const fetchRakutenProducts = async () => {
-      setRakutenLoading(true);
+    if (!keyword) return;
+
+    const fetchRakutenData = async () => {
+      setLoading(true);
+      const appId = process.env.NEXT_PUBLIC_RAKUTEN_APP_ID;
+      
+      // 楽天APIへのリクエストパラメータ
+      const params = new URLSearchParams({
+        applicationId: appId || '',
+        keyword: keyword,
+        hits: '12', // 取得するアイテム数
+        formatVersion: '2',
+        sort: 'standard', // 標準の並び順（関連度順）
+      });
+
       try {
-        const response = await fetch(
-          `https://app.rakuten.co.jp/services/api/IchibaItem/Search/20170706?applicationId=${process.env.NEXT_PUBLIC_RAKUTEN_APP_ID}&keyword=${encodeURIComponent(keyword)}&hits=6&formatVersion=2`
-        );
-        if (!response.ok) {
-          throw new Error('Rakuten API fetch failed');
-        }
-        const data = await response.json();
-        // formatVersion=2のAPIは、'Items'配列に直接商品を返します。
-        setRakutenProducts(data.Items || []);
-      } catch (err) {
-        console.error('Rakuten API error:', err);
-        setRakutenProducts([]);
+        const res = await fetch(`https://app.rakuten.co.jp/services/api/IchibaItem/Search/20170706?${params.toString()}`);
+        const data = await res.json();
+        
+        // 🔍 デバッグ用: 取得できた商品数を表示
+        console.log(`📊 Rakuten Search Results: ${data.Items?.length || 0} items found for "${keyword}"`);
+        
+        setProducts(data.Items || []);
+      } catch (error) {
+        console.error("楽天データの取得エラー:", error);
       } finally {
-        setRakutenLoading(false);
+        setLoading(false);
       }
     };
 
-    fetchRakutenProducts();
-  }, [keyword]); // 5. 依存配列: [keyword] - keywordが変更された場合に再度検索を実行
+    fetchRakutenData();
+  }, [keyword]);
 
-  // 6. コンポーネントのJSX（ビジュアル部分）
-  return (
-    <section className="mt-16 bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-      <h2 className="text-2xl font-bold mb-6 text-center text-blue-700 tracking-wide">
-        Rakuten 関連商品ランキング 🛍️
-      </h2>
+  // カルーセルをスクロールする関数
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 300;
+      scrollContainerRef.current.scrollBy({
+        left: direction === 'right' ? scrollAmount : -scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
 
-      <div className="space-y-6">
-        {rakutenLoading ? (
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex items-center gap-4 animate-pulse">
-                <div className="w-20 h-20 bg-gray-200 rounded"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : rakutenProducts.length > 0 ? (
-          rakutenProducts.map((p, idx) => {
-            // --- 画像の安全性チェック ---
-            let imageUrl = 'https://placehold.co/80x80/e9ecef/6c757d?text=画像なし';
+  if (!loading && products.length === 0) return null;
 
-            if (p.mediumImageUrls && p.mediumImageUrls.length > 0) {
-              const firstImage = p.mediumImageUrls[0];
-              if (typeof firstImage === 'string') {
-                // 文字列の場合
-                imageUrl = firstImage.split('?')[0];
-              } else if (firstImage && typeof firstImage === 'object' && 'imageUrl' in firstImage) {
-                // オブジェクトの場合
-                imageUrl = firstImage.imageUrl.replace('?_ex=128x128', '');
-              }
-            } else if (p.imageUrl) {
-              // 代替のimageUrlフィールドがある場合
-              imageUrl = p.imageUrl.split('?')[0];
-            }
-
-            return (
-              <div
-                key={p.itemCode}
-                className="flex items-start gap-4 border-b pb-4 last:border-none"
-              >
-                <div className="text-2xl font-bold text-blue-600 w-8 text-center">
-                  {idx + 1}.
-                </div>
-                <Image
-                  src={imageUrl}
-                  alt={p.itemName}
-                  width={80}
-                  height={80}
-                  quality={90}
-                  className="w-20 h-20 object-cover rounded border"
-                />
-                <div className="flex-1">
-                  <a
-                    href={p.itemUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-blue-600 hover:underline text-sm"
-                  >
-                    {p.itemName}
-                  </a>
-                  <div className="text-sm text-gray-500 mt-1">
-                    ショップ: {p.shopName}
-                  </div>
-                  <div className="text-lg font-bold text-gray-800 mt-1">
-                    ¥{p.itemPrice.toLocaleString()}
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <p className="text-center text-gray-500">
-            関連する商品が見つかりませんでした。
-          </p>
-        )}
+  // レビュー評価（星）を表示する関数
+  const renderStars = (avg: number = 0, count: number = 0) => {
+    if (!count) return <div className="h-4"></div>;
+    return (
+      <div className="flex items-center gap-1 mt-1">
+        <div className="flex text-[#FFCC00]">
+          {[...Array(5)].map((_, i) => (
+            <Star 
+              key={i} 
+              size={12} 
+              fill={i < Math.round(avg) ? "currentColor" : "#e0e0e0"} 
+              strokeWidth={0} 
+            />
+          ))}
+        </div>
+        <span className="text-[10px] text-[#0066cc] underline">({count})</span>
       </div>
-    </section>
+    );
+  };
+
+  return (
+    <div className="mt-8 pt-6 border-t border-gray-100 bg-white rounded-xl shadow-sm p-4">
+      {/* ヘッダー部分 */}
+      <div className="flex justify-between items-center mb-4 px-1">
+        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+          <ShoppingCart size={20} className="text-blue-500" />
+          関連商品の相場をチェック
+          <span className="text-[10px] text-gray-400 font-normal border border-gray-300 rounded px-1 ml-1">R</span>
+        </h3>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center p-12">
+          <div className="animate-spin h-8 w-8 border-4 border-[#bf0000] rounded-full border-t-transparent"></div>
+        </div>
+      ) : (
+        <div className="relative group">
+          
+          {/* 左スクロールボタン */}
+          <button 
+            onClick={() => scroll('left')}
+            className="absolute -left-2 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-200 shadow-md rounded-full w-9 h-9 flex items-center justify-center text-gray-600 hover:text-[#bf0000] transition-opacity opacity-0 group-hover:opacity-100"
+          >
+            <ChevronLeft size={20} />
+          </button>
+
+          {/* カルーセルコンテナ */}
+          <div 
+            ref={scrollContainerRef}
+            className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide scroll-smooth"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {products.map((item) => {
+              // 画像URLの処理
+              let imgUrl = 'https://placehold.co/150?text=No+Image';
+              if (item.mediumImageUrls && item.mediumImageUrls.length > 0) {
+                const rawUrl = item.mediumImageUrls[0];
+                if (typeof rawUrl === 'string') {
+                  imgUrl = rawUrl.split('?')[0];
+                } 
+              }
+
+              return (
+                <a 
+                  key={item.itemCode}
+                  href={item.itemUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-w-[140px] w-[140px] md:min-w-[160px] md:w-[160px] flex flex-col group/card transition-transform hover:-translate-y-1"
+                >
+                  {/* 画像 */}
+                  <div className="w-full aspect-square mb-2 border border-gray-100 rounded-md overflow-hidden bg-white">
+                    <img 
+                      src={imgUrl} 
+                      alt={item.itemName} 
+                      className="w-full h-full object-contain p-1"
+                      loading="lazy"
+                    />
+                  </div>
+
+                  {/* 商品詳細 */}
+                  <div className="flex flex-col px-1">
+                    {/* 商品名（2行制限） */}
+                    <h4 className="text-[11px] text-gray-700 leading-tight line-clamp-2 h-[2.5em] mb-1 group-hover/card:text-[#bf0000] group-hover/card:underline">
+                      {item.itemName}
+                    </h4>
+
+                    {/* 価格と送料 */}
+                    <div className="mt-1">
+                      <span className="text-sm font-bold text-[#bf0000] block">
+                        {item.itemPrice.toLocaleString()}円
+                      </span>
+                      
+                      {item.postageFlag === 0 && (
+                        <span className="inline-block text-[9px] bg-white border border-[#bf0000] text-[#bf0000] px-1 rounded mt-1">
+                          送料無料
+                        </span>
+                      )}
+                    </div>
+
+                    {/* 評価 */}
+                    {renderStars(item.reviewAverage, item.reviewCount)}
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+
+          {/* 右スクロールボタン */}
+          <button 
+            onClick={() => scroll('right')}
+            className="absolute -right-2 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-200 shadow-md rounded-full w-9 h-9 flex items-center justify-center text-gray-600 hover:text-[#bf0000] transition-opacity opacity-0 group-hover:opacity-100"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

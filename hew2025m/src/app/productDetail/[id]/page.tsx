@@ -9,7 +9,8 @@ import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
 import CancelModal from '@/components/CancelModal';
 import ProductCard from '@/components/ProductCard';
-import RakutenProducts from '@/components/rakuten';
+// AI版コンポーネントを使用
+import SmartRakuten from '@/components/SmartRakuten'; 
 import UserInfoCard from '@/components/UserInfoCard';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
@@ -510,8 +511,14 @@ export default function SellDetailPage() {
           <Comment productId={params.id as string} />
         </section>
 
-        {/* 楽天関連商品セクション */}
-        <RakutenProducts keyword={product ? getCategoryLabel(product.category) : ''} />
+        {/* ✅ AI検索用コンポーネント (カテゴリも渡す) */}
+        {product && (
+          <SmartRakuten 
+            productName={product.title} 
+            description={product.description} 
+            category={getCategoryLabel(product.category)}
+          />
+        )}
 
       </main>
 
