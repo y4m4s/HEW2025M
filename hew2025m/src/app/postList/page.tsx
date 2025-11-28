@@ -14,6 +14,29 @@ export default function PostList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const POSTS_PER_PAGE = 12;
+
+  // Firestoreからユーザー情報を取得
+  const fetchUserProfile = async (authorId: string) => {
+    try {
+      const uid = authorId.startsWith('user-') ? authorId.replace('user-', '') : authorId;
+      const userDocRef = doc(db, 'users', uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        return {
+          photoURL: userData.photoURL || undefined,
+          displayName: userData.displayName || undefined,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('ユーザー情報取得エラー:', error);
+      return null;
+    }
+  };
 
   const fetchPosts = async () => {
     try {
@@ -35,59 +58,54 @@ export default function PostList() {
 
       const data = await response.json();
 
-      // データベースのデータをPost型に変換（authorPhotoURLを取得）
-      const formattedPosts: Post[] = await Promise.all(data.posts.map(async (post: {
-        _id: string;
-        title: string;
-        content: string;
-        tags?: string[];
-        address?: string;
-        authorId: string;
-        authorName: string;
-        createdAt: string;
-        likes?: number;
-        comments?: unknown[];
-        category?: string;
-        media?: Array<{ url: string; order: number }>;
-      }) => {
-        // authorIdから "user-" プレフィックスを削除してFirestoreのuidを取得
-        const uid = post.authorId.startsWith('user-') ? post.authorId.replace('user-', '') : post.authorId;
-
-        // Firestoreからユーザー情報を取得
-        let authorPhotoURL: string | undefined;
-        try {
-          const userDocRef = doc(db, 'users', uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            authorPhotoURL = userData.photoURL || undefined;
+      // データベースのデータをPost型に変換 + Firestoreからユーザー情報取得
+      const formattedPosts: Post[] = await Promise.all(
+        data.posts.map(async (post: {
+          _id: string;
+          title: string;
+          content: string;
+          tags?: string[];
+          address?: string;
+          authorId: string;
+          authorName: string;
+          createdAt: string;
+          likes?: number;
+          comments?: unknown[];
+          category?: string;
+          media?: Array<{ url: string; order: number }>;
+        }) => {
+          // Firestoreから最新のユーザー情報を取得
+          let authorPhotoURL: string | undefined;
+          let authorDisplayName: string = post.authorName; // フォールバック
+          if (post.authorId) {
+            const userProfile = await fetchUserProfile(post.authorId);
+            authorPhotoURL = userProfile?.photoURL;
+            authorDisplayName = userProfile?.displayName || post.authorName;
           }
-        } catch (error) {
-          console.error('ユーザー情報取得エラー:', error);
-        }
 
-        return {
-          id: post._id,
-          title: post.title,
-          excerpt: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
-          fishName: extractFishName(post.tags),
-          fishSize: extractFishSize(post.tags),
-          fishWeight: extractFishWeight(post.tags),
-          fishCount: extractFishCount(post.tags),
-          location: post.address || '場所未設定',
-          author: post.authorName,
-          authorId: post.authorId,
-          authorPhotoURL,
-          date: formatDate(post.createdAt),
-          likes: post.likes || 0,
-          comments: post.comments?.length || 0,
-          category: post.category || 'other',
-          isLiked: false,
-          imageUrl: post.media && post.media.length > 0
-            ? post.media.sort((a, b) => a.order - b.order)[0].url
-            : undefined
-        };
-      }));
+          return {
+            id: post._id,
+            title: post.title,
+            excerpt: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
+            fishName: extractFishName(post.tags),
+            fishSize: extractFishSize(post.tags),
+            fishWeight: extractFishWeight(post.tags),
+            fishCount: extractFishCount(post.tags),
+            location: post.address || '場所未設定',
+            author: authorDisplayName,
+            authorId: post.authorId,
+            authorPhotoURL,
+            date: formatDate(post.createdAt),
+            likes: post.likes || 0,
+            comments: post.comments?.length || 0,
+            category: post.category || 'other',
+            isLiked: false,
+            imageUrl: post.media && post.media.length > 0
+              ? post.media.sort((a, b) => a.order - b.order)[0].url
+              : undefined
+          };
+        })
+      );
 
       setPosts(formattedPosts);
     } catch (err) {
@@ -99,6 +117,7 @@ export default function PostList() {
   };
 
   useEffect(() => {
+    setCurrentPage(1); // Reset to first page when filters change
     fetchPosts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFilter, keyword]);
@@ -157,9 +176,45 @@ export default function PostList() {
     { key: 'bait', label: 'エサ釣り' }
   ];
 
+  // Pagination calculations
+  const totalPages = Math.ceil(posts.length / POSTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
+  const endIndex = startIndex + POSTS_PER_PAGE;
+  const paginatedPosts = posts.slice(startIndex, endIndex);
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) {
+      // Show all pages if 7 or fewer
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Always show first page
+      pages.push(1);
+
+      if (currentPage > 3) {
+        pages.push('...');
+      }
+
+      // Show pages around current page
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+        pages.push(i);
+      }
+
+      if (currentPage < totalPages - 2) {
+        pages.push('...');
+      }
+
+      // Always show last page
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="bg-gray-50 min-h-screen flex flex-col">
 
       <div className="flex-1 container mx-auto px-4 py-6">
         <main>
@@ -244,39 +299,55 @@ export default function PostList() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-              {posts.map((post) => (
+              {paginatedPosts.map((post) => (
                 <PostCard key={post.id} post={post} />
               ))}
             </div>
           )}
 
-          <div className="flex justify-center items-center gap-4">
-            <Button
-              disabled
-              variant="ghost"
-              size="md"
-              className="bg-gray-100 text-gray-400 cursor-not-allowed"
-              icon={<ChevronLeft size={16} />}
-            >
-              前へ
-            </Button>
+          {posts.length > POSTS_PER_PAGE && (
+            <div className="flex justify-center items-center gap-4">
+              <Button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+                variant="ghost"
+                size="md"
+                className={currentPage === 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}
+                icon={<ChevronLeft size={16} />}
+              >
+                前へ
+              </Button>
 
-            <div className="flex gap-2">
-              <Button variant="primary" size="sm" className="w-8 h-8 p-0">1</Button>
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0 bg-gray-100 hover:bg-gray-200">2</Button>
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0 bg-gray-100 hover:bg-gray-200">3</Button>
-              <span className="px-2">...</span>
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0 bg-gray-100 hover:bg-gray-200">10</Button>
+              <div className="flex gap-2">
+                {getPageNumbers().map((page, index) => (
+                  page === '...' ? (
+                    <span key={`ellipsis-${index}`} className="px-2 flex items-center">...</span>
+                  ) : (
+                    <Button
+                      key={page}
+                      onClick={() => setCurrentPage(page as number)}
+                      variant={currentPage === page ? "primary" : "ghost"}
+                      size="sm"
+                      className={currentPage === page ? "w-8 h-8 p-0" : "w-8 h-8 p-0 bg-gray-100 hover:bg-gray-200"}
+                    >
+                      {page}
+                    </Button>
+                  )
+                ))}
+              </div>
+
+              <Button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                variant={currentPage === totalPages ? "ghost" : "primary"}
+                size="md"
+                className={currentPage === totalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""}
+                icon={<ChevronRight size={16} />}
+              >
+                次へ
+              </Button>
             </div>
-
-            <Button
-              variant="primary"
-              size="md"
-              icon={<ChevronRight size={16} />}
-            >
-              次へ
-            </Button>
-          </div>
+          )}
         </main>
       </div>
 

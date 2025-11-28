@@ -130,6 +130,14 @@ export default function NotificationPage() {
     });
   };
 
+  // すべて削除する処理（既読にすることで削除）
+  const handleDeleteAll = () => {
+    // すべての通知を既読にします
+    notifications.forEach(notif => {
+      handleMarkAsRead(notif.id);
+    });
+  };
+
   // --- 新規 ---
   // 通知をクリックした際の処理（遷移先に移動して既読にする）
   const handleNotificationClick = async (notification: NotificationItem) => {
@@ -180,6 +188,12 @@ export default function NotificationPage() {
               className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
             >
               すべて既読にする
+            </button>
+            <button
+              onClick={handleDeleteAll}
+              className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
+            >
+              すべて削除する
             </button>
             {/* フィルター機能は未実装ですが、ボタンは配置済みです */}
             <select className="border border-gray-300 rounded-md p-2 text-sm">

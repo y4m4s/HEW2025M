@@ -13,8 +13,8 @@ import RakutenProducts from '@/components/rakuten';
 import SellerInfo from '@/components/SellerInfo';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, deleteDoc, getDoc, collection, addDoc } from 'firebase/firestore';
-import toast from 'react-hot-toast'; // toastをインポート
+import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import toast from 'react-hot-toast';
 import { useCartStore } from '@/components/useCartStore';
 
 interface ProductDetail {
@@ -39,6 +39,8 @@ export default function SellDetailPage() {
   const router = useRouter();
   const { user } = useAuth();
   const addItemToCart = useCartStore((state) => state.addItem);
+  const removeItemFromCart = useCartStore((state) => state.removeItem);
+  const cartItems = useCartStore((state) => state.items);
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,6 +50,7 @@ export default function SellDetailPage() {
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isInCart, setIsInCart] = useState(false);
 
   // 出品者のプロフィール情報
   const [sellerProfile, setSellerProfile] = useState<{
@@ -85,6 +88,14 @@ export default function SellDetailPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, params.id]);
+
+  // カートに入っているかチェック
+  useEffect(() => {
+    if (params.id) {
+      const inCart = cartItems.some(item => item.id === params.id);
+      setIsInCart(inCart);
+    }
+  }, [params.id, cartItems]);
 
   const checkBookmarkStatus = async () => {
     if (!user || !params.id) return;
@@ -246,40 +257,30 @@ export default function SellDetailPage() {
     }
   };
 
-  // 「カートに追加」ボタンの処理
-  const handleAddToCart = async () => { // asyncを追加
+  // 「カートに追加/削除」ボタンの処理
+  const handleCartToggle = () => {
     if (!product) return;
-    if (product.status !== 'available') {
-      alert('この商品は現在購入できません。');
-      return;
-    }
-    addItemToCart({
-      id: product._id,
-      title: product.title,
-      price: product.price,
-      image: product.images[0] || '',
-    });
 
-    // --- 新規: 自分自身に通知を送信 ---
-    if (user) {
-      try {
-        const notificationRef = collection(db, 'users', user.uid, 'notifications');
-        await addDoc(notificationRef, {
-          iconType: 'system', // システム通知のアイコン
-          iconBgColor: 'bg-blue-500',
-          title: '商品をカートに追加しました',
-          description: product.title,
-          timestamp: new Date(),
-          tag: 'カート',
-          isUnread: true,
-        });
-      } catch (error) {
-        console.error("カート通知の作成エラー:", error);
+    if (isInCart) {
+      // カートから削除
+      removeItemFromCart(product._id);
+      toast.success('商品をカートから削除しました。');
+    } else {
+      // カートに追加
+      if (product.status !== 'available') {
+        alert('この商品は現在購入できません。');
+        return;
       }
-    }
 
-    toast.success('商品をカートに追加しました！'); // 通知を表示
-    router.push('/cart'); // カートページへ移動
+      addItemToCart({
+        id: product._id,
+        title: product.title,
+        price: product.price,
+        image: product.images[0] || '',
+      });
+
+      toast.success('商品をカートに追加しました。');
+    }
   };
 
   // 出品取り消しボタンの処理（モーダル表示）
@@ -398,7 +399,7 @@ export default function SellDetailPage() {
                       {product.images.map((_, index) => (
                         <button
                           key={index}
-                          onClick={() => goToSlide(index)}
+                          onClick={() => setCurrentSlide(index)}
                           className={`w-3 h-3 rounded-full transition-colors ${currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
                             }`}
                         />
@@ -424,7 +425,7 @@ export default function SellDetailPage() {
             </div>
             <div>
               <h3 className="text-xl font-semibold mb-3">商品詳細</h3>
-              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed break-words overflow-wrap-anywhere">
                 {product.description}
               </p>
             </div>
@@ -482,7 +483,13 @@ export default function SellDetailPage() {
                   {bookmarkLoading ? '処理中...' : isBookmarked ? 'ブックマーク済み' : 'ブックマーク'}
                 </Button>
                 <Button
-                  onClick={handleAddToCart} variant="primary" size="md" className="flex-1" disabled={product.status !== 'available'}> {product.status === 'available' ? 'カートに追加' : '購入できません'}
+                  onClick={handleCartToggle}
+                  variant={isInCart ? "ghost" : "primary"}
+                  size="md"
+                  className={`flex-1 ${isInCart ? 'bg-red-50 text-red-600 hover:bg-red-100' : ''}`}
+                  disabled={!isInCart && product.status !== 'available'}
+                >
+                  {isInCart ? 'カートから削除する' : product.status === 'available' ? 'カートに追加' : '購入できません'}
                 </Button>
               </div>
             )}
@@ -536,11 +543,12 @@ export default function SellDetailPage() {
               id: product._id,
               name: product.title,
               price: product.price,
-              location: product.sellerName,
+              location: sellerProfile?.displayName || product.sellerName,
               condition: getConditionLabel(product.condition),
               postedDate: formatDate(product.createdAt),
               imageUrl: product.images[0] || undefined,
               status: product.status,
+              sellerPhotoURL: sellerProfile?.photoURL,
             }}
           />
         </div>

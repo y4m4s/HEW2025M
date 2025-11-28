@@ -139,8 +139,8 @@ export default function Post() {
 
     if (!title) {
       errors.push('件名を入力してください');
-    } else if (title.length > 50) {
-      errors.push('件名は50文字以内で入力してください');
+    } else if (title.length > 30) {
+      errors.push('件名は30文字以内で入力してください');
     }
 
     if (!content) {
@@ -267,7 +267,7 @@ export default function Post() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 outline-none transition-colors ${
-                  title.length > 50
+                  title.length > 30
                     ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
                     : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
                 }`}
@@ -275,10 +275,10 @@ export default function Post() {
                 required
                 disabled={isSubmitting}
               />
-              <div className={`text-right text-sm mt-1 ${title.length > 50 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                {title.length}/50文字
-                {title.length > 50 && (
-                  <span className="ml-2">({title.length - 50}文字超過)</span>
+              <div className={`text-right text-sm mt-1 ${title.length > 30 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                {title.length}/30文字
+                {title.length > 30 && (
+                  <span className="ml-2">({title.length - 30}文字超過)</span>
                 )}
               </div>
             </div>
