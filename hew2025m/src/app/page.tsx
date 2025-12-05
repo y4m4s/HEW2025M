@@ -333,33 +333,39 @@ export default function Home() {
         </section>
 
         {/* 特徴セクション */}
-        <section className="py-16 bg-white rounded-3xl mb-16 shadow-sm">
+        <section className="py-16 mb-16">
           <div className="text-center mb-10">
             <h3 className="text-3xl font-bold mb-3 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>釣り人のためのコミュニティ</h3>
             <p className="text-base text-gray-600">釣り用品の取引から情報交換まで</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            <div className="text-center py-8 px-5">
-              <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
-                <Fish size={32} />
+            <Link href="/postList">
+              <div className="bg-white text-center py-8 px-5 rounded-2xl shadow-lg transition-all duration-300 relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-green-500 before:to-emerald-500 before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+                <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
+                  <Fish size={32} />
+                </div>
+                <h4 className="text-xl font-bold mb-4 text-gray-800">釣果情報</h4>
+                <p className="text-gray-600 leading-relaxed">みんなの釣行記録をチェック</p>
               </div>
-              <h4 className="text-xl font-bold mb-4 text-gray-800">釣り用品専門</h4>
-              <p className="text-gray-600 leading-relaxed">釣り竿からルアーまで、釣り用品に特化した専門マーケット</p>
-            </div>
-            <div className="text-center py-8 px-5">
-              <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
-                <MapPin size={32} />
+            </Link>
+            <Link href="/map">
+              <div className="bg-white text-center py-8 px-5 rounded-2xl shadow-lg transition-all duration-300 relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-green-500 before:to-emerald-500 before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+                <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
+                  <MapPin size={32} />
+                </div>
+                <h4 className="text-xl font-bold mb-4 text-gray-800">釣り場情報共有</h4>
+                <p className="text-gray-600 leading-relaxed">地域の情報をシェア</p>
               </div>
-              <h4 className="text-xl font-bold mb-4 text-gray-800">釣り場情報共有</h4>
-              <p className="text-gray-600 leading-relaxed">地域の釣り場情報や釣果報告をシェア</p>
-            </div>
-            <div className="text-center py-8 px-5">
-              <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
-                <Users size={32} />
+            </Link>
+            <Link href="/community">
+              <div className="bg-white text-center py-8 px-5 rounded-2xl shadow-lg transition-all duration-300 relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-green-500 before:to-emerald-500 before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
+                <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
+                  <Users size={32} />
+                </div>
+                <h4 className="text-xl font-bold mb-4 text-gray-800">釣り仲間と交流</h4>
+                <p className="text-gray-600 leading-relaxed">近くの釣り人との情報交換</p>
               </div>
-              <h4 className="text-xl font-bold mb-4 text-gray-800">釣り仲間と交流</h4>
-              <p className="text-gray-600 leading-relaxed">近くの釣り人との情報交換やグループ釣行の企画</p>
-            </div>
+            </Link>
           </div>
         </section>
 
