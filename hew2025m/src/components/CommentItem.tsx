@@ -72,7 +72,10 @@ export default function CommentItem({
   const replyCount = comment.replies?.length || 0;
 
   return (
-    <div className={`pb-4 last:border-none ${isReply ? 'ml-10 border-l-2 border-gray-200 pl-4' : 'border-b border-gray-200'}`}>
+    <div
+      id={`comment-${comment._id}`}
+      className={`pb-4 last:border-none scroll-mt-4 ${isReply ? 'ml-10 border-l-2 border-gray-200 pl-4' : 'border-b border-gray-200'}`}
+    >
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           {comment.userPhotoURL && !imageError ? (

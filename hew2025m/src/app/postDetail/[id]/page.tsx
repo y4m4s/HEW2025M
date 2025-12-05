@@ -119,6 +119,27 @@ export default function PostDetailPage() {
     }
   }, [params.id, fetchPost]);
 
+  // URLハッシュからコメントへスクロール
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hash = window.location.hash;
+      const targetId = hash.substring(1); // #を除去
+
+      // ページの読み込みを待ってからスクロール
+      setTimeout(() => {
+        const element = document.getElementById(targetId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // ハイライト効果を追加
+          element.classList.add('bg-yellow-100');
+          setTimeout(() => {
+            element.classList.remove('bg-yellow-100');
+          }, 2000);
+        }
+      }, 500);
+    }
+  }, [post]); // postが読み込まれた後に実行
+
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ja-JP', {

@@ -451,7 +451,7 @@ export default function SellPage() {
                   rows={6}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                  className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none ${
                     description.length > 300
                       ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'

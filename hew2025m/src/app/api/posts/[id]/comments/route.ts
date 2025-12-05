@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Comment from '@/models/Comment';
 import Post from '@/models/Post';
+import { createPostCommentNotificationServer, createReplyNotificationServer } from '@/lib/notifications';
 
 // コメントを階層構造に変換するヘルパー関数
 function organizeComments(comments: any[]) {
@@ -114,8 +115,9 @@ export async function POST(
     }
 
     // 返信の場合、親コメントが存在するか確認
+    let parentComment = null;
     if (parentId) {
-      const parentComment = await Comment.findById(parentId);
+      parentComment = await Comment.findById(parentId);
       if (!parentComment) {
         return NextResponse.json(
           { error: '返信先のコメントが見つかりませんでした' },
@@ -133,6 +135,41 @@ export async function POST(
       content: content.trim(),
       parentId: parentId || undefined,
     });
+
+    // 通知を作成
+    if (parentId && parentComment) {
+      // 返信の場合：親コメントの投稿者に通知（自分への返信でない場合のみ）
+      if (parentComment.userId && parentComment.userId !== userId) {
+        await createReplyNotificationServer(
+          parentComment.userId,
+          userId,
+          userName,
+          id,
+          post.title || '投稿',
+          comment._id.toString(),
+          content.trim(),
+          'post'
+        );
+      }
+    } else {
+      // 新規コメントの場合：投稿の作成者に通知（自分の投稿でない場合のみ）
+      // Postモデルは authorId フィールドを使用
+      const postAuthorId = post.authorId.startsWith('user-')
+        ? post.authorId.replace('user-', '')
+        : post.authorId;
+
+      if (postAuthorId && postAuthorId !== userId) {
+        await createPostCommentNotificationServer(
+          postAuthorId,
+          userId,
+          userName,
+          id,
+          post.title || '投稿',
+          comment._id.toString(),
+          content.trim()
+        );
+      }
+    }
 
     return NextResponse.json(
       {

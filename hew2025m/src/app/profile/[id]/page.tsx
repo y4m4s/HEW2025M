@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
-import { User } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, deleteDoc, Timestamp } from "firebase/firestore";
 import ProfileEdit from "@/components/ProfileEdit";
 import ProfSelling from "@/components/ProfSelling";
@@ -13,6 +14,9 @@ import ProfHistory from "@/components/ProfHistory";
 import ProfBookmark from "@/components/ProfBookmark";
 import UserRating from "@/components/UserRating";
 import FollowListModal from "@/components/FollowListModal";
+import LogoutModal from "@/components/LogoutModal";
+import { createFollowNotification } from "@/lib/notifications";
+import toast from "react-hot-toast";
 
 type TabType = "selling" | "history" | "bookmarks";
 
@@ -44,6 +48,7 @@ export default function UserProfilePage() {
   const [followModalType, setFollowModalType] = useState<'following' | 'followers'>('following');
   const [isFollowing, setIsFollowing] = useState(false);
   const [followDocId, setFollowDocId] = useState<string | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // 対象ユーザーのプロフィールを取得
   const fetchUserProfile = async () => {
@@ -158,6 +163,9 @@ export default function UserProfilePage() {
         setIsFollowing(true);
         setFollowDocId(docRef.id);
         setFollowersCount(prev => prev + 1);
+
+        // フォロー通知を作成
+        await createFollowNotification(targetProfile.uid, user.uid);
       }
     } catch (error) {
       console.error('フォロー処理エラー:', error);
@@ -169,6 +177,28 @@ export default function UserProfilePage() {
   const handleSendMessage = () => {
     if (!targetProfile) return;
     router.push(`/message?userId=${targetProfile.uid}`);
+  };
+
+  // ログアウト処理
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    try {
+      await signOut(auth);
+      setShowLogoutModal(false);
+      toast.success('ログアウトしました');
+      router.push('/login');
+    } catch (error) {
+      console.error('ログアウトエラー:', error);
+      setShowLogoutModal(false);
+      toast.error('ログアウトに失敗しました');
+    }
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
   };
 
   if (loading || authLoading || !user || !targetProfile) {
@@ -197,6 +227,13 @@ export default function UserProfilePage() {
         onClose={() => setFollowModalOpen(false)}
         userId={userId}
         type={followModalType}
+      />
+
+      {/* Logout Modal */}
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onConfirm={handleLogoutConfirm}
+        onCancel={handleLogoutCancel}
       />
 
       {/* ページ */}
@@ -255,7 +292,7 @@ export default function UserProfilePage() {
                 {/* ボタンエリア - 高さを統一 */}
                 <div className="space-y-3">
                   {isOwnProfile ? (
-                    // 自分のプロフィールの場合: プロフィール編集ボタンのみ
+                    // 自分のプロフィールの場合: プロフィール編集ボタンとログアウトボタン
                     <>
                       <button
                         className="w-full bg-[#2FA3E3] text-white py-3 rounded-lg hover:bg-[#1d7bb8] transition-colors"
@@ -263,8 +300,13 @@ export default function UserProfilePage() {
                       >
                         プロフィール編集
                       </button>
-                      {/* スペーサー - カードの高さを揃えるため */}
-                      <div className="h-12"></div>
+                      <button
+                        className="w-full border border-red-500 text-red-500 py-3 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+                        onClick={handleLogoutClick}
+                      >
+                        <LogOut size={18} />
+                        ログアウト
+                      </button>
                     </>
                   ) : (
                     // 他人のプロフィールの場合: フォローボタンとメッセージボタン

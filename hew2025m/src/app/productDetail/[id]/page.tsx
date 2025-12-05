@@ -75,6 +75,27 @@ export default function SellDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
+  // URLハッシュからコメントへスクロール
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hash = window.location.hash;
+      const targetId = hash.substring(1); // #を除去
+
+      // ページの読み込みを待ってからスクロール
+      setTimeout(() => {
+        const element = document.getElementById(targetId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // ハイライト効果を追加
+          element.classList.add('bg-yellow-100');
+          setTimeout(() => {
+            element.classList.remove('bg-yellow-100');
+          }, 2000);
+        }
+      }, 500);
+    }
+  }, [product]); // productが読み込まれた後に実行
+
   // 商品データが取得できたら出品者のプロフィールを取得
   useEffect(() => {
     if (product && product.sellerId) {
@@ -347,7 +368,6 @@ export default function SellDetailPage() {
               <h1 className="text-2xl font-bold mb-2">{product.title}</h1>
               <div className="flex gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-1"><Calendar size={14} /><span>{formatDate(product.createdAt)}</span></div>
-                <div className="flex items-center gap-1"><User size={14} /><span>{product.sellerName}</span></div>
               </div>
               <div className="mt-2">
                 <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${product.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
