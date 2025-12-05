@@ -18,11 +18,17 @@ interface RakutenItem {
 
 interface RakutenProductsProps {
   keyword: string;
+  initialProducts?: RakutenItem[];
+  initialLoading?: boolean;
 }
 
-export default function RakutenProducts({ keyword }: RakutenProductsProps) {
-  const [products, setProducts] = useState<RakutenItem[]>([]);
-  const [loading, setLoading] = useState(false);
+export default function RakutenProducts({
+  keyword,
+  initialProducts,
+  initialLoading = true,
+}: RakutenProductsProps) {
+  const [products, setProducts] = useState<RakutenItem[]>(initialProducts || []);
+  const [loading, setLoading] = useState(initialProducts ? initialLoading : true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,7 +37,10 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
     console.log("🛒 Rakuten Component Received Keyword:", keyword);
     console.log("--------------------------------------------------");
 
-    if (!keyword) return;
+    // initialProductsが渡された場合は、再フェッチしない
+    if (initialProducts || !keyword) {
+      return;
+    }
 
     const fetchRakutenData = async () => {
       setLoading(true);
@@ -62,7 +71,7 @@ export default function RakutenProducts({ keyword }: RakutenProductsProps) {
     };
 
     fetchRakutenData();
-  }, [keyword]);
+  }, [keyword, initialProducts]);
 
   // カルーセルをスクロールする関数
   const scroll = (direction: 'left' | 'right') => {
