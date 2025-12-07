@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { useRouter, useParams } from "next/navigation";
-import { User } from "lucide-react";
+import { useRouter, useParams } from 'next/navigation';
+import { User, Loader2 } from 'lucide-react';
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -11,14 +11,14 @@ import ProfileEdit from "@/components/ProfileEdit";
 import ProfSelling from "@/components/ProfSelling";
 import ProfHistory from "@/components/ProfHistory";
 import ProfBookmark from "@/components/ProfBookmark";
-import ProfActivity from "@/components/ProfActivity";
 import RecentlyViewed from "@/components/RecentlyViewed";
 
-type TabType = "selling" | "history" | "bookmarks" | "activity";
+type TabType = "selling" | "history" | "bookmarks";
 
 interface UserProfile {
   uid: string;
   displayName: string;
+  username?: string; // ユーザー名（@xxxx）を追加。存在しない場合もあるためオプショナルに。
 
   photoURL: string;
   bio: string;
@@ -38,7 +38,6 @@ export default function UserProfilePage() {
   const [sellingCount, setSellingCount] = useState(0);
   const [historyCount, setHistoryCount] = useState(0);
   const [bookmarkCount, setBookmarkCount] = useState(0);
-  const [activityCount, setActivityCount] = useState(0);
 
   // 対象ユーザーのプロフィールを取得
   const fetchUserProfile = async () => {
@@ -88,7 +87,7 @@ export default function UserProfilePage() {
   if (loading || authLoading || !user || !targetProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>読み込み中...</p>
+        <Loader2 className="h-10 w-10 animate-spin text-[#2FA3E3]" />
       </div>
     );
   }
@@ -132,7 +131,7 @@ export default function UserProfilePage() {
                 <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "せのびゴシック" }}>
                   {targetProfile.displayName || "名無しユーザー"}
                 </h1>
-                <p className="text-gray-600 mb-4">@{targetProfile.username || "user"}</p>
+                <p className="text-gray-600 mb-4">@{targetProfile.username || 'user'}</p>
 
                 {/* 自分のプロフィールの場合: プロフィール編集ボタンのみ */}
                 {isOwnProfile ? (
@@ -199,19 +198,6 @@ export default function UserProfilePage() {
                     ブックマーク ({bookmarkCount})
                   </button>
                 )}
-                {/* 活動履歴は自分のプロフィールの場合のみ表示 */}
-                {isOwnProfile && (
-                  <button
-                    className={`px-6 py-4 font-medium transition-colors ${
-                      activeTab === "activity"
-                        ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
-                        : "text-gray-600 hover:text-[#2FA3E3]"
-                    }`}
-                    onClick={() => setActiveTab("activity")}
-                  >
-                    活動履歴 ({activityCount})
-                  </button>
-                )}
               </div>
 
               <div style={{ display: activeTab === "selling" ? "block" : "none" }}>
@@ -223,11 +209,6 @@ export default function UserProfilePage() {
               {isOwnProfile && (
                 <div style={{ display: activeTab === "bookmarks" ? "block" : "none" }}>
                   <ProfBookmark onCountChange={setBookmarkCount} />
-                </div>
-              )}
-              {isOwnProfile && (
-                <div style={{ display: activeTab === "activity" ? "block" : "none" }}>
-                  <ProfActivity userId={userId} onCountChange={setActivityCount} />
                 </div>
               )}
             </div>
