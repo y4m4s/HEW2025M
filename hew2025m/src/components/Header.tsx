@@ -111,6 +111,7 @@ export default function Header() {
                       height={40}
                       quality={90}
                       className="w-full h-full object-cover"
+                      unoptimized
                     />
                   ) : (
                     <UserIcon size={20} />

@@ -24,7 +24,7 @@ export async function createFollowNotification(
 
     // 被フォローユーザーに通知を作成
     const notificationData = {
-      iconType: 'system',
+      iconType: 'follow',
       iconBgColor: 'bg-blue-500',
       title: `${displayName}さんにフォローされました`,
       description: `${displayName}さんがあなたをフォローしました。`,
@@ -73,7 +73,7 @@ export async function createRatingNotification(
 
     // 評価されたユーザーに通知を作成
     const notificationData = {
-      iconType: 'comment',
+      iconType: 'rating',
       iconBgColor: 'bg-green-500',
       title: `${displayName}さんに評価されました`,
       description: `★${rating} - ${comment.substring(0, 50)}${comment.length > 50 ? '...' : ''}`,
@@ -225,5 +225,53 @@ export async function createReplyNotificationServer(
     console.log('返信通知を作成しました');
   } catch (error) {
     console.error('返信通知の作成に失敗しました:', error);
+  }
+}
+
+/**
+ * 投稿へのいいね通知を作成する関数（サーバーサイド用）
+ * @param postAuthorId - 投稿の作成者ID
+ * @param likerUserId - いいねしたユーザーのID
+ * @param postId - 投稿ID
+ * @param postTitle - 投稿タイトル
+ */
+export async function createPostLikeNotificationServer(
+  postAuthorId: string,
+  likerUserId: string,
+  postId: string,
+  postTitle: string
+): Promise<void> {
+  try {
+    // いいねしたユーザーの情報をFirestoreから取得
+    const userDoc = await getDoc(doc(db, 'users', likerUserId));
+
+    if (!userDoc.exists()) {
+      console.error('いいねしたユーザーが見つかりません');
+      return;
+    }
+
+    const userData = userDoc.data();
+    const displayName = userData.displayName || '不明なユーザー';
+
+    const notificationData = {
+      iconType: 'like',
+      iconBgColor: 'bg-pink-500',
+      title: `${displayName}さんがいいねしました`,
+      description: `${displayName}さんがあなたの投稿「${postTitle}」にいいねしました。`,
+      timestamp: Timestamp.now(),
+      tag: 'いいね',
+      isUnread: true,
+      link: `/postDetail/${postId}`,
+    };
+
+    // 通知をFirestoreに保存
+    await addDoc(
+      collection(db, 'users', postAuthorId, 'notifications'),
+      notificationData
+    );
+
+    console.log('いいね通知を作成しました');
+  } catch (error) {
+    console.error('いいね通知の作成に失敗しました:', error);
   }
 }

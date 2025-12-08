@@ -415,7 +415,7 @@ export default function MessagePage() {
 
     // 通知ドキュメントのデータを準備
     const notificationData = {
-      iconType: 'comment' as const,
+      iconType: 'message' as const,
       iconBgColor: 'bg-green-500',
       title: `${myData?.displayName || user.displayName || '不明なユーザー'}さんから新しいメッセージ`,
       description: inputValue.trim(),

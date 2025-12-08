@@ -12,13 +12,14 @@ import ProfileEdit from "@/components/ProfileEdit";
 import ProfSelling from "@/components/ProfSelling";
 import ProfHistory from "@/components/ProfHistory";
 import ProfBookmark from "@/components/ProfBookmark";
+import ProfLikedPosts from "@/components/ProfLikedPosts";
 import UserRating from "@/components/UserRating";
 import FollowListModal from "@/components/FollowListModal";
 import LogoutModal from "@/components/LogoutModal";
 import { createFollowNotification } from "@/lib/notifications";
 import toast from "react-hot-toast";
 
-type TabType = "selling" | "history" | "bookmarks";
+type TabType = "selling" | "history" | "bookmarks" | "likedPosts";
 
 interface UserProfile {
   uid: string;
@@ -42,6 +43,7 @@ export default function UserProfilePage() {
   const [sellingCount, setSellingCount] = useState(0);
   const [historyCount, setHistoryCount] = useState(0);
   const [bookmarkCount, setBookmarkCount] = useState(0);
+  const [likedPostsCount, setLikedPostsCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
   const [followModalOpen, setFollowModalOpen] = useState(false);
@@ -381,6 +383,19 @@ export default function UserProfilePage() {
                     ブックマーク ({bookmarkCount})
                   </button>
                 )}
+                {/* いいねは自分のプロフィールの場合のみ表示 */}
+                {isOwnProfile && (
+                  <button
+                    className={`px-6 py-4 font-medium transition-colors ${
+                      activeTab === "likedPosts"
+                        ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
+                        : "text-gray-600 hover:text-[#2FA3E3]"
+                    }`}
+                    onClick={() => setActiveTab("likedPosts")}
+                  >
+                    いいね ({likedPostsCount})
+                  </button>
+                )}
               </div>
 
               <div style={{ display: activeTab === "selling" ? "block" : "none" }}>
@@ -390,9 +405,14 @@ export default function UserProfilePage() {
                 <ProfHistory onCountChange={setHistoryCount} userId={userId} />
               </div>
               {isOwnProfile && (
-                <div style={{ display: activeTab === "bookmarks" ? "block" : "none" }}>
-                  <ProfBookmark onCountChange={setBookmarkCount} />
-                </div>
+                <>
+                  <div style={{ display: activeTab === "bookmarks" ? "block" : "none" }}>
+                    <ProfBookmark onCountChange={setBookmarkCount} />
+                  </div>
+                  <div style={{ display: activeTab === "likedPosts" ? "block" : "none" }}>
+                    <ProfLikedPosts onCountChange={setLikedPostsCount} userId={userId} />
+                  </div>
+                </>
               )}
             </div>
 

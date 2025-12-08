@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   images: {
+
+    qualities: [75, 90],
+
     remotePatterns: [
       {
         protocol: 'https',
@@ -39,6 +41,15 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
+      },
+    ],
+    
+    localPatterns: [
+      {
+        pathname: '/uploads/**',
+      },
+      {
+        pathname: '/avatars/**',
       },
     ],
   },
