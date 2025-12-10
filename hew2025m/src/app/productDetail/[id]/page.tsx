@@ -9,9 +9,10 @@ import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
 import CancelModal from '@/components/CancelModal';
 import ProductCard from '@/components/ProductCard';
-// AI版コンポーネントを使用
+
 import SmartRakuten from '@/components/SmartRakuten'; 
-import UserInfoCard from '@/components/UserInfoCard';
+import SellerInfo from '@/components/SellerInfo';
+
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
@@ -498,12 +499,14 @@ export default function SellDetailPage() {
         </div>
 
         {/* 出品者情報 */}
-        <UserInfoCard
-          title="出品者情報"
-          userProfile={sellerProfile}
-          loading={sellerProfileLoading}
-          fallbackName={product.sellerName}
-        />
+        <div className="mt-8">
+          <SellerInfo
+            sellerProfile={sellerProfile}
+            loading={sellerProfileLoading}
+            fallbackName={product.sellerName}
+            isOwnProduct={!!(user && (product.sellerId === user.uid || product.sellerId === `user-${user.uid}`))}
+          />
+        </div>
 
         {/* コメントセクション */}
         <section className="mt-8 bg-white rounded-lg shadow-md p-6">
