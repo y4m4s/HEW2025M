@@ -213,35 +213,30 @@ export default function SearchPage() {
   const paginatedProducts = products.slice(startIndex, endIndex);
 
   // Generate page numbers to display
-  const getPageNumbers = () => {
-    const pages: (number | string)[] = [];
-    if (totalPages <= 7) {
-      // Show all pages if 7 or fewer
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      // Always show first page
-      pages.push(1);
+  const range = (start: number, end: number) =>
+  Array.from({ length: end - start + 1 }, (_, i) => start + i);
 
-      if (currentPage > 3) {
-        pages.push('...');
-      }
+const getPageNumbers = () => {
+  const visiblePages = 5;
 
-      // Show pages around current page
-      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
-        pages.push(i);
-      }
+  if (totalPages <= 7) return range(1, totalPages);
 
-      if (currentPage < totalPages - 2) {
-        pages.push('...');
-      }
+  const firstPage = 1;
+  const lastPage = totalPages;
+  const start = Math.max(firstPage + 1, currentPage - 1);
+  const end = Math.min(lastPage - 1, currentPage + 1);
 
-      // Always show last page
-      pages.push(totalPages);
-    }
-    return pages;
-  };
+  const pages: (number | string)[] = [
+    firstPage,
+    ...(start > firstPage + 1 ? ['...'] : []),
+    ...range(start, end),
+    ...(end < lastPage - 1 ? ['...'] : []),
+    lastPage
+  ];
+
+  return pages;
+};
+
 
   return (
     <div>

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { useRouter, useParams } from "next/navigation";
-import { User } from "lucide-react";
+import { useRouter, useParams } from 'next/navigation';
+import { User, Loader2 } from 'lucide-react';
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, deleteDoc, Timestamp } from "firebase/firestore";
@@ -11,6 +11,9 @@ import ProfileEdit from "@/components/ProfileEdit";
 import ProfSelling from "@/components/ProfSelling";
 import ProfHistory from "@/components/ProfHistory";
 import ProfBookmark from "@/components/ProfBookmark";
+
+import RecentlyViewed from "@/components/RecentlyViewed";
+
 import UserRating from "@/components/UserRating";
 import FollowListModal from "@/components/FollowListModal";
 
@@ -19,7 +22,8 @@ type TabType = "selling" | "history" | "bookmarks";
 interface UserProfile {
   uid: string;
   displayName: string;
-  username: string;
+  username?: string; // ユーザー名（@xxxx）を追加。存在しない場合もあるためオプショナルに。
+
   photoURL: string;
   bio: string;
   email: string;
@@ -174,7 +178,7 @@ export default function UserProfilePage() {
   if (loading || authLoading || !user || !targetProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>読み込み中...</p>
+        <Loader2 className="h-10 w-10 animate-spin text-[#2FA3E3]" />
       </div>
     );
   }
@@ -226,7 +230,7 @@ export default function UserProfilePage() {
                 <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "せのびゴシック" }}>
                   {targetProfile.displayName || "名無しユーザー"}
                 </h1>
-                <p className="text-gray-600 mb-4">@{targetProfile.username || "user"}</p>
+                <p className="text-gray-600 mb-4">@{targetProfile.username || 'user'}</p>
 
                 {/* フォロー/フォロワー表示 */}
                 <div className="flex justify-center gap-6 mb-4 text-sm">
@@ -355,6 +359,8 @@ export default function UserProfilePage() {
             </div>
 
           </div>
+          {/* Recently Viewed Products */}
+          <RecentlyViewed />
         </div>
       </div>
     </>
