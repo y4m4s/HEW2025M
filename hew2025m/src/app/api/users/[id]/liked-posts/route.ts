@@ -8,12 +8,12 @@ import { doc, getDoc } from 'firebase/firestore';
 // ユーザーがいいねした投稿一覧を取得
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
 
-    const { userId } = await params;
+    const { id: userId } = await params;
 
     // ユーザーのいいねを取得（新しい順）
     const likes = await PostLike.find({ userId })
