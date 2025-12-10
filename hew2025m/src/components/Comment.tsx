@@ -11,9 +11,10 @@ import CommentList from './CommentList';
 interface CommentProps {
   productId?: string;
   postId?: string;
+  onCommentCountChange?: (count: number) => void;
 }
 
-export default function Comment({ productId, postId }: CommentProps) {
+export default function Comment({ productId, postId, onCommentCountChange }: CommentProps) {
   const router = useRouter();
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -42,7 +43,13 @@ export default function Comment({ productId, postId }: CommentProps) {
         throw new Error('コメントの取得に失敗しました');
       }
       const data = await response.json();
-      setComments(data.comments || []);
+      const fetchedComments = data.comments || [];
+      setComments(fetchedComments);
+
+      // 親コンポーネントにコメント数を通知
+      if (onCommentCountChange) {
+        onCommentCountChange(fetchedComments.length);
+      }
     } catch (err) {
       console.error('コメント取得エラー:', err);
     } finally {

@@ -97,7 +97,7 @@ export default function MessagePage() {
           setSelectedUser({
             id: userId,
             name: userData.displayName || '不明なユーザー',
-            preview: `@${userData.username} - ${userData.email}`,
+            preview: `@${userData.username}`,
             photoURL: userData.photoURL || '',
             username: userData.username || '',
             bio: userData.bio || '',
@@ -315,7 +315,7 @@ export default function MessagePage() {
       return searchResults.map(u => ({
         id: u.uid,
         name: u.displayName,
-        preview: `@${u.username} - ${u.email}`,
+        preview: `@${u.username}`,
         photoURL: u.photoURL,
         username: u.username,
         bio: '' // 検索時はbioを取得しない
@@ -415,7 +415,7 @@ export default function MessagePage() {
 
     // 通知ドキュメントのデータを準備
     const notificationData = {
-      iconType: 'comment' as const,
+      iconType: 'message' as const,
       iconBgColor: 'bg-green-500',
       title: `${myData?.displayName || user.displayName || '不明なユーザー'}さんから新しいメッセージ`,
       description: inputValue.trim(),
@@ -515,35 +515,41 @@ export default function MessagePage() {
         </div>
 
         <div className="flex-1 overflow-y-auto min-h-0">
-          {conversationList.map((convo) => (
-            <div
-              key={convo.id}
-              className={`flex items-center p-4 cursor-pointer border-l-4 transition-colors duration-150 ${selectedUser?.id === convo.id
-                ? 'bg-blue-50 border-blue-500'
-                : 'border-transparent hover:bg-gray-100'
-                }`}
-              onClick={() => handleSelectUser(convo)}
-            >
-              {/* アバター画像 */}
-              <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0 overflow-hidden relative">
-                {convo.photoURL ? (
-                  <Image
-                    src={convo.photoURL}
-                    alt={convo.name}
-                    fill
-                    className="object-cover"
-                    sizes="40px"
-                  />
-                ) : (
-                  <User size={20} className="text-gray-600" />
-                )}
-              </div>
-              <div className="overflow-hidden">
-                <h3 className="text-md font-semibold text-gray-900">{convo.name}</h3>
-                <p className="text-sm text-gray-500 truncate">{convo.preview}</p>
-              </div>
+          {conversationList.length === 0 && searchQuery ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+              <p className="text-gray-500">ユーザーが見つかりませんでした。</p>
             </div>
-          ))}
+          ) : (
+            conversationList.map((convo) => (
+              <div
+                key={convo.id}
+                className={`flex items-center p-4 cursor-pointer border-l-4 transition-colors duration-150 ${selectedUser?.id === convo.id
+                  ? 'bg-blue-50 border-blue-500'
+                  : 'border-transparent hover:bg-gray-100'
+                  }`}
+                onClick={() => handleSelectUser(convo)}
+              >
+                {/* アバター画像 */}
+                <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0 overflow-hidden relative">
+                  {convo.photoURL ? (
+                    <Image
+                      src={convo.photoURL}
+                      alt={convo.name}
+                      fill
+                      className="object-cover"
+                      sizes="40px"
+                    />
+                  ) : (
+                    <User size={20} className="text-gray-600" />
+                  )}
+                </div>
+                <div className="overflow-hidden">
+                  <h3 className="text-md font-semibold text-gray-900">{convo.name}</h3>
+                  <p className="text-sm text-gray-500 truncate">{convo.preview}</p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import PostCard, { Post } from '@/components/PostCard';
 import Button from '@/components/Button';
+import RecommendedUsers from '@/components/RecommendedUsers';
 import { Fish, MapPin, User } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -326,12 +327,10 @@ export default function CommunityPage() {
                   <User className="text-purple-600" size={24} />
                 </div>
                 <h3 className="text-xl font-bold text-gray-800" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
-                  おすすめ
+                  おすすめユーザー
                 </h3>
               </div>
-              <div className="h-32 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg flex items-center justify-center text-gray-500 border border-gray-100">
-                <p className="text-sm">準備中...</p>
-              </div>
+              <RecommendedUsers />
             </div>
           </aside>
         </div>

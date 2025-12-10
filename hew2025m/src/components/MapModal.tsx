@@ -179,7 +179,7 @@ const MapModal: React.FC<MapModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-gray-800/30 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full my-8">
         {/* ヘッダー */}
         <div className="bg-gray-50 px-6 py-4 border-b flex justify-between items-center sticky top-0 z-10">

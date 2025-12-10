@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { Fish } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
+import ProductCard, { Product } from "./ProductCard";
 
 interface Bookmark {
   id: string;
@@ -23,8 +22,7 @@ interface ProfBookmarkProps {
 
 export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
   const { user } = useAuth();
-  const router = useRouter();
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,15 +49,50 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
 
-        setBookmarks(bookmarkList);
+        // 各ブックマークの商品詳細を取得
+        const productDetails = await Promise.all(
+          bookmarkList.map(async (bookmark) => {
+            try {
+              const response = await fetch(`/api/products/${bookmark.productId}`);
+              if (!response.ok) return null;
+
+              const data = await response.json();
+              const product = data.product;
+
+              // ProductCard用のフォーマットに変換
+              return {
+                id: product._id,
+                name: product.title,
+                price: product.price,
+                location: product.location || '場所未設定',
+                condition: product.condition || '状態不明',
+                postedDate: new Date(product.createdAt).toLocaleDateString('ja-JP', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                }),
+                imageUrl: product.images?.[0] || bookmark.image,
+                status: product.status || 'available',
+                sellerPhotoURL: product.sellerPhotoURL,
+              } as Product;
+            } catch (error) {
+              console.error(`商品 ${bookmark.productId} の取得エラー:`, error);
+              return null;
+            }
+          })
+        );
+
+        // 削除された商品を除外
+        const validProducts = productDetails.filter((p): p is Product => p !== null);
+        setProducts(validProducts);
 
         // 親コンポーネントにブックマーク数を通知
         if (onCountChange) {
-          onCountChange(bookmarkList.length);
+          onCountChange(validProducts.length);
         }
       } catch (error) {
         console.error("ブックマーク取得エラー:", error);
-        setBookmarks([]);
+        setProducts([]);
         if (onCountChange) {
           onCountChange(0);
         }
@@ -71,10 +104,6 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
     fetchBookmarks();
   }, [user, onCountChange]);
 
-  const handleProductClick = (productId: string) => {
-    router.push(`/productDetail/${productId}`);
-  };
-
   if (loading) {
     return (
       <div className="p-6 text-center">
@@ -83,7 +112,7 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
     );
   }
 
-  if (bookmarks.length === 0) {
+  if (products.length === 0) {
     return (
       <div className="p-6 text-center">
         <Fish size={64} className="mx-auto text-gray-300 mb-4" />
@@ -94,31 +123,8 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
 
   return (
     <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {bookmarks.map((bookmark) => (
-        <div
-          key={bookmark.id}
-          className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition cursor-pointer"
-          onClick={() => handleProductClick(bookmark.productId)}
-        >
-          <div className="h-36 bg-gray-200 flex items-center justify-center overflow-hidden">
-            {bookmark.image ? (
-              <Image
-                src={bookmark.image}
-                alt={bookmark.title}
-                width={400}
-                height={300}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <Fish className="text-gray-400" />
-            )}
-          </div>
-          <div className="p-3 text-sm">
-            <p className="font-medium truncate">{bookmark.title}</p>
-            <p className="text-lg font-bold text-[#2FA3E3]">¥{bookmark.price.toLocaleString()}</p>
-            <p className="text-xs text-gray-500">ブックマーク済み</p>
-          </div>
-        </div>
+      {products.map((product) => (
+        <ProductCard key={product.id} product={product} />
       ))}
     </div>
   );

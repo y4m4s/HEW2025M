@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { X, Star } from "lucide-react";
+import { X, Star, User } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface RatingWithUser {
   id: string;
@@ -28,6 +29,14 @@ export default function RatingListModal({
   ratings,
   averageRating,
 }: RatingListModalProps) {
+  const router = useRouter();
+
+  // ユーザープロフィールへ遷移
+  const handleUserClick = (userId: string) => {
+    onClose();
+    router.push(`/profile/${userId}`);
+  };
+
   // ESCキーでモーダルを閉じる
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -52,7 +61,7 @@ export default function RatingListModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30 p-4"
       onClick={onClose}
     >
       {/* モーダルコンテンツ */}
@@ -85,9 +94,12 @@ export default function RatingListModal({
           ) : (
             <div className="space-y-4">
               {ratings.map((rating) => (
-                <div key={rating.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                <div key={rating.id} className="border rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden flex-shrink-0">
+                    <div
+                      className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-[#2FA3E3] hover:ring-offset-2 transition-all"
+                      onClick={() => handleUserClick(rating.raterUserId)}
+                    >
                       {rating.raterPhotoURL ? (
                         <Image
                           src={rating.raterPhotoURL}
@@ -97,15 +109,18 @@ export default function RatingListModal({
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm font-medium">
-                          {rating.raterName.charAt(0)}
-                        </div>
+                        <User size={20} className="text-gray-600" />
                       )}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-sm">{rating.raterName}</span>
-                        <span className="text-xs text-gray-500">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+                        <span
+                          className="font-medium text-sm truncate cursor-pointer hover:text-[#2FA3E3] hover:underline transition-colors"
+                          onClick={() => handleUserClick(rating.raterUserId)}
+                        >
+                          {rating.raterName}
+                        </span>
+                        <span className="text-xs text-gray-500 flex-shrink-0">
                           {rating.createdAt.toLocaleDateString("ja-JP", {
                             year: "numeric",
                             month: "long",
@@ -126,7 +141,7 @@ export default function RatingListModal({
                           />
                         ))}
                       </div>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed overflow-wrap-anywhere">
                         {rating.comment}
                       </p>
                     </div>

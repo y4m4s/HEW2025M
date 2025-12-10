@@ -75,6 +75,27 @@ export default function SellDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
+  // URLハッシュからコメントへスクロール
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hash = window.location.hash;
+      const targetId = hash.substring(1); // #を除去
+
+      // ページの読み込みを待ってからスクロール
+      setTimeout(() => {
+        const element = document.getElementById(targetId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // ハイライト効果を追加
+          element.classList.add('bg-yellow-100');
+          setTimeout(() => {
+            element.classList.remove('bg-yellow-100');
+          }, 2000);
+        }
+      }, 500);
+    }
+  }, [product]); // productが読み込まれた後に実行
+
   // 商品データが取得できたら出品者のプロフィールを取得
   useEffect(() => {
     if (product && product.sellerId) {
@@ -115,7 +136,14 @@ export default function SellDetailPage() {
       setLoading(true);
       setError(null);
       const response = await fetch(`/api/products/${params.id}`);
-      if (!response.ok) throw new Error('商品の取得に失敗しました');
+      if (!response.ok) {
+        if (response.status === 404) {
+          // 404は正常な運用で起こり得るため、エラーログを出さない
+          setError('この商品は削除されています。');
+          return;
+        }
+        throw new Error('商品の取得に失敗しました');
+      }
       const data = await response.json();
       setProduct(data.product);
     } catch (err) {
@@ -325,7 +353,25 @@ export default function SellDetailPage() {
   };
 
   if (loading) return <div className="min-h-screen flex justify-center items-center bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2FA3E3]"></div></div>;
-  if (error || !product) return <div className="min-h-screen flex flex-col justify-center items-center"><p className="text-red-600 mb-4">{error || '商品が見つかりませんでした'}</p><Button onClick={() => router.back()} variant="primary" size="md">戻る</Button></div>;
+  if (error || !product) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 px-4">
+        <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
+          <Fish size={64} className="text-gray-300 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">商品が見つかりません</h2>
+          <p className="text-gray-600 mb-6">{error || '商品が見つかりませんでした'}</p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={() => router.back()} variant="ghost" size="md" className="flex-1">
+              戻る
+            </Button>
+            <Button onClick={() => router.push('/')} variant="primary" size="md" className="flex-1">
+              トップページへ
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const hasImages = product.images && product.images.length > 0;
 
@@ -347,7 +393,6 @@ export default function SellDetailPage() {
               <h1 className="text-2xl font-bold mb-2">{product.title}</h1>
               <div className="flex gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-1"><Calendar size={14} /><span>{formatDate(product.createdAt)}</span></div>
-                <div className="flex items-center gap-1"><User size={14} /><span>{product.sellerName}</span></div>
               </div>
               <div className="mt-2">
                 <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${product.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>

@@ -228,8 +228,20 @@ export default function SellPage() {
       });
 
       if (!productResponse.ok) {
-        const errorData = await productResponse.json();
-        throw new Error(errorData.error || '商品の出品に失敗しました');
+        try {
+          const errorData = await productResponse.json();
+          throw new Error(errorData.error || '商品の出品に失敗しました');
+        } catch (jsonError) {
+          throw new Error('商品の出品に失敗しました');
+        }
+      }
+
+      // 成功時のレスポンスを取得（エラーが発生しても無視）
+      try {
+        await productResponse.json();
+      } catch (jsonError) {
+        // レスポンスが空でもエラーにしない
+        console.log('Response body is empty or invalid JSON, but request was successful');
       }
 
       previewUrls.forEach((url) => URL.revokeObjectURL(url));
@@ -371,13 +383,20 @@ export default function SellPage() {
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">¥</span>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      className="w-full p-4 pl-8 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20 transition-all duration-300"
+                      onChange={(e) => {
+                        // 数字のみを許可（e, +, -, . などを除外）
+                        const value = e.target.value.replace(/[^0-9]/g, '');
+                        setPrice(value);
+                      }}
+                      className={`w-full p-4 pl-8 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                        submitted && (price === "" || Number(price) <= 0 || Number(price) > 99999999)
+                          ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
+                          : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
+                      }`}
                       placeholder="0"
-                      min="1"
-                      max="99999999"
                       required
                       aria-required="true"
                       aria-invalid={submitted && (price === "" || Number(price) <= 0 || Number(price) > 99999999) ? "true" : "false"}
@@ -477,7 +496,7 @@ export default function SellPage() {
                   rows={6}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                  className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none ${
                     description.length > 300
                       ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'

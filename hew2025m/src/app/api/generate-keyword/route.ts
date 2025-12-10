@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     const genAI = new GoogleGenerativeAI(apiKey);
     
     // ✅ モデル指定: ユーザーが動作を確認済みのバージョンを使用
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-09-2025" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // フロントエンドから JSON データ（商品名、説明、カテゴリ）を受け取る
     const { productName, description, category } = await req.json();

@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@/lib/useAuth";
 import toast from "react-hot-toast";
 import RatingListModal from "./RatingListModal";
+import { createRatingNotification } from "@/lib/notifications";
 
 interface Rating {
   id: string;
@@ -191,6 +192,14 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
           totalRatings: increment(1),
           ratingSum: increment(selectedRating),
         });
+
+        // 評価通知を作成
+        await createRatingNotification(
+          targetUserId,
+          user.uid,
+          selectedRating,
+          comment.trim()
+        );
 
         toast.success("評価を投稿しました");
       }

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/useAuth';
 import { collection, query, where, getDocs, doc, getDoc, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { createFollowNotification } from '@/lib/notifications';
 
 interface UserInfo {
   uid: string;
@@ -201,6 +202,9 @@ export default function FollowListModal({ isOpen, onClose, userId, type: initial
           ...prev,
           [targetUserId]: { isFollowing: true, docId: docRef.id }
         }));
+
+        // フォロー通知を作成
+        await createFollowNotification(targetUserId, user.uid);
       }
     } catch (error) {
       console.error('フォロー処理エラー:', error);
@@ -212,7 +216,7 @@ export default function FollowListModal({ isOpen, onClose, userId, type: initial
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30 p-4"
       onClick={onClose}
     >
       {/* モーダルコンテンツ */}

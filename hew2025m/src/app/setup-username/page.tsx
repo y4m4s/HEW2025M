@@ -33,8 +33,8 @@ export default function SetupUsernamePage() {
       return;
     }
 
-    // デフォルト値を設定
-    setDisplayName(profile.displayName || user.displayName || "");
+    // デフォルト値を設定（user.displayNameはGoogleログイン時のみ）
+    setDisplayName(user.displayName || "");
     setUsername("");
   }, [user, profile, profileLoading, router]);
 
@@ -60,6 +60,11 @@ export default function SetupUsernamePage() {
       return;
     }
 
+    if (!displayName.trim()) {
+      setError("表示名を入力してください");
+      return;
+    }
+
     if (displayName.length > 15) {
       setError("表示名は15文字以内で入力してください");
       return;
@@ -70,7 +75,7 @@ export default function SetupUsernamePage() {
     try {
       // Firestoreにユーザープロフィールを保存
       await setDoc(doc(db, "users", user.uid), {
-        displayName: displayName || user.displayName || "名無しユーザー",
+        displayName: displayName.trim(),
         username: username,
         email: user.email || "",
         bio: "",

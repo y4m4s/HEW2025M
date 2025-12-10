@@ -9,6 +9,7 @@ import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
 import CancelModal from '@/components/CancelModal';
 import UserInfoCard from '@/components/UserInfoCard';
+import LikedUsersModal from '@/components/LikedUsersModal';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -50,11 +51,15 @@ export default function PostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [likeLoading, setLikeLoading] = useState(false);
+  const [showLikedUsersModal, setShowLikedUsersModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalImageIndex, setModalImageIndex] = useState(0);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
   const [authorProfile, setAuthorProfile] = useState<{
     uid: string;
     username: string;
@@ -113,11 +118,95 @@ export default function PostDetailPage() {
     }
   }, [params.id]);
 
+  // いいね状態をチェック
+  const checkLikeStatus = useCallback(async () => {
+    if (!user || !params.id) return;
+    try {
+      const response = await fetch(`/api/posts/${params.id}/likes`);
+      if (!response.ok) return;
+      const data = await response.json();
+      const userLiked = data.likes?.some((like: { userId: string }) => like.userId === user.uid);
+      setIsLiked(userLiked);
+      setLikesCount(data.count || 0);
+    } catch (error) {
+      console.error('いいね状態の確認エラー:', error);
+    }
+  }, [user, params.id]);
+
   useEffect(() => {
     if (params.id) {
       fetchPost();
+      checkLikeStatus();
     }
-  }, [params.id, fetchPost]);
+  }, [params.id, fetchPost, checkLikeStatus]);
+
+  // いいねをトグル
+  const handleLikeToggle = async () => {
+    if (!user) {
+      toast.error('いいねするにはログインが必要です');
+      router.push('/login');
+      return;
+    }
+    if (!post) return;
+
+    setLikeLoading(true);
+    try {
+      if (isLiked) {
+        // いいねを削除
+        const response = await fetch(`/api/posts/${params.id}/likes?userId=${user.uid}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) throw new Error('いいねの削除に失敗しました');
+        setIsLiked(false);
+        setLikesCount((prev) => Math.max(0, prev - 1));
+        toast.success('いいねを取り消しました');
+      } else {
+        // いいねを追加
+        const response = await fetch(`/api/posts/${params.id}/likes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.uid,
+            userName: user.displayName || user.email?.split('@')[0] || '名無しユーザー',
+            userPhotoURL: user.photoURL || '',
+          }),
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'いいねの追加に失敗しました');
+        }
+        setIsLiked(true);
+        setLikesCount((prev) => prev + 1);
+        toast.success('いいねしました');
+      }
+    } catch (error) {
+      console.error('いいね処理エラー:', error);
+      toast.error(error instanceof Error ? error.message : 'いいねの処理に失敗しました');
+    } finally {
+      setLikeLoading(false);
+    }
+  };
+
+  // URLハッシュからコメントへスクロール
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hash = window.location.hash;
+      const targetId = hash.substring(1); // #を除去
+
+      // ページの読み込みを待ってからスクロール
+      setTimeout(() => {
+        const element = document.getElementById(targetId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // ハイライト効果を追加
+          element.classList.add('bg-yellow-100');
+          setTimeout(() => {
+            element.classList.remove('bg-yellow-100');
+          }, 2000);
+        }
+      }, 500);
+    }
+  }, [post]); // postが読み込まれた後に実行
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -370,18 +459,39 @@ export default function PostDetailPage() {
             {/* アクション */}
             <div className="flex items-center gap-6 pt-4 border-t">
               <button
-                onClick={() => setIsLiked(!isLiked)}
+                onClick={handleLikeToggle}
+                disabled={likeLoading}
                 className={`flex items-center gap-2 ${isLiked ? 'text-red-500' : 'text-gray-600 hover:text-red-500'
-                  } transition-colors`}
+                  } transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <Heart size={20} className={isLiked ? 'fill-current' : ''} />
-                <span>{(post.likes || 0) + (isLiked ? 1 : 0)}</span>
+                <span>{likesCount}</span>
               </button>
-              <button className="flex items-center gap-2 text-gray-600 hover:text-blue-500 transition-colors">
+              <button
+                onClick={() => {
+                  const commentSection = document.getElementById('comment-section');
+                  if (commentSection) {
+                    commentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+                className="flex items-center gap-2 text-gray-600 hover:text-blue-500 transition-colors"
+              >
                 <MessageCircle size={20} />
-                <span>{post.comments?.length || 0}</span>
+                <span>{commentCount}</span>
               </button>
             </div>
+
+            {/* いいねしたユーザーを表示 */}
+            {likesCount > 0 && (
+              <div className="pt-4">
+                <button
+                  onClick={() => setShowLikedUsersModal(true)}
+                  className="text-sm text-gray-600 hover:text-blue-500 hover:underline transition-colors"
+                >
+                  {likesCount}人がいいねしています
+                </button>
+              </div>
+            )}
           </div>
 
         </article>
@@ -395,9 +505,9 @@ export default function PostDetailPage() {
         />
 
         {/* コメントセクション */}
-        <section className="mt-8 bg-white rounded-lg shadow-md p-6">
+        <section id="comment-section" className="mt-8 bg-white rounded-lg shadow-md p-6">
           <h3 className="text-xl font-bold mb-4">コメント</h3>
-          <Comment postId={params.id as string} />
+          <Comment postId={params.id as string} onCommentCountChange={setCommentCount} />
         </section>
       </div>
 
@@ -456,6 +566,13 @@ export default function PostDetailPage() {
           </div>
         </div>
       </CancelModal>
+
+      {/* いいねしたユーザー一覧モーダル */}
+      <LikedUsersModal
+        isOpen={showLikedUsersModal}
+        onClose={() => setShowLikedUsersModal(false)}
+        postId={params.id as string}
+      />
     </div>
   );
 }

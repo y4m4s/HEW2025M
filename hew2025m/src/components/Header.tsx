@@ -1,16 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 // ChevronRight アイコンを追加しました
 import { Bell, Mail, User as UserIcon, ShoppingCart, ChevronRight } from "lucide-react";
 import Button from "@/components/Button";
-import LogoutModal from "@/components/LogoutModal";
 import { useAuth } from "@/lib/useAuth";
 import { useProfile } from "@/contexts/ProfileContext";
-import { auth, db } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { useCartStore } from "@/components/useCartStore";
 
@@ -29,8 +27,6 @@ export default function Header() {
   const { user } = useAuth();
   const { profile } = useProfile();
   const cartItems = useCartStore((state) => state.items);
-  const router = useRouter();
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
   useEffect(() => {
@@ -155,34 +151,28 @@ export default function Header() {
                   </span>
                 )}
               </Link>
-
+              
               <Link
                 href={user?.uid ? `/profile/${user.uid}` : "/profile"}
-                className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
+                className="flex items-center gap-3 px-4 py-2 rounded-full border border-gray-200 text-gray-800 hover:bg-gray-50 hover:border-[#2FA3E3] hover:text-[#2FA3E3] transition-all duration-300"
               >
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                   {profile.photoURL ? (
                     <Image
                       src={profile.photoURL}
                       alt="プロフィール画像"
-                      width={32}
-                      height={32}
+                      width={40}
+                      height={40}
                       quality={90}
                       className="w-full h-full object-cover"
+                      unoptimized
                     />
                   ) : (
-                    <UserIcon size={18} />
+                    <UserIcon size={20} />
                   )}
                 </div>
-                <span>{profile.displayName || "ユーザー"}</span>
+                <span className="font-medium">{profile.displayName || "ユーザー"}</span>
               </Link>
-
-              <button
-                onClick={handleLogoutClick}
-                className="py-2 px-4 border border-gray-300 rounded-full hover:bg-gray-100 transition-colors duration-300"
-              >
-                ログアウト
-              </button>
             </>
           ) : (
             <>
@@ -196,12 +186,6 @@ export default function Header() {
           )}
         </div>
       </div>
-
-      <LogoutModal
-        isOpen={showLogoutModal}
-        onConfirm={handleLogoutConfirm}
-        onCancel={handleLogoutCancel}
-      />
     </header>
   );
 }

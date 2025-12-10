@@ -205,14 +205,14 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
             <div className="flex items-center gap-3 text-sm text-gray-600 flex-shrink-0">
               <span className="hidden sm:block">{post.date}</span>
               <div className="flex items-center gap-2">
-                <button className={`flex items-center gap-1 ${post.isLiked ? 'text-red-500' : 'hover:text-red-500'} transition-colors`}>
+                <div className={`flex items-center gap-1 ${post.isLiked ? 'text-red-500' : ''}`}>
                   <Heart size={14} className={post.isLiked ? 'fill-current' : ''} />
                   <span>{post.likes}</span>
-                </button>
-                <button className="flex items-center gap-1 hover:text-blue-500 transition-colors">
+                </div>
+                <div className="flex items-center gap-1">
                   <MessageCircle size={14} />
                   <span>{post.comments}</span>
-                </button>
+                </div>
               </div>
             </div>
           </div>

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react'; // --- 変更 --- (useEffect を追加)
-import { useRouter } from 'next/navigation'; // --- 新規 ---
-import { useAuth } from '@/lib/useAuth'; // --- 新規 ---
-import { Megaphone, JapaneseYen, MessageSquare, Trash2 } from 'lucide-react';
-import { db } from '@/lib/firebase'; // --- 新規 ---
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/useAuth';
+import { Megaphone, MessageSquare, Trash2, Heart, Star, ShoppingCart, UserPlus, Mail } from 'lucide-react';
+import { db } from '@/lib/firebase';
 import {
   collection,
   query,
@@ -13,14 +13,12 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  Timestamp, // --- 新規 ---
+  Timestamp,
 } from 'firebase/firestore';
 
-// --- 変更 ---
-// インターフェースはFirestoreから取得するデータと一致させる必要があります。
 interface NotificationItem {
-  id: string; // ドキュメントのID
-  iconType: 'system' | 'sales' | 'comment';
+  id: string;
+  iconType: 'system' | 'like' | 'rating' | 'comment' | 'message' | 'follow' | 'purchase' | 'sales';
   iconBgColor: string;
   title: string;
   description: string;
@@ -31,39 +29,42 @@ interface NotificationItem {
   linkUserId?: string; // メッセージ通知用のユーザーID（オプション）
 }
 
-// --- sampleNotifications は削除されました ---
-// const sampleNotifications: NotificationItem[] = [ ... ]; はもう必要ありません。
-
-// --- getNotificationIcon関数は変更ありません ---
+// 通知タイプごとに適切なアイコンを表示
 const getNotificationIcon = (iconType: string) => {
   switch (iconType) {
     case 'system':
       return <Megaphone className="w-6 h-6 text-white" />;
-    case 'sales':
-      return <JapaneseYen className="w-6 h-6 text-white" />;
+    case 'like':
+      return <Heart className="w-6 h-6 text-white" />;
+    case 'rating':
+      return <Star className="w-6 h-6 text-white" />;
     case 'comment':
       return <MessageSquare className="w-6 h-6 text-white" />;
+    case 'message':
+      return <Mail className="w-6 h-6 text-white" />;
+    case 'follow':
+      return <UserPlus className="w-6 h-6 text-white" />;
+    case 'purchase':
+    case 'sales':
+      return <ShoppingCart className="w-6 h-6 text-white" />;
     default:
-      return null;
+      return <Megaphone className="w-6 h-6 text-white" />;
   }
 };
 
 // --- 通知ページのメインコンポーネント ---
 export default function NotificationPage() {
-  const { user, loading: authLoading } = useAuth(); // --- 新規 ---
-  const router = useRouter(); // --- 新規 ---
-  // --- 変更 ---
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
   // stateは空の配列で初期化します。
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
-  // --- 新規 ---
   // Firestoreから通知を読み込みます
   useEffect(() => {
-    // --- 変更 ---
     if (!user) return;
 
     // 参照はユーザーのサブコレクションを指します
-    // --- 変更 ---
     const notifRef = collection(db, 'users', user.uid, 'notifications');
     const q = query(notifRef, orderBy('timestamp', 'desc')); // 新しい順に並べ替え
 
@@ -80,20 +81,23 @@ export default function NotificationPage() {
     });
 
     return () => unsubscribe();
-    // --- 変更 ---
   }, [user]); // userに依存します
 
-  // --- 新規 ---
   // Timestampをフォーマットする関数
   const formatTimestamp = (timestamp: Timestamp | string) => {
     if (typeof timestamp === 'string') return timestamp;
     if (timestamp instanceof Timestamp) {
-      return timestamp.toDate().toLocaleString('ja-JP'); // 日付/時刻のフォーマット
+      return timestamp.toDate().toLocaleString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      }); // 日付/時刻のフォーマット（秒なし）
     }
     return 'Data inválida';
   };
 
-  // --- 変更 ---
   // 既読にする処理（Firestoreと連携）
   const handleMarkAsRead = async (id: string) => {
     if (!user) return;
@@ -107,7 +111,6 @@ export default function NotificationPage() {
     }
   };
 
-  // --- 変更 ---
   // 削除処理（Firestoreと連携）
   const handleDelete = async (id: string) => {
     if (!user) return;
@@ -119,7 +122,6 @@ export default function NotificationPage() {
     }
   };
   
-  // --- 新規 ---
   // すべてを既読にする処理
   const handleMarkAllAsRead = () => {
     // 未読の通知それぞれに対して、handleMarkAsReadを呼び出します
@@ -138,7 +140,6 @@ export default function NotificationPage() {
     });
   };
 
-  // --- 新規 ---
   // 通知をクリックした際の処理（遷移先に移動して既読にする）
   const handleNotificationClick = async (notification: NotificationItem) => {
 
@@ -178,13 +179,12 @@ export default function NotificationPage() {
           <span>ホーム</span> &gt; <span>通知</span>
         </nav>
 
-        {/* --- 変更 --- */}
         {/* ヘッダー（「すべて既読にする」ボタンが機能するようになりました） */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">✉️ 通知</h1>
           <div className="flex items-center gap-4">
             <button
-              onClick={handleMarkAllAsRead} // --- 変更 ---
+              onClick={handleMarkAllAsRead}
               className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
             >
               すべて既読にする
@@ -203,7 +203,6 @@ export default function NotificationPage() {
           </div>
         </div>
 
-        {/* --- 変更 --- */}
         {/* 通知リスト */}
         <div className="space-y-4">
           {/* 通知がない場合にメッセージを表示します */}
@@ -225,7 +224,7 @@ export default function NotificationPage() {
             >
               {/* 1. アイコン */}
               <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${notification.iconBgColor}`}
+                className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 bg-[#2FA3E3]"
               >
                 {getNotificationIcon(notification.iconType)}
               </div>
@@ -242,7 +241,6 @@ export default function NotificationPage() {
                   {notification.description}
                 </p>
                 <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                  {/* --- 変更 --- (フォーマット関数を使用) */}
                   <span>{formatTimestamp(notification.timestamp)}</span>
                   <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
                     {notification.tag}
@@ -252,7 +250,6 @@ export default function NotificationPage() {
 
               {/* 3. アクション */}
               <div className="flex flex-col space-y-2">
-                {/* --- 新規 --- (未読の場合のみボタンを表示) */}
                 {notification.isUnread && (
                   <button
                     onClick={(e) => {
