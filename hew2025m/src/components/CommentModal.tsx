@@ -55,7 +55,7 @@ export default function CommentModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* ヘッダー */}
-        <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white rounded-t-lg">
+        <div className="flex-shrink-0 flex items-center justify-between p-4 border-b sticky top-0 bg-white rounded-t-lg z-10">
           <h3 className="text-lg font-bold">すべてのコメント ({comments.length}件)</h3>
           <button
             onClick={onClose}
@@ -67,7 +67,7 @@ export default function CommentModal({
         </div>
 
         {/* コメント一覧 */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 min-h-0">
           {comments.length === 0 ? (
             <p className="text-center text-gray-500 py-8">
               コメントはまだありません
@@ -88,7 +88,7 @@ export default function CommentModal({
         </div>
 
         {/* フッター（閉じるボタン） */}
-        <div className="p-4 border-t bg-gray-50 rounded-b-lg">
+        <div className="flex-shrink-0 p-4 border-t bg-gray-50 rounded-b-lg">
           <button
             onClick={onClose}
             className="w-full py-3 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors font-medium"

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { Bell, Mail, User as UserIcon,  ShoppingCart } from "lucide-react";
+// ChevronRight アイコンを追加しました
+import { Bell, Mail, User as UserIcon, ShoppingCart, ChevronRight } from "lucide-react";
 import Button from "@/components/Button";
 import { useAuth } from "@/lib/useAuth";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -11,13 +12,23 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { useCartStore } from "@/components/useCartStore";
 
+// カテゴリーリストを釣り関連のアイテムに修正（DBの保存値と一致させる）
+const categories = [
+  { name: "ロッド/竿", href: "/productList?category=rod" },
+  { name: "リール", href: "/productList?category=reel" },
+  { name: "ルアー", href: "/productList?category=lure" },
+  { name: "ライン/糸", href: "/productList?category=line" },
+  { name: "ウェア", href: "/productList?category=wear" },
+  { name: "アクセサリー", href: "/productList?category=accessories" },
+  { name: "その他", href: "/productList?category=other" },
+];
+
 export default function Header() {
   const { user } = useAuth();
   const { profile } = useProfile();
   const cartItems = useCartStore((state) => state.items);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
-  // 未読通知数を取得
   useEffect(() => {
     if (!user) {
       setUnreadNotificationCount(0);
@@ -34,8 +45,27 @@ export default function Header() {
     return () => unsubscribe();
   }, [user]);
 
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    try {
+      await auth.signOut();
+      setShowLogoutModal(false);
+      router.push("/");
+    } catch (error) {
+      console.error("ログアウトエラー:", error);
+      setShowLogoutModal(false);
+    }
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
+  };
+
   return (
-    <header className="bg-white py-4 px-10 border-b border-gray-200">
+    <header className="bg-white py-4 px-10 border-b border-gray-200 relative z-50">
       <div className="flex justify-around items-center">
         <h1
           className="text-7xl font-bold text-[#2FA3E3]"
@@ -44,19 +74,43 @@ export default function Header() {
           <Link href="/">ツリマチ</Link>
         </h1>
 
-        <nav className="mx-11 flex justify-around gap-12">
+        <nav className="mx-11 flex justify-around gap-12 items-center">
           <Link
             href="/sell"
             className="relative no-underline text-gray-800 text-base hover:text-[#2FA3E3] transition-colors duration-300 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#2FA3E3] after:transition-all after:duration-300 hover:after:w-full"
           >
             出品する
           </Link>
-          <Link
-            href="/productList"
-            className="relative no-underline text-gray-800 text-base hover:text-[#2FA3E3] transition-colors duration-300 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#2FA3E3] after:transition-all after:duration-300 hover:after:w-full"
-          >
-            商品を探す
-          </Link>
+
+          {/* --- ドロップダウンメニューの開始 --- */}
+          <div className="relative group py-2">
+            <Link
+              href="/productList"
+              className="relative no-underline text-gray-800 text-base hover:text-[#2FA3E3] transition-colors duration-300 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#2FA3E3] after:transition-all after:duration-300 hover:after:w-full flex items-center gap-1"
+            >
+              商品を探す
+            </Link>
+
+            {/* ドロップダウンリスト本体 */}
+            <div className="absolute top-full left-0 pt-2 w-[280px] invisible opacity-0 translate-y-2 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 ease-in-out z-50">
+              <div className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden max-h-[80vh] overflow-y-auto custom-scrollbar">
+                <div className="py-2">
+                  {categories.map((category, index) => (
+                    <Link
+                      key={index}
+                      href={category.href}
+                      className="flex items-center justify-between px-4 py-3 text-sm text-gray-600 hover:bg-blue-50 hover:text-[#2FA3E3] transition-colors duration-150 border-b border-gray-50 last:border-0"
+                    >
+                      <span>{category.name}</span>
+                      <ChevronRight size={14} className="text-gray-300" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* --- ドロップダウンメニューの終了 --- */}
+
           <Link
             href="/community"
             className="relative no-underline text-gray-800 text-base hover:text-[#2FA3E3] transition-colors duration-300 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#2FA3E3] after:transition-all after:duration-300 hover:after:w-full"

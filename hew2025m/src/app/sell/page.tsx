@@ -2,12 +2,13 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { Camera, Fish, X } from 'lucide-react';
+import { Camera, Fish, X, WandSparkles } from 'lucide-react';
 import Button from '@/components/Button';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { useProfile } from '@/contexts/ProfileContext';
 import toast from 'react-hot-toast';
+import PriceAdvisorModal from '@/components/PriceAdvisorModal'; // 修正
 
 // カテゴリの定義（表示名とDB保存用の値のマッピング）
 const CATEGORIES = [
@@ -41,6 +42,7 @@ export default function SellPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
 
   // 認証チェック：未ログインならログインページへリダイレクト
   useEffect(() => {
@@ -48,6 +50,19 @@ export default function SellPage() {
       router.push('/login');
     }
   }, [user, authLoading, router]);
+
+  const handlePriceSelect = (suggestedPrice: number) => {
+    setPrice(String(suggestedPrice));
+    toast.success(`価格が ¥${suggestedPrice.toLocaleString()} に設定されました`);
+  };
+
+  const handlePriceSuggest = () => {
+    if (!title) {
+        toast.error('価格を提案するには、まず商品名を入力してください。');
+        return;
+    }
+    setIsAdvisorOpen(true);
+  }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -403,6 +418,17 @@ export default function SellPage() {
                       価格は99,999,999円以下で入力してください。
                     </p>
                   )}
+                  <div className="mt-3 text-right">
+                    <button
+                        type="button"
+                        onClick={handlePriceSuggest}
+                        disabled={!title || isSubmitting}
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                    >
+                        <WandSparkles size={16} />
+                        AIで価格相場をチェック
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -569,6 +595,13 @@ export default function SellPage() {
           </div>
         </div>
       </div>
+
+      <PriceAdvisorModal
+        isOpen={isAdvisorOpen}
+        onClose={() => setIsAdvisorOpen(false)}
+        productName={title}
+        onPriceSelect={handlePriceSelect}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 import Link from 'next/link';
-import { auth, provider } from "@/lib/firebase";
-import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { createUserWithEmailAndPassword, signInWithPopup, TwitterAuthProvider, OAuthProvider, GoogleAuthProvider, fetchSignInMethodsForEmail, AuthProvider } from "firebase/auth";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -40,26 +40,18 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      // Firebase Authenticationでアカウント作成のみ
       await createUserWithEmailAndPassword(auth, email, password);
-
-      // ユーザーID設定画面へリダイレクト
       showSuccessAndRedirect("アカウント作成に成功しました！ユーザーIDを設定してください", "/setup-username");
     } catch (error: unknown) {
       let errorMessage = "登録エラーが発生しました";
-
-      // Firebase Authenticationのエラーコードに応じてメッセージを変更
       const firebaseError = error as { code?: string };
+      
       if (firebaseError.code === "auth/email-already-in-use") {
-        errorMessage = "このメールアドレスは既に登録されています。ログインページからログインしてください。";
+        errorMessage = "このメールアドレスは既に登録されています。";
       } else if (firebaseError.code === "auth/invalid-email") {
         errorMessage = "メールアドレスの形式が正しくありません";
       } else if (firebaseError.code === "auth/weak-password") {
         errorMessage = "パスワードは6文字以上で設定してください";
-      } else if (firebaseError.code === "auth/operation-not-allowed") {
-        errorMessage = "メール/パスワード認証が有効になっていません";
-      } else if (firebaseError.code === "auth/network-request-failed") {
-        errorMessage = "ネットワークエラーが発生しました。接続を確認してください";
       }
 
       setSuccessMessage(errorMessage);
@@ -69,16 +61,59 @@ export default function RegisterPage() {
     }
   };
 
-  const handleGoogleRegister = async () => {
+  // SNSプロバイダー（Google, X, Yahoo!）でのログインを処理する統一関数
+  const handleSocialRegister = async (providerName: 'google' | 'twitter' | 'yahoo') => {
     setLoading(true);
+    let provider: AuthProvider;
+    let providerDisplayName = '';
+
+    switch (providerName) {
+      case 'google':
+        provider = new GoogleAuthProvider();
+        providerDisplayName = 'Google';
+        break;
+      case 'twitter':
+        provider = new TwitterAuthProvider();
+        providerDisplayName = 'X (Twitter)';
+        break;
+      case 'yahoo':
+        provider = new OAuthProvider('yahoo.com');
+        providerDisplayName = 'Yahoo!';
+        break;
+      default:
+        setLoading(false);
+        return;
+    }
+
     try {
       await signInWithPopup(auth, provider);
-      // ユーザーネーム設定画面へリダイレクト
-      showSuccessAndRedirect("Googleでログインに成功しました！ユーザーネームを設定してください", "/setup-username");
+      showSuccessAndRedirect(`${providerDisplayName}でのログインに成功しました！`, "/setup-username");
     } catch (error: unknown) {
-      console.error("Googleログインエラー:", error);
-      const message = error instanceof Error ? error.message : String(error);
-      setSuccessMessage("Googleでのログインエラー: " + message);
+      let errorMessage = `${providerDisplayName}でのログイン中にエラーが発生しました。`;
+      const firebaseError = error as { code?: string, customData?: { email?: string } };
+
+      if (firebaseError.code === 'auth/popup-closed-by-user') {
+        errorMessage = "ログインがキャンセルされました。";
+      } else if (firebaseError.code === 'auth/account-exists-with-different-credential') {
+        const email = firebaseError.customData?.email; // エラーからメールアドレスを取得
+        if (email) {
+          const methods = await fetchSignInMethodsForEmail(auth, email); // 登録済みのログイン方法を問い合わせる
+          if (methods.includes('google.com')) {
+            errorMessage = "このメールはGoogleで登録済です。Googleからログインしてください。";
+          } else if (methods.includes('yahoo.com')) {
+            errorMessage = "このメールはYahoo!で登録済です。Yahoo!でログインしてください。";
+          } else if (methods.includes('twitter.com')) {
+            errorMessage = "このメールはXで登録済です。Xでログインしてください。";
+          } else if (methods.includes('password')) {
+            errorMessage = "このメールはパスワードで登録済です。メールとパスワードでログインしてください。";
+          }
+        }
+      } else if (firebaseError.code === 'auth/invalid-credential') {
+        errorMessage = `${providerDisplayName}との連携設定に問題があります。管理者にお問い合わせください。`;
+      }
+
+      console.error(`${providerDisplayName} login error:`, firebaseError.code || error);
+      setSuccessMessage(errorMessage);
       setTimeout(() => setSuccessMessage(""), 2200);
     } finally {
       setLoading(false);
@@ -151,16 +186,47 @@ export default function RegisterPage() {
             >
               {loading ? "処理中..." : "アカウント作成"}
             </button>
+
+            {/* Googleでの登録ボタン */}
             <button
               type="button"
               className="w-full mt-3 p-4 flex justify-center items-center border border-[#2FA3E3] text-[#2FA3E3] bg-white rounded-lg text-base font-bold cursor-pointer transition-all duration-300 hover:bg-[#f0faff]"
-              onClick={handleGoogleRegister}
+              onClick={() => handleSocialRegister('google')}
               disabled={loading}
               style={{ fontFamily: 'せのびゴシック, sans-serif' }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3C34.7 32 30 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z"/><path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.4 16.4 18.7 13 24 13c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z"/><path fill="#FBBC05" d="M24 44c5.6 0 10.4-1.8 13.8-4.8l-6.4-5.3c-1.9 1.3-4.3 2.1-7.4 2.1-5.8 0-10.7-3.9-12.5-9h-7v5.7C7 40.3 14.9 44 24 44z"/><path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3-4.9 5-11.3 5z"/></g></svg>
               Googleで登録／ログイン
             </button>
+
+            {/* X (Twitter)での登録ボタン */}
+            <button
+              type="button"
+              className="w-full mt-3 p-4 flex justify-center items-center bg-black text-white border border-black rounded-lg text-base font-bold cursor-pointer transition-all duration-300 hover:bg-gray-800 hover:shadow-md"
+              onClick={() => handleSocialRegister('twitter')}
+              disabled={loading}
+              style={{ fontFamily: 'せのびゴシック, sans-serif' }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+              X (Twitter)で登録／ログイン
+            </button>
+
+            {/* Yahoo!での登録ボタン */}
+            <button
+              type="button"
+              className="w-full mt-3 p-4 flex justify-center items-center bg-[#6001d2] text-white border border-[#6001d2] rounded-lg text-base font-bold cursor-pointer transition-all duration-300 hover:bg-[#5001b0] hover:shadow-md"
+              onClick={() => handleSocialRegister('yahoo')}
+              disabled={loading}
+              style={{ fontFamily: 'せのびゴシック, sans-serif' }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.52 18.217l-3.26-5.252-2.36 3.792H8.62l3.697-5.94-3.58-5.756h2.278l2.28 3.66 3.26-5.24h2.278l-4.52 7.26 4.637 7.453h-2.28z"/>
+              </svg>
+              Yahoo!で登録／ログイン
+            </button>
+
           </form>
         </div>
 
