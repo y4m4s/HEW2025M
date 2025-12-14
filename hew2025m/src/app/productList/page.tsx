@@ -2,11 +2,53 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import ProductCard, { Product } from '@/components/ProductCard';
+import ProductCard, { Product } from '@/components/Productcard';
 import Button from '@/components/Button';
-import { Fish, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Fish, Search, ChevronLeft, ChevronRight, Puzzle } from 'lucide-react';
+import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from 'react-icons/gi';
+import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
+import { SiHelix } from 'react-icons/si';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import CustomSelect from '@/components/CustomSelect';
+
+const CATEGORY_OPTIONS = [
+  { label: 'すべて', value: '' },
+  { label: 'ロッド/竿', value: 'rod', icon: GiFishingPole },
+  { label: 'リール', value: 'reel', icon: FaTape },
+  { label: 'ルアー', value: 'lure', icon: GiFishingLure },
+  { label: 'ライン/糸', value: 'line', icon: SiHelix },
+  { label: 'ハリ/針', value: 'hook', icon: GiFishingHook },
+  { label: '餌', value: 'bait', icon: GiEarthWorm },
+  { label: 'ウェア', value: 'wear', icon: FaTshirt },
+  { label: 'セット用品', value: 'set', icon: FaBox },
+  { label: 'サービス', value: 'service', icon: GiSpanner },
+  { label: 'その他', value: 'other', icon: Puzzle },
+];
+
+const PRICE_RANGE_OPTIONS = [
+  { label: '指定なし', value: '' },
+  { label: '〜1,000円', value: '0-1000' },
+  { label: '1,000〜5,000円', value: '1000-5000' },
+  { label: '5,000〜10,000円', value: '5000-10000' },
+  { label: '10,000円〜', value: '10000-' },
+];
+
+const CONDITION_OPTIONS = [
+  { label: 'すべて', value: '' },
+  { label: '新品・未使用', value: 'new' },
+  { label: '未使用に近い', value: 'like-new' },
+  { label: '目立った傷汚れなし', value: 'good' },
+  { label: 'やや傷や汚れあり', value: 'fair' },
+  { label: '傷や汚れあり', value: 'poor' },
+];
+
+const SORT_OPTIONS = [
+  { label: '新着順', value: 'newest' },
+  { label: '価格の安い順', value: 'price-low' },
+  { label: '価格の高い順', value: 'price-high' },
+  { label: '人気順', value: 'popular' },
+];
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
@@ -272,52 +314,30 @@ const getPageNumbers = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリー</label>
-                  <select
+                  <CustomSelect
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none"
-                  >
-                    <option value="">すべて</option>
-                    <option value="rod">ロッド/竿</option>
-                    <option value="reel">リール</option>
-                    <option value="lure">ルアー</option>
-                    <option value="line">ライン/糸</option>
-                    <option value="hook">ハリ/針</option>
-                    <option value="bait">餌</option>
-                    <option value="wear">ウェア</option>
-                    <option value="set">セット用品</option>
-                    <option value="service">サービス</option>
-                    <option value="other">その他</option>
-                  </select>
+                    onChange={setCategory}
+                    options={CATEGORY_OPTIONS}
+                    placeholder="すべて"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">価格帯</label>
-                  <select
+                  <CustomSelect
                     value={priceRange}
-                    onChange={(e) => setPriceRange(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none"
-                  >
-                    <option value="">指定なし</option>
-                    <option value="0-1000">〜1,000円</option>
-                    <option value="1000-5000">1,000〜5,000円</option>
-                    <option value="5000-10000">5,000〜10,000円</option>
-                    <option value="10000-">10,000円〜</option>
-                  </select>
+                    onChange={setPriceRange}
+                    options={PRICE_RANGE_OPTIONS}
+                    placeholder="指定なし"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">状態</label>
-                  <select
+                  <CustomSelect
                     value={condition}
-                    onChange={(e) => setCondition(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none"
-                  >
-                    <option value="">すべて</option>
-                    <option value="new">新品・未使用</option>
-                    <option value="like-new">未使用に近い</option>
-                    <option value="good">目立った傷汚れなし</option>
-                    <option value="fair">やや傷や汚れあり</option>
-                    <option value="poor">傷や汚れあり</option>
-                  </select>
+                    onChange={setCondition}
+                    options={CONDITION_OPTIONS}
+                    placeholder="すべて"
+                  />
                 </div>
               </div>
             </div>
@@ -327,16 +347,12 @@ const getPageNumbers = () => {
               <p className="text-gray-600">検索結果: {products.length}件</p>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600">並び替え:</span>
-                <select
+                <CustomSelect
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="p-2 border border-gray-300 rounded-lg focus:border-[#2FA3E3] focus:outline-none"
-                >
-                  <option value="newest">新着順</option>
-                  <option value="price-low">価格の安い順</option>
-                  <option value="price-high">価格の高い順</option>
-                  <option value="popular">人気順</option>
-                </select>
+                  onChange={setSortBy}
+                  options={SORT_OPTIONS}
+                  className="min-w-[200px]"
+                />
               </div>
             </div>
 

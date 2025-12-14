@@ -8,7 +8,7 @@ import Button from '@/components/Button';
 import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
 import CancelModal from '@/components/CancelModal';
-import ProductCard from '@/components/ProductCard';
+import ProductCard from '@/components/Productcard';
 
 import SmartRakuten from '@/components/SmartRakuten'; 
 import SellerInfo from '@/components/SellerInfo';

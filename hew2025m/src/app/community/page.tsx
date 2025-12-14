@@ -5,6 +5,7 @@ import Link from 'next/link';
 import PostCard, { Post } from '@/components/PostCard';
 import Button from '@/components/Button';
 import RecommendedUsers from '@/components/RecommendedUsers';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import { Fish, MapPin, User } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -163,15 +164,7 @@ export default function CommunityPage() {
     }
   };
   if (loading) {
-    return (
-      <div className="bg-gray-50 min-h-screen">
-        <main className="flex max-w-7xl mx-auto px-5 py-8 gap-8">
-          <div className="flex-1 flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        </main>
-      </div>
-    );
+    return <LoadingSpinner message="コミュニティを読み込み中……" size="lg" fullScreen />;
   }
 
   if (error) {

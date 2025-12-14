@@ -90,7 +90,7 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
                 {product.sellerPhotoURL ? (
-                  <Image src={product.sellerPhotoURL} alt={product.location} width={24} height={24} className="w-full h-full object-cover" />
+                  <Image src={product.sellerPhotoURL} alt={product.location} width={24} height={24} quality={90} className="w-full h-full object-cover" />
                 ) : (
                   <User size={12} className="text-gray-600" />
                 )}
@@ -132,7 +132,7 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
             <div className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
               {product.sellerPhotoURL ? (
-                <Image src={product.sellerPhotoURL} alt={product.location} width={20} height={20} className="w-full h-full object-cover" />
+                <Image src={product.sellerPhotoURL} alt={product.location} width={20} height={20} quality={90} className="w-full h-full object-cover" />
               ) : (
                 <User size={10} className="text-gray-600" />
               )}

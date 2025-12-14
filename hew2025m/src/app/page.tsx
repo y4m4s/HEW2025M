@@ -2,9 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import ProductCard, { Product } from '@/components/ProductCard';
+import ProductCard, { Product } from '@/components/Productcard';
 import Button from '@/components/Button';
-import { Fish, Search, MapPin, Users, ArrowRight, Circle, Bug, Package, Shirt, Ship, Zap, Info } from 'lucide-react';
+
+import { Fish, Search, MapPin, Users, ArrowRight, Puzzle } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
+import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from 'react-icons/gi';
+import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
+import { SiHelix } from 'react-icons/si';
+
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -166,11 +172,11 @@ export default function Home() {
                   <span>釣竿</span>
                 </div>
                 <div className="absolute bottom-[30%] left-[5%] bg-white text-[#2FA3E3] py-4 px-5 rounded-2xl shadow-lg flex items-center gap-3 font-bold animate-[float_3s_ease-in-out_infinite] [animation-delay:1s]">
-                  <Circle size={20} />
+                  <FaTape size={20} />
                   <span>リール</span>
                 </div>
                 <div className="absolute top-[60%] right-[20%] bg-white text-[#2FA3E3] py-4 px-5 rounded-2xl shadow-lg flex items-center gap-3 font-bold animate-[float_3s_ease-in-out_infinite] [animation-delay:2s]">
-                  <Bug size={20} />
+                  <GiFishingLure size={20} />
                   <span>ルアー</span>
                 </div>
               </div>
@@ -189,7 +195,7 @@ export default function Home() {
             <Link href="/productList?category=rod">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Fish size={28} />
+                  <GiFishingPole size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ロッド/竿</h4>
                 <p className="text-gray-600 text-sm mb-3">海釣り・川釣り用</p>
@@ -200,7 +206,7 @@ export default function Home() {
             <Link href="/productList?category=reel">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Circle size={28} />
+                  <FaTape size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>リール</h4>
                 <p className="text-gray-600 text-sm mb-3">スピニング・ベイト</p>
@@ -211,7 +217,7 @@ export default function Home() {
             <Link href="/productList?category=lure">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Bug size={28} />
+                  <GiFishingLure size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ルアー</h4>
                 <p className="text-gray-600 text-sm mb-3">ハード・ソフト</p>
@@ -222,7 +228,7 @@ export default function Home() {
             <Link href="/productList?category=line">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Zap size={28} />
+                  <SiHelix size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ライン/糸</h4>
                 <p className="text-gray-600 text-sm mb-3">各種ライン</p>
@@ -233,7 +239,7 @@ export default function Home() {
             <Link href="/productList?category=hook">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Search size={28} />
+                  <GiFishingHook size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ハリ/針</h4>
                 <p className="text-gray-600 text-sm mb-3">各種フック</p>
@@ -244,7 +250,7 @@ export default function Home() {
             <Link href="/productList?category=bait">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Fish size={28} className="rotate-45" />
+                  <GiEarthWorm size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>餌</h4>
                 <p className="text-gray-600 text-sm mb-3">生餌・練り餌</p>
@@ -255,7 +261,7 @@ export default function Home() {
             <Link href="/productList?category=wear">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Shirt size={28} />
+                  <FaTshirt size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ウェア</h4>
                 <p className="text-gray-600 text-sm mb-3">服・装備品</p>
@@ -266,7 +272,7 @@ export default function Home() {
             <Link href="/productList?category=set">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Package size={28} />
+                  <FaBox size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>セット用品</h4>
                 <p className="text-gray-600 text-sm mb-3">まとめてお得</p>
@@ -277,7 +283,7 @@ export default function Home() {
             <Link href="/productList?category=service">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Users size={28} />
+                  <GiSpanner size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>サービス</h4>
                 <p className="text-gray-600 text-sm mb-3">ガイド・修理</p>
@@ -288,7 +294,7 @@ export default function Home() {
             <Link href="/productList?category=other">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Info size={28} />
+                  <Puzzle size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>その他</h4>
                 <p className="text-gray-600 text-sm mb-3">その他の用品</p>
@@ -342,7 +348,7 @@ export default function Home() {
             <Link href="/postList">
               <div className="bg-white text-center py-8 px-5 rounded-2xl shadow-lg transition-all duration-300 relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-green-500 before:to-emerald-500 before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
-                  <Fish size={32} />
+                  <MessageSquare size={32} />
                 </div>
                 <h4 className="text-xl font-bold mb-4 text-gray-800">釣果情報</h4>
                 <p className="text-gray-600 leading-relaxed">みんなの釣行記録をチェック</p>

@@ -49,7 +49,7 @@ const PostSchema = new Schema<IPost>(
           originalName: { type: String, required: true },
           mimeType: { type: String, required: true },
           size: { type: Number, required: true },
-          uniqueId: { type: String, required: true, unique: true },
+          uniqueId: { type: String, required: true },
           order: { type: Number, required: true, min: 1 },
           uploadedAt: { type: Date, default: Date.now },
         },

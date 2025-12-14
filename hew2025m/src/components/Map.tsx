@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useImperativeHandle, forwardRef } from "react";
-import { GoogleMap, Marker, InfoWindow, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 
 const containerStyle = {
   width: "100%",
@@ -116,32 +116,52 @@ const Map = forwardRef<MapRef, MapProps>(({ onMarkerClick, onMapClick }, ref) =>
       onClick={handleMapClick}
       onLoad={(map) => setMap(map)}
     >
-      {posts.map((post, idx) => (
-        <Marker
-          key={idx}
-          position={{
-            lat: post.location.lat,
-            lng: post.location.lng,
-          }}
-          onClick={() => handleMarkerClick(post)}
-          title={post.title}
-        />
-      ))}
-      {selectedPost && (
-        <InfoWindow
-          position={{
-            lat: selectedPost.location.lat,
-            lng: selectedPost.location.lng,
-          }}
-          onCloseClick={() => setSelectedPost(null)}
-        >
-          <div>
-            <h3 style={{ fontWeight: 'bold', marginBottom: 6 }}>{selectedPost.title}</h3>
-            <p style={{ fontSize: 12, color: '#444' }}>{selectedPost.address || '住所未設定'}</p>
-            <p style={{ fontSize: 14 }}>{selectedPost.content}</p>
-          </div>
-        </InfoWindow>
-      )}
+      {posts.map((post, idx) => {
+        const isSelected = selectedPost && selectedPost._id === post._id;
+        return (
+          <Marker
+            key={idx}
+            position={{
+              lat: post.location.lat,
+              lng: post.location.lng,
+            }}
+            onClick={() => handleMarkerClick(post)}
+            title={post.title}
+            icon={
+              isSelected
+                ? {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                      <svg width="80" height="92" viewBox="0 0 80 92" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                          <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+                            <feOffset dx="0" dy="2" result="offsetblur"/>
+                            <feComponentTransfer>
+                              <feFuncA type="linear" slope="0.3"/>
+                            </feComponentTransfer>
+                            <feMerge>
+                              <feMergeNode/>
+                              <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                          </filter>
+                        </defs>
+                        <circle cx="40" cy="40" r="18" fill="#EF4444" opacity="0.3">
+                          <animate attributeName="r" values="18;35;18" dur="1.5s" repeatCount="indefinite"/>
+                          <animate attributeName="opacity" values="0.3;0;0.3" dur="1.5s" repeatCount="indefinite"/>
+                        </circle>
+                        <path d="M40 24c-7.73 0-14 6.27-14 14 0 10.5 14 26 14 26s14-15.5 14-26c0-7.73-6.27-14-14-14z"
+                              fill="#EF4444" filter="url(#shadow)"/>
+                        <circle cx="40" cy="38" r="6" fill="white"/>
+                      </svg>
+                    `),
+                    scaledSize: new google.maps.Size(80, 92),
+                    anchor: new google.maps.Point(40, 72),
+                  }
+                : undefined
+            }
+          />
+        );
+      })}
     </GoogleMap>
   );
 });

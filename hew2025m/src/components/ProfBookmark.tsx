@@ -5,7 +5,7 @@ import { Fish } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
-import ProductCard, { Product } from "./ProductCard";
+import ProductCard, { Product } from "./Productcard";
 
 interface Bookmark {
   id: string;

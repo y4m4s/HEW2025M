@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import PostCard, { Post } from '@/components/PostCard';
 import Button from '@/components/Button';
+import CustomSelect from '@/components/CustomSelect';
 import { Fish, Plus, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -87,10 +88,6 @@ export default function PostList() {
             id: post._id,
             title: post.title,
             excerpt: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
-            fishName: extractFishName(post.tags),
-            fishSize: extractFishSize(post.tags),
-            fishWeight: extractFishWeight(post.tags),
-            fishCount: extractFishCount(post.tags),
             location: post.address || '場所未設定',
             author: authorDisplayName,
             authorId: post.authorId,
@@ -122,30 +119,6 @@ export default function PostList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFilter, keyword]);
 
-  // タグから魚の名前を抽出
-  const extractFishName = (tags: string[] = []): string => {
-    const fishTag = tags.find(tag => tag.startsWith('魚:'));
-    return fishTag ? fishTag.replace('魚:', '') : '';
-  };
-
-  // タグからサイズを抽出
-  const extractFishSize = (tags: string[] = []): string => {
-    const sizeTag = tags.find(tag => tag.includes('cm'));
-    return sizeTag || '';
-  };
-
-  // タグから重さを抽出
-  const extractFishWeight = (tags: string[] = []): string => {
-    const weightTag = tags.find(tag => tag.includes('kg') || tag.includes('g'));
-    return weightTag || '';
-  };
-
-  // タグから匹数を抽出
-  const extractFishCount = (tags: string[] = []): string => {
-    const countTag = tags.find(tag => tag.includes('匹'));
-    return countTag || '';
-  };
-
   // 日付をフォーマット
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -174,6 +147,11 @@ export default function PostList() {
     { key: 'river', label: '川釣り' },
     { key: 'lure', label: 'ルアー' },
     { key: 'bait', label: 'エサ釣り' }
+  ];
+
+  const SORT_OPTIONS = [
+    { label: '新着順', value: 'latest' },
+    { label: 'おすすめ順', value: 'popular' },
   ];
 
   // Pagination calculations
@@ -268,16 +246,15 @@ export default function PostList() {
               ))}
             </div>
 
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-2 text-sm"
-            >
-              <option value="latest">新着順</option>
-              <option value="popular">人気順</option>
-              <option value="size">魚のサイズ順</option>
-              <option value="location">場所別</option>
-            </select>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">並び替え:</span>
+              <CustomSelect
+                value={sortBy}
+                onChange={setSortBy}
+                options={SORT_OPTIONS}
+                className="min-w-[200px]"
+              />
+            </div>
           </div>
 
           {loading ? (

@@ -16,6 +16,7 @@ import ProfHistory from "@/components/ProfHistory";
 import ProfBookmark from "@/components/ProfBookmark";
 import ProfLikedPosts from "@/components/ProfLikedPosts";
 import RecentlyViewed from "@/components/RecentlyViewed";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 import UserRating from "@/components/UserRating";
 import FollowListModal from "@/components/FollowListModal";
@@ -209,11 +210,7 @@ export default function UserProfilePage() {
   };
 
   if (loading || authLoading || !user || !targetProfile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-[#2FA3E3]" />
-      </div>
-    );
+    return <LoadingSpinner message="プロフィールを読み込み中……" size="lg" fullScreen />;
   }
 
   return (
