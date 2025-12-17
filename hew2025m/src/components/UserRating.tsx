@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@/lib/useAuth";
 import toast from "react-hot-toast";
 import RatingListModal from "./RatingListModal";
+import LoginRequiredModal from "./LoginRequiredModal";
 import { createRatingNotification } from "@/lib/notifications";
 
 interface Rating {
@@ -51,6 +52,8 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
   const [hasRated, setHasRated] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [existingRatingId, setExistingRatingId] = useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
 
   const MAX_COMMENT_LENGTH = 140;
   const isOverLimit = comment.length > MAX_COMMENT_LENGTH;
@@ -131,7 +134,8 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
   // 評価の送信（新規または更新）
   const handleSubmitRating = async () => {
     if (!user) {
-      toast.error("ログインが必要です");
+      setLoginRequiredAction("評価を送信");
+      setShowLoginModal(true);
       return;
     }
 
@@ -318,6 +322,13 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
         onClose={() => setIsModalOpen(false)}
         ratings={ratings}
         averageRating={averageRating}
+      />
+
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
       />
     </div>
   );

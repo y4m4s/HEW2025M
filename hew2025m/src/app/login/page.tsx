@@ -1,16 +1,17 @@
 "use client";
 import Link from 'next/link';
 import { auth } from "@/lib/firebase";
-import { 
-  signInWithEmailAndPassword, 
-  signInWithPopup, 
-  GoogleAuthProvider, 
-  TwitterAuthProvider, 
+import {
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  TwitterAuthProvider,
   OAuthProvider,
-  AuthProvider 
+  AuthProvider
 } from "firebase/auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/useAuth";
 
 // 通知トーストコンポーネント
 function NotificationToast({ message, isError }: { message: string, isError?: boolean }) {
@@ -31,11 +32,19 @@ function NotificationToast({ message, isError }: { message: string, isError?: bo
 }
 
 export default function LoginPage() {
+  const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<{ message: string, isError?: boolean } | null>(null);
   const router = useRouter();
+
+  // ログイン済みユーザーをホームにリダイレクト
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/');
+    }
+  }, [user, authLoading, router]);
 
   const showNotification = (message: string, isError: boolean = false, duration: number = 2200) => {
     setNotification({ message, isError });
@@ -100,6 +109,23 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // 認証チェック中はローディング表示
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2FA3E3] mx-auto mb-4"></div>
+          <p className="text-gray-600">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ログイン済みの場合は何も表示しない（リダイレクト中）
+  if (user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef] flex items-center justify-center p-5">

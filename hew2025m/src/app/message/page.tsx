@@ -6,6 +6,7 @@ import { User, Send, Search, Menu, X, Plus } from 'lucide-react';
 import Image from 'next/image';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/useAuth';
+import toast from 'react-hot-toast';
 import ImageModal from '@/components/ImageModal';
 import {
   collection,
@@ -90,6 +91,13 @@ export default function MessagePage() {
 
   // URLクエリパラメータから userId を取得して、自動的にユーザーを選択（初回のみ）
   const hasLoadedFromUrl = useRef(false);
+
+  // 認証チェック：未ログインならログインページへリダイレクト
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     const userId = searchParams.get('userId');
@@ -537,7 +545,7 @@ export default function MessagePage() {
       handleRemoveImage();
     } catch (error) {
       console.error('メッセージ送信エラー:', error);
-      alert('メッセージの送信に失敗しました。');
+      toast.error('メッセージの送信に失敗しました。');
     }
   };
 

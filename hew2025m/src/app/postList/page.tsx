@@ -34,6 +34,10 @@ export default function PostList() {
       }
       return null;
     } catch (error) {
+      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
+        return null;
+      }
       console.error('ユーザー情報取得エラー:', error);
       return null;
     }

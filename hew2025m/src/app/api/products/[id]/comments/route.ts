@@ -153,9 +153,9 @@ export async function POST(
       }
     } else {
       // 新規コメントの場合：商品の出品者に通知（自分の商品でない場合のみ）
-      if (product.userId && product.userId !== userId) {
+      if (product.sellerId && product.sellerId !== userId) {
         await createCommentNotificationServer(
-          product.userId,
+          product.sellerId,
           userId,
           userName,
           id,

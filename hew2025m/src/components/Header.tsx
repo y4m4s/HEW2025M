@@ -25,6 +25,8 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { useCartStore } from "@/components/useCartStore";
 import DropdownMenu from "@/components/DropdownMenu";
 import HoverCard from "@/components/HoverCard";
+import LoginRequiredModal from "@/components/LoginRequiredModal";
+import { useRouter } from "next/navigation";
 
 // カテゴリーリストを釣り関連のアイテムに修正（DBの保存値と一致させる）
 const categories = [
@@ -40,20 +42,34 @@ const categories = [
   { name: "その他", href: "/productList?category=other", Icon: Puzzle },
 ];
 
-// コミュニティメニューリスト
-const communityMenuItems = [
-  { name: "コミュニティ", href: "/community", Icon: Users },
-  { name: "投稿", href: "/post", Icon: MessageSquare },
-  { name: "投稿一覧", href: "/postList", Icon: List },
-  { name: "地図", href: "/map", Icon: Map },
-];
-
 export default function Header() {
   const { user } = useAuth();
   const { profile } = useProfile();
+  const router = useRouter();
   const cartItems = useCartStore((state) => state.items);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
+
+  // コミュニティメニューリスト（useStateフック内で定義してuserを参照できるようにする）
+  const communityMenuItems = [
+    { name: "コミュニティ", href: "/community", Icon: Users },
+    {
+      name: "投稿",
+      Icon: MessageSquare,
+      onClick: () => {
+        if (!user) {
+          setLoginRequiredAction('投稿');
+          setShowLoginModal(true);
+        } else {
+          router.push('/post');
+        }
+      }
+    },
+    { name: "投稿一覧", href: "/postList", Icon: List },
+    { name: "地図", href: "/map", Icon: Map },
+  ];
 
   useEffect(() => {
     if (!user) {
@@ -108,12 +124,19 @@ export default function Header() {
         </h1>
 
         <nav className="mx-11 flex justify-around gap-12 items-center">
-          <Link
-            href="/sell"
-            className="relative no-underline text-gray-800 text-base hover:text-[#2FA3E3] transition-colors duration-300 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#2FA3E3] after:transition-all after:duration-300 hover:after:w-full"
+          <button
+            onClick={() => {
+              if (!user) {
+                setLoginRequiredAction('出品する');
+                setShowLoginModal(true);
+              } else {
+                router.push('/sell');
+              }
+            }}
+            className="relative no-underline text-gray-800 text-base hover:text-[#2FA3E3] transition-colors duration-300 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#2FA3E3] after:transition-all after:duration-300 hover:after:w-full bg-transparent border-0 cursor-pointer"
           >
             出品する
-          </Link>
+          </button>
 
           {/* --- 商品を探すドロップダウンメニュー --- */}
           <div className="relative group py-2">
@@ -253,6 +276,13 @@ export default function Header() {
           )}
         </div>
       </div>
+
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
+      />
     </header>
   );
 }

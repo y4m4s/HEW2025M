@@ -53,6 +53,10 @@ export default function ProfLikedPosts({ onCountChange, userId }: ProfLikedPosts
       }
       return null;
     } catch (error) {
+      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+      if ((error as any)?.code === 'permission-denied') {
+        return null;
+      }
       console.error('ユーザー情報取得エラー:', error);
       return null;
     }

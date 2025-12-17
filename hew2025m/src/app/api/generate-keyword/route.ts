@@ -43,13 +43,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ keyword });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Gemini APIエラー:", error);
-    
+
     // エラーメッセージ（日本語）
-    return NextResponse.json({ 
-      error: 'API_ERROR', 
-      message: error.message || 'AIモデルの呼び出しに失敗しました。'
+    const errorMessage = error instanceof Error ? error.message : 'AIモデルの呼び出しに失敗しました。';
+    return NextResponse.json({
+      error: 'API_ERROR',
+      message: errorMessage
     }, { status: 500 });
   }
 }

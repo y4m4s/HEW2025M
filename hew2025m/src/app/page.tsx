@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import ProductCard, { Product } from '@/components/Productcard';
 import Button from '@/components/Button';
 
@@ -13,17 +14,53 @@ import { SiHelix } from 'react-icons/si';
 
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useAuth } from '@/lib/useAuth';
+import LoginRequiredModal from '@/components/LoginRequiredModal';
 
 export default function Home() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
 
-  useEffect(() => {
-    fetchFeaturedProducts();
+  // 状態を日本語に変換
+  const formatCondition = useCallback((cond: string): string => {
+    const conditionMap: Record<string, string> = {
+      'new': '新品・未使用',
+      'like-new': '未使用に近い',
+      'good': '目立った傷汚れなし',
+      'fair': 'やや傷や汚れあり',
+      'poor': '傷や汚れあり'
+    };
+    return conditionMap[cond] || cond;
+  }, []);
+
+  // 日付をフォーマット
+  const formatDate = useCallback((dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return '今日';
+    } else if (diffDays === 1) {
+      return '昨日';
+    } else if (diffDays < 7) {
+      return `${diffDays}日前`;
+    } else {
+      return date.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
   }, []);
 
   // Firestoreからユーザー情報を取得
-  const fetchUserProfile = async (sellerId: string) => {
+  const fetchUserProfile = useCallback(async (sellerId: string) => {
     try {
       const uid = sellerId.startsWith('user-') ? sellerId.replace('user-', '') : sellerId;
       const userDocRef = doc(db, 'users', uid);
@@ -38,12 +75,16 @@ export default function Home() {
       }
       return null;
     } catch (error) {
+      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
+        return null;
+      }
       console.error('ユーザー情報取得エラー:', error);
       return null;
     }
-  };
+  }, []);
 
-  const fetchFeaturedProducts = async () => {
+  const fetchFeaturedProducts = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -98,41 +139,11 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchUserProfile, formatCondition, formatDate]);
 
-  // 状態を日本語に変換
-  const formatCondition = (cond: string): string => {
-    const conditionMap: Record<string, string> = {
-      'new': '新品・未使用',
-      'like-new': '未使用に近い',
-      'good': '目立った傷汚れなし',
-      'fair': 'やや傷や汚れあり',
-      'poor': '傷や汚れあり'
-    };
-    return conditionMap[cond] || cond;
-  };
-
-  // 日付をフォーマット
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      return '今日';
-    } else if (diffDays === 1) {
-      return '昨日';
-    } else if (diffDays < 7) {
-      return `${diffDays}日前`;
-    } else {
-      return date.toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    }
-  };
+  useEffect(() => {
+    fetchFeaturedProducts();
+  }, [fetchFeaturedProducts]);
 
   return (
     <div>
@@ -154,10 +165,23 @@ export default function Home() {
                 釣り人の集まる街「ツリマチ」で、もっと釣りを楽しもう。
               </p>
               <div className="flex gap-5 flex-wrap">
-                <Button href="/sell" variant="primary" size="lg" className="bg-white text-[#2FA3E3] hover:shadow-xl" icon={<Fish size={20} />}>
-                  釣り用品を出品
+                <Button
+                  onClick={() => {
+                    if (!user) {
+                      setLoginRequiredAction('商品を出品');
+                      setShowLoginModal(true);
+                    } else {
+                      router.push('/sell');
+                    }
+                  }}
+                  variant="primary"
+                  size="lg"
+                  className="bg-white text-[#2FA3E3] hover:shadow-xl py-5 px-9"
+                  icon={<Fish size={20} />}
+                >
+                  商品を出品
                 </Button>
-                <Button href="/productList" variant="outline" size="lg" className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-[#2FA3E3]" icon={<Search size={20} />}>
+                <Button href="/productList" variant="outline" size="lg" className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-[#2FA3E3] py-5 px-9" icon={<Search size={20} />}>
                   用品を探す
                 </Button>
               </div>
@@ -376,24 +400,63 @@ export default function Home() {
         </section>
 
         {/* CTA セクション */}
-        <section className="bg-gradient-to-r from-gray-700 to-gray-600 text-white py-20 rounded-3xl text-center mb-10 relative overflow-hidden before:absolute before:top-[-50%] before:left-[-50%] before:w-[200%] before:h-[200%] before:bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,transparent_70%)] before:animate-[spin_20s_linear_infinite]">
-          <div className="relative z-10">
-            <h3 className="text-3xl lg:text-4xl font-bold mb-5" style={{fontFamily: "せのびゴシック, sans-serif"}}>釣り人のコミュニティに参加しよう</h3>
-            <p className="text-lg mb-10 opacity-90">
-              無料で簡単に始められます。あなたの釣り用品を必要な人に届けませんか？
-            </p>
-            <div className="flex gap-5 justify-center flex-wrap">
-              <Button href="/register" variant="primary" size="lg" className="py-5 px-9" icon={<Fish size={20} />}>
-                釣り人として参加
-              </Button>
-              <Button href="/productList" variant="outline" size="lg" className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-gray-700 py-5 px-9" icon={<Search size={20} />}>
-                釣り用品を探す
-              </Button>
+        {!user ? (
+          // 未ログインユーザー向け：参加を促すCTA
+          <section className="bg-gradient-to-r from-gray-700 to-gray-600 text-white py-20 rounded-3xl text-center mb-10 relative overflow-hidden before:absolute before:top-[-50%] before:left-[-50%] before:w-[200%] before:h-[200%] before:bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,transparent_70%)] before:animate-[spin_20s_linear_infinite]">
+            <div className="relative z-10">
+              <h3 className="text-3xl lg:text-4xl font-bold mb-5" style={{fontFamily: "せのびゴシック, sans-serif"}}>釣り人のコミュニティに参加しよう</h3>
+              <p className="text-lg mb-10 opacity-90">
+                無料で簡単に始められます。あなたの釣り用品を必要な人に届けませんか？
+              </p>
+              <div className="flex gap-5 justify-center flex-wrap">
+                <Button href="/register" variant="primary" size="lg" className="py-5 px-9" icon={<Fish size={20} />}>
+                  釣り人として参加
+                </Button>
+                <Button href="/productList" variant="outline" size="lg" className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-gray-700 py-5 px-9" icon={<Search size={20} />}>
+                  釣り用品を探す
+                </Button>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ) : (
+          // ログイン済みユーザー向け：出品や活動を促すCTA
+          <section className="bg-gradient-to-r from-[#2FA3E3] to-[#007bff] text-white py-20 rounded-3xl text-center mb-10 relative overflow-hidden before:absolute before:top-[-50%] before:left-[-50%] before:w-[200%] before:h-[200%] before:bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,transparent_70%)] before:animate-[spin_20s_linear_infinite]">
+            <div className="relative z-10">
+              <h3 className="text-3xl lg:text-4xl font-bold mb-5" style={{fontFamily: "せのびゴシック, sans-serif"}}>もっと釣りを楽しもう！</h3>
+              <p className="text-lg mb-10 opacity-90">
+                使わなくなった釣り用品を出品したり、釣果情報をシェアしたりして、コミュニティを盛り上げましょう！
+              </p>
+              <div className="flex gap-5 justify-center flex-wrap">
+                <Button
+                  onClick={() => router.push('/sell')}
+                  variant="primary"
+                  size="lg"
+                  className="bg-white text-[#2FA3E3] hover:shadow-xl py-5 px-9"
+                  icon={<Fish size={20} />}
+                >
+                  商品を出品
+                </Button>
+                <Button
+                  onClick={() => router.push('/post')}
+                  variant="outline"
+                  size="lg"
+                  className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-[#2FA3E3] py-5 px-9"
+                  icon={<MessageSquare size={20} />}
+                >
+                  釣果を投稿
+                </Button>
+              </div>
+            </div>
+          </section>
+        )}
       </main>
 
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
+      />
     </div>
   );
 }

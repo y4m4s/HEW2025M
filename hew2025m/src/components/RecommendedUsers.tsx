@@ -68,7 +68,12 @@ export default function RecommendedUsers() {
 
       setUsers(sortedUsers);
     } catch (error) {
-      console.error("おすすめユーザーの取得エラー:", error);
+      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
+        // エラーを静かに処理
+      } else {
+        console.error("おすすめユーザーの取得エラー:", error);
+      }
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { X, MapPin, Navigation, Search } from 'lucide-react';
 import Button from './Button';
+import toast from 'react-hot-toast';
 
 const containerStyle = {
   width: '100%',
@@ -111,12 +112,11 @@ const MapModal: React.FC<MapModalProps> = ({
         setSelectedPosition(newCenter);
         // 住所を取得
         getAddressFromLatLng(newCenter.lat, newCenter.lng);
-      } else {
-        alert('指定された場所が見つかりませんでした。別の住所を試してください。');
       }
+      // 場所が見つからなくてもエラーは表示しない
     } catch (error) {
       console.error('場所の検索に失敗しました:', error);
-      alert('場所の検索に失敗しました。別の住所を試してください。');
+      // エラーが発生してもトーストは表示しない
     } finally {
       setIsSearching(false);
     }
@@ -151,11 +151,11 @@ const MapModal: React.FC<MapModalProps> = ({
         },
         (error) => {
           console.error('現在地の取得に失敗しました:', error);
-          alert('現在地を取得できませんでした。位置情報の使用を許可してください。');
+          toast.error('現在地を取得できませんでした。位置情報の使用を許可してください。');
         }
       );
     } else {
-      alert('お使いのブラウザは位置情報に対応していません。');
+      toast.error('お使いのブラウザは位置情報に対応していません。');
     }
   }, [getAddressFromLatLng]);
 
@@ -164,7 +164,7 @@ const MapModal: React.FC<MapModalProps> = ({
     if (selectedPosition) {
       // 住所が取得できていない場合は警告
       if (!address) {
-        alert('住所を取得できませんでした。別の位置を選択してください。');
+        toast.error('住所を取得できませんでした。別の位置を選択してください。');
         return;
       }
       onSelectLocation({
@@ -179,7 +179,7 @@ const MapModal: React.FC<MapModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-800/30 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[100vh] flex flex-col overflow-hidden">
         {/* ヘッダー */}
         <div className="bg-gray-50 px-6 py-4 border-b flex justify-between items-center flex-shrink-0">
@@ -257,6 +257,9 @@ const MapModal: React.FC<MapModalProps> = ({
                   center={mapCenter}
                   zoom={selectedPosition ? 15 : 12}
                   onClick={handleMapClick}
+                  options={{
+                    mapTypeControl: false,
+                  }}
                 >
                   {selectedPosition && <Marker position={selectedPosition} />}
                 </GoogleMap>

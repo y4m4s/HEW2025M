@@ -8,10 +8,12 @@ import CartProductCard, { CartProduct } from '@/components/CartProductCard';
 import { Trash2, ShoppingCart } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useAuth } from '@/lib/useAuth';
 
 
 export default function CartPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const items = useCartStore((state) => state.items);
   const removeItem = useCartStore((state) => state.removeItem);
 
@@ -19,6 +21,13 @@ export default function CartPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [products, setProducts] = useState<(CartProduct & { cartItemId: string })[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // 認証チェック：未ログインならログインページへリダイレクト
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -73,7 +82,12 @@ export default function CartPage() {
                     sellerPhotoURL = userData.photoURL || undefined;
                   }
                 } catch (error) {
-                  console.error('ユーザー情報取得エラー:', error);
+                  // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+                  if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
+                    // エラーを静かに処理
+                  } else {
+                    console.error('ユーザー情報取得エラー:', error);
+                  }
                 }
               }
 

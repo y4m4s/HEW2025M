@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, ArrowLeft, Calendar, User, Bookmark, Fish } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, Calendar, Bookmark, Fish } from 'lucide-react';
 import Button from '@/components/Button';
 import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
 import CancelModal from '@/components/CancelModal';
+import LoginRequiredModal from '@/components/LoginRequiredModal';
 import ProductCard from '@/components/Productcard';
 
 import SmartRakuten from '@/components/SmartRakuten'; 
@@ -67,6 +68,10 @@ export default function SellDetailPage() {
   // 画像モーダル
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalImageIndex, setModalImageIndex] = useState(0);
+
+  // ログイン必須モーダル
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
 
   useEffect(() => {
     if (params.id) {
@@ -186,11 +191,16 @@ export default function SellDetailPage() {
         });
       }
     } catch (err) {
-      console.error('出品者プロフィール取得エラー:', err);
+      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+      if (err && typeof err === 'object' && 'code' in err && err.code === 'permission-denied') {
+        // エラーを静かに処理
+      } else {
+        console.error('出品者プロフィール取得エラー:', err);
+      }
       // エラーの場合もデフォルト値を設定
       setSellerProfile({
-        uid: '',
-        displayName: '名無しユーザー',
+        uid: sellerId.startsWith('user-') ? sellerId.replace('user-', '') : sellerId,
+        displayName: product?.sellerName || '名無しユーザー',
         username: 'user',
         photoURL: '',
         bio: '',
@@ -257,8 +267,8 @@ export default function SellDetailPage() {
 
   const handleBookmark = async () => {
     if (!user) {
-      alert('ブックマークするにはログインが必要です');
-      router.push('/login');
+      setLoginRequiredAction('ブックマーク');
+      setShowLoginModal(true);
       return;
     }
     if (!product) return;
@@ -281,7 +291,7 @@ export default function SellDetailPage() {
       }
     } catch (error) {
       console.error(error);
-      alert('操作に失敗しました');
+      toast.error('操作に失敗しました');
     } finally {
       setBookmarkLoading(false);
     }
@@ -296,9 +306,15 @@ export default function SellDetailPage() {
       removeItemFromCart(product._id);
       toast.success('商品をカートから削除しました。');
     } else {
-      // カートに追加
+      // カートに追加 - ログインチェック
+      if (!user) {
+        setLoginRequiredAction('カートに追加');
+        setShowLoginModal(true);
+        return;
+      }
+
       if (product.status !== 'available') {
-        alert('この商品は現在購入できません。');
+        toast.error('この商品は現在購入できません。');
         return;
       }
 
@@ -320,7 +336,7 @@ export default function SellDetailPage() {
     // 自分の商品かどうか確認
     const actualUserId = `user-${user.uid}`;
     if (product.sellerId !== actualUserId && product.sellerId !== user.uid) {
-      alert('自分の商品のみ削除できます');
+      toast.error('自分の商品のみ削除できます');
       return;
     }
 
@@ -346,7 +362,7 @@ export default function SellDetailPage() {
       router.push('/productList');
     } catch (err) {
       console.error('商品削除エラー:', err);
-      alert(err instanceof Error ? err.message : '商品の削除に失敗しました');
+      toast.error(err instanceof Error ? err.message : '商品の削除に失敗しました');
     } finally {
       setDeleting(false);
     }
@@ -606,6 +622,13 @@ export default function SellDetailPage() {
           />
         </div>
       </CancelModal>
+
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
+      />
     </div>
   );
 }

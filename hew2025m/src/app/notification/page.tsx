@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
-import { Megaphone, MessageSquare, Trash2, Heart, Star, ShoppingCart, UserPlus, Mail, Bell, Home, ChevronRight, CheckCheck, ChevronLeft } from 'lucide-react';
+import { Megaphone, MessageSquare, Trash2, Heart, Star, ShoppingCart, UserPlus, Mail, Bell, CheckCheck, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import CustomSelect from '@/components/CustomSelect';
 import Button from '@/components/Button';
@@ -64,6 +64,13 @@ export default function NotificationPage() {
   const [filterValue, setFilterValue] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // 認証チェック：未ログインならログインページへリダイレクト
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
   // Firestoreから通知を読み込みます
   useEffect(() => {
@@ -206,14 +213,6 @@ export default function NotificationPage() {
   return (
     <div className="bg-gray-100 min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
-        {/* パンくずリスト */}
-        <nav className="text-sm text-gray-600 mb-4 flex items-center gap-2">
-          <Home size={16} />
-          <span>ホーム</span>
-          <ChevronRight size={16} />
-          <span>通知</span>
-        </nav>
-
         {/* ヘッダー（「すべて既読にする」ボタンが機能するようになりました） */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -264,24 +263,47 @@ export default function NotificationPage() {
           {paginatedNotifications.map((notification) => (
             <div
               key={notification.id}
-              className={`bg-white rounded-xl p-5 flex items-start gap-4 transition-all duration-300 ${
+              className={`bg-white rounded-xl p-5 flex items-start gap-4 transition-all duration-300 relative ${
                 notification.isUnread
                   ? 'border-l-4 border-[#2FA3E3] shadow-lg'
                   : 'border-l-4 border-transparent shadow-md'
-              } ${notification.link || notification.linkUserId ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-l-[#1d7bb8]' : ''}`}
+              } ${notification.link || notification.linkUserId ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-l-[#2FA3E3]' : ''}`}
               onClick={() => handleNotificationClick(notification)}
             >
+              {/* 削除ボタン（右上） */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(notification.id);
+                }}
+                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-gray-500 hover:bg-red-500 text-white flex items-center justify-center transition-colors duration-200"
+                aria-label="削除"
+              >
+                <X size={16} />
+              </button>
+
               {/* 1. アイコン */}
               <div
-                className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-[#2FA3E3] to-[#1d7bb8] shadow-md"
+                className="w-14 h-14 my-auto rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-[#2FA3E3] to-[#1d7bb8] shadow-md"
               >
                 {getNotificationIcon(notification.iconType)}
               </div>
 
               {/* 2. コンテンツ */}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-gray-900 break-words text-base">
-                  {notification.title}
+              <div className="flex-1 min-w-0 pr-8">
+                <h3 className="text-gray-900 break-words text-base">
+                  {(() => {
+                    const match = notification.title.match(/^(.+?さん)(.+)$/);
+                    if (match) {
+                      return (
+                        <>
+                          <span className="font-bold">{match[1]}</span>
+                          <span className="font-normal">{match[2]}</span>
+                        </>
+                      );
+                    }
+                    return <span className="font-bold">{notification.title}</span>;
+                  })()}
                 </h3>
                 <p className="text-sm text-gray-600 mt-2 line-clamp-2 break-words leading-relaxed">
                   {notification.description}
@@ -291,35 +313,21 @@ export default function NotificationPage() {
                     <Bell size={12} />
                     {formatTimestamp(notification.timestamp)}
                   </span>
-                  <span className="bg-gradient-to-r from-blue-50 to-cyan-50 text-[#2FA3E3] px-3 py-1 rounded-full font-medium border border-blue-100">
+                  <span className="bg-gradient-to-r from-blue-50 to-cyan-50 text-[#2FA3E3] px-3 py-1 rounded-full font-medium border border-blue-100 w-20 text-center">
                     {notification.tag}
                   </span>
+                  {notification.isUnread && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMarkAsRead(notification.id);
+                      }}
+                      className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-lg text-xs font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                      既読
+                    </button>
+                  )}
                 </div>
-              </div>
-
-              {/* 3. アクション */}
-              <div className="flex flex-col space-y-2">
-                {notification.isUnread && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMarkAsRead(notification.id);
-                    }}
-                    className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
-                  >
-                    既読
-                  </button>
-                )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(notification.id);
-                  }}
-                  className="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-1"
-                >
-                  <Trash2 className="w-3 h-3" />
-                  削除
-                </button>
               </div>
             </div>
           ))}

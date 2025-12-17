@@ -8,6 +8,7 @@ import Button from '@/components/Button';
 import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
 import CancelModal from '@/components/CancelModal';
+import LoginRequiredModal from '@/components/LoginRequiredModal';
 import UserInfoCard from '@/components/UserInfoCard';
 import LikedUsersModal from '@/components/LikedUsersModal';
 import { useAuth } from '@/lib/useAuth';
@@ -69,6 +70,10 @@ export default function PostDetailPage() {
   } | null>(null);
   const [authorProfileLoading, setAuthorProfileLoading] = useState(false);
 
+  // ログイン必須モーダル
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
+
   const fetchAuthorProfile = async (authorId: string) => {
     try {
       setAuthorProfileLoading(true);
@@ -87,7 +92,12 @@ export default function PostDetailPage() {
         });
       }
     } catch (error) {
-      console.error('投稿者プロフィール取得エラー:', error);
+      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
+        // エラーを静かに処理
+      } else {
+        console.error('投稿者プロフィール取得エラー:', error);
+      }
     } finally {
       setAuthorProfileLoading(false);
     }
@@ -143,8 +153,8 @@ export default function PostDetailPage() {
   // いいねをトグル
   const handleLikeToggle = async () => {
     if (!user) {
-      toast.error('いいねするにはログインが必要です');
-      router.push('/login');
+      setLoginRequiredAction('いいね');
+      setShowLoginModal(true);
       return;
     }
     if (!post) return;
@@ -230,7 +240,7 @@ export default function PostDetailPage() {
 
     // 自分の投稿かどうか確認
     if (post.authorId !== user.uid && post.authorId !== `user-${user.uid}`) {
-      alert('自分の投稿のみ削除できます');
+      toast.error('自分の投稿のみ削除できます');
       return;
     }
 
@@ -255,7 +265,7 @@ export default function PostDetailPage() {
       router.push('/community');
     } catch (err) {
       console.error('投稿削除エラー:', err);
-      alert(err instanceof Error ? err.message : '投稿の削除に失敗しました');
+      toast.error(err instanceof Error ? err.message : '投稿の削除に失敗しました');
     } finally {
       setDeleting(false);
     }
@@ -572,6 +582,13 @@ export default function PostDetailPage() {
         isOpen={showLikedUsersModal}
         onClose={() => setShowLikedUsersModal(false)}
         postId={params.id as string}
+      />
+
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
       />
     </div>
   );

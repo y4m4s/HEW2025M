@@ -6,6 +6,7 @@ import { User, X } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
+import toast from "react-hot-toast";
 
 interface UserProfile {
   displayName: string;
@@ -50,13 +51,13 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile, onSaveSuc
 
     // ファイルサイズチェック（5MB制限）
     if (file.size > 5 * 1024 * 1024) {
-      alert("画像サイズが5MBを超えています");
+      toast.error("画像サイズが5MBを超えています");
       return;
     }
 
     // 画像タイプチェック
     if (!file.type.startsWith("image/")) {
-      alert("画像ファイルを選択してください");
+      toast.error("画像ファイルを選択してください");
       return;
     }
 
@@ -72,18 +73,18 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile, onSaveSuc
 
   const handleSaveProfile = async () => {
     if (!user) {
-      alert("ユーザーが認証されていません");
+      toast.error("ユーザーが認証されていません");
       return;
     }
 
     // 文字数チェック
     if (editProfile.displayName.length > 15) {
-      alert("表示名は15文字以内で入力してください");
+      toast.error("表示名は15文字以内で入力してください");
       return;
     }
 
     if (editProfile.bio.length > 140) {
-      alert("自己紹介は140文字以内で入力してください");
+      toast.error("自己紹介は140文字以内で入力してください");
       return;
     }
 
@@ -118,7 +119,7 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile, onSaveSuc
           photoURL = `${uploadData.imageUrl}?t=${Date.now()}`;
         } catch (uploadError) {
           console.error("画像アップロードエラー:", uploadError);
-          alert("画像のアップロードに失敗しました");
+          toast.error("画像のアップロードに失敗しました");
           setSaving(false);
           return;
         }
@@ -160,11 +161,11 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile, onSaveSuc
 
       if (error instanceof Error) {
         if (error.message.includes("permission-denied")) {
-          alert("プロフィールの保存権限がありません");
+          toast.error("プロフィールの保存権限がありません");
         } else if (error.message.includes("タイムアウト")) {
-          alert("保存がタイムアウトしました。ネットワーク接続を確認してください");
+          toast.error("保存がタイムアウトしました。ネットワーク接続を確認してください");
         } else {
-          alert("プロフィールの保存に失敗しました");
+          toast.error("プロフィールの保存に失敗しました");
         }
       }
     } finally {

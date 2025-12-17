@@ -9,6 +9,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/useAuth';
+import LoginRequiredModal from '@/components/LoginRequiredModal';
 
 interface SelectedPost {
   _id: string;
@@ -32,6 +35,8 @@ interface AuthorProfile {
 }
 
 export default function MapPage() {
+  const { user } = useAuth();
+  const router = useRouter();
   const mapRef = useRef<MapRef>(null);
   const [selectedPost, setSelectedPost] = useState<SelectedPost | null>(null);
   const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
@@ -41,6 +46,8 @@ export default function MapPage() {
   const [postsAtSameLocation, setPostsAtSameLocation] = useState<SelectedPost[]>([]);
   const [currentPostIndex, setCurrentPostIndex] = useState(0);
   const [allPosts, setAllPosts] = useState<SelectedPost[]>([]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
 
   // 全投稿を取得
   useEffect(() => {
@@ -131,7 +138,12 @@ export default function MapPage() {
           });
         }
       } catch (error) {
-        console.error('投稿者情報の取得に失敗しました:', error);
+        // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
+          // エラーを静かに処理
+        } else {
+          console.error('投稿者情報の取得に失敗しました:', error);
+        }
         setAuthorProfile({
           displayName: selectedPost.authorName || 'ユーザー',
           username: '',
@@ -207,27 +219,25 @@ export default function MapPage() {
                 </h3>
                 {postsAtSameLocation.length > 1 && selectedPost && (
                   <div className="flex items-center gap-2">
-                    <Button
+                    <button
                       onClick={handlePreviousPost}
                       disabled={currentPostIndex === 0}
-                      variant="ghost"
-                      size="sm"
-                      className={currentPostIndex === 0 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}
-                      icon={<ChevronLeft size={16} />}
+                      className={`p-2 rounded-lg transition-all duration-200 ${currentPostIndex === 0 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}`}
                       aria-label="前の投稿"
-                    />
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
                     <span className="text-xs text-gray-600 font-medium min-w-[60px] text-center">
                       {currentPostIndex + 1} / {postsAtSameLocation.length}
                     </span>
-                    <Button
+                    <button
                       onClick={handleNextPost}
                       disabled={currentPostIndex === postsAtSameLocation.length - 1}
-                      variant="ghost"
-                      size="sm"
-                      className={currentPostIndex === postsAtSameLocation.length - 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}
-                      icon={<ChevronRight size={16} />}
+                      className={`p-2 rounded-lg transition-all duration-200 ${currentPostIndex === postsAtSameLocation.length - 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}`}
                       aria-label="次の投稿"
-                    />
+                    >
+                      <ChevronRight size={16} />
+                    </button>
                   </div>
                 )}
               </div>
@@ -402,26 +412,23 @@ export default function MapPage() {
                           </div>
                         </div>
 
-                        <Link
-                          href={{
-                            pathname: '/post',
-                            query: {
-                              lat: clickedLocation.lat,
-                              lng: clickedLocation.lng,
-                              address: clickedLocation.address
+                        <Button
+                          onClick={() => {
+                            if (!user) {
+                              setLoginRequiredAction('この場所で投稿を作成');
+                              setShowLoginModal(true);
+                            } else {
+                              router.push(`/post?lat=${clickedLocation.lat}&lng=${clickedLocation.lng}&address=${encodeURIComponent(clickedLocation.address)}`);
                             }
                           }}
+                          variant="primary"
+                          size="md"
+                          className="w-full"
+                          icon={<Plus size={16} />}
+                          disabled={isLoadingAddress}
                         >
-                          <Button
-                            variant="primary"
-                            size="md"
-                            className="w-full"
-                            icon={<Plus size={16} />}
-                            disabled={isLoadingAddress}
-                          >
-                            この場所で投稿を作成
-                          </Button>
-                        </Link>
+                          この場所で投稿を作成
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -437,6 +444,12 @@ export default function MapPage() {
         </main>
       </div>
 
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
+      />
     </div>
   );
 }

@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 export default function Post() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { profile } = useProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -27,6 +27,13 @@ export default function Post() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
+
+  // 認証チェック：未ログインならログインページへリダイレクト
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
   // URLクエリパラメータから位置情報を取得
   useEffect(() => {

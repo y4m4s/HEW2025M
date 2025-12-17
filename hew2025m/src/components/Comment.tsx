@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { useProfile } from '@/contexts/ProfileContext';
 import { Comment as CommentType } from '@/types/comment';
 import CommentInput from './CommentInput';
 import CommentList from './CommentList';
+import LoginRequiredModal from './LoginRequiredModal';
+import toast from 'react-hot-toast';
 
 interface CommentProps {
   productId?: string;
@@ -15,13 +16,14 @@ interface CommentProps {
 }
 
 export default function Comment({ productId, postId, onCommentCountChange }: CommentProps) {
-  const router = useRouter();
   const { user } = useAuth();
   const { profile } = useProfile();
 
   const [comments, setComments] = useState<CommentType[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
 
   // どちらのIDが渡されたかに基づいてAPIエンドポイントを決定
   const targetId = productId || postId;
@@ -60,18 +62,18 @@ export default function Comment({ productId, postId, onCommentCountChange }: Com
   // コメントを投稿
   const handleSubmitComment = async (content: string, parentId?: string) => {
     if (!user) {
-      alert('コメントするにはログインが必要です');
-      router.push('/login');
+      setLoginRequiredAction('コメント');
+      setShowLoginModal(true);
       return;
     }
 
     if (!content.trim()) {
-      alert('コメント内容を入力してください');
+      toast.error('コメント内容を入力してください');
       return;
     }
 
     if (content.length > 140) {
-      alert('コメントは140文字以内で入力してください');
+      toast.error('コメントは140文字以内で入力してください');
       return;
     }
 
@@ -101,7 +103,7 @@ export default function Comment({ productId, postId, onCommentCountChange }: Com
       await fetchComments();
     } catch (err) {
       console.error('コメント投稿エラー:', err);
-      alert('コメントの投稿に失敗しました');
+      toast.error('コメントの投稿に失敗しました');
     } finally {
       setCommentSubmitting(false);
     }
@@ -137,7 +139,7 @@ export default function Comment({ productId, postId, onCommentCountChange }: Com
       await fetchComments();
     } catch (err) {
       console.error('コメント削除エラー:', err);
-      alert(err instanceof Error ? err.message : 'コメントの削除に失敗しました');
+      toast.error(err instanceof Error ? err.message : 'コメントの削除に失敗しました');
     }
   };
 
@@ -157,6 +159,13 @@ export default function Comment({ productId, postId, onCommentCountChange }: Com
         currentUserId={user?.uid}
         onDeleteComment={handleDeleteComment}
         onReply={handleReplyComment}
+      />
+
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
       />
     </div>
   );

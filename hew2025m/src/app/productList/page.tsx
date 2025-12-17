@@ -96,6 +96,10 @@ export default function SearchPage() {
       }
       return null;
     } catch (error) {
+      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
+        return null;
+      }
       console.error('ユーザー情報取得エラー:', error);
       return null;
     }
@@ -259,8 +263,6 @@ export default function SearchPage() {
   Array.from({ length: end - start + 1 }, (_, i) => start + i);
 
 const getPageNumbers = () => {
-  const visiblePages = 5;
-
   if (totalPages <= 7) return range(1, totalPages);
 
   const firstPage = 1;

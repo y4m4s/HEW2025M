@@ -1,27 +1,76 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import PostCard, { Post } from '@/components/PostCard';
 import Button from '@/components/Button';
 import RecommendedUsers from '@/components/RecommendedUsers';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import LoginRequiredModal from '@/components/LoginRequiredModal';
 import { Fish, MapPin, User } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useAuth } from '@/lib/useAuth';
 
 export default function CommunityPage() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [popularPost, setPopularPost] = useState<Post | null>(null);
   const [latestPosts, setLatestPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
 
-  useEffect(() => {
-    fetchPosts();
+  // タグから魚の名前を抽出
+  const extractFishName = useCallback((tags: string[] = []): string => {
+    const fishTag = tags.find(tag => tag.startsWith('魚:'));
+    return fishTag ? fishTag.replace('魚:', '') : '';
+  }, []);
+
+  // タグからサイズを抽出
+  const extractFishSize = useCallback((tags: string[] = []): string => {
+    const sizeTag = tags.find(tag => tag.includes('cm'));
+    return sizeTag || '';
+  }, []);
+
+  // タグから重さを抽出
+  const extractFishWeight = useCallback((tags: string[] = []): string => {
+    const weightTag = tags.find(tag => tag.includes('kg') || tag.includes('g'));
+    return weightTag || '';
+  }, []);
+
+  // タグから匹数を抽出
+  const extractFishCount = useCallback((tags: string[] = []): string => {
+    const countTag = tags.find(tag => tag.includes('匹'));
+    return countTag || '';
+  }, []);
+
+  // 日付のフォーマット
+  const formatDate = useCallback((dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return '今日';
+    } else if (diffDays === 1) {
+      return '昨日';
+    } else if (diffDays < 7) {
+      return `${diffDays}日前`;
+    } else {
+      return date.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
   }, []);
 
   // Firestoreからユーザー情報を取得
-  const fetchUserProfile = async (authorId: string) => {
+  const fetchUserProfile = useCallback(async (authorId: string) => {
     try {
       const uid = authorId.startsWith('user-') ? authorId.replace('user-', '') : authorId;
       const userDocRef = doc(db, 'users', uid);
@@ -36,12 +85,16 @@ export default function CommunityPage() {
       }
       return null;
     } catch (error) {
+      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
+        return null;
+      }
       console.error('ユーザー情報取得エラー:', error);
       return null;
     }
-  };
+  }, []);
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -116,53 +169,12 @@ export default function CommunityPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchUserProfile, extractFishName, extractFishSize, extractFishWeight, extractFishCount, formatDate]);
 
-  // タグから魚の名前を抽出
-  const extractFishName = (tags: string[] = []): string => {
-    const fishTag = tags.find(tag => tag.startsWith('魚:'));
-    return fishTag ? fishTag.replace('魚:', '') : '';
-  };
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
-  // タグからサイズを抽出
-  const extractFishSize = (tags: string[] = []): string => {
-    const sizeTag = tags.find(tag => tag.includes('cm'));
-    return sizeTag || '';
-  };
-
-  // タグから重さを抽出
-  const extractFishWeight = (tags: string[] = []): string => {
-    const weightTag = tags.find(tag => tag.includes('kg') || tag.includes('g'));
-    return weightTag || '';
-  };
-
-  // タグから匹数を抽出
-  const extractFishCount = (tags: string[] = []): string => {
-    const countTag = tags.find(tag => tag.includes('匹'));
-    return countTag || '';
-  };
-
-  // 日付をフォーマット
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      return '今日';
-    } else if (diffDays === 1) {
-      return '昨日';
-    } else if (diffDays < 7) {
-      return `${diffDays}日前`;
-    } else {
-      return date.toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    }
-  };
   if (loading) {
     return <LoadingSpinner message="コミュニティを読み込み中……" size="lg" fullScreen />;
   }
@@ -197,7 +209,19 @@ export default function CommunityPage() {
                   </h1>
                   <p className="text-gray-600">釣果を共有して、釣り仲間と繋がろう</p>
                 </div>
-                <Button href="/post" variant="primary" size="md" className="shadow-lg hover:shadow-xl transition-shadow">
+                <Button
+                  onClick={() => {
+                    if (!user) {
+                      setLoginRequiredAction('投稿する');
+                      setShowLoginModal(true);
+                    } else {
+                      router.push('/post');
+                    }
+                  }}
+                  variant="primary"
+                  size="md"
+                  className="shadow-lg hover:shadow-xl transition-shadow"
+                >
                   投稿する
                 </Button>
               </div>
@@ -328,6 +352,13 @@ export default function CommunityPage() {
           </aside>
         </div>
       </main>
+
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
+      />
     </div>
   );
 }

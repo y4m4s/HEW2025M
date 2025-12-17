@@ -21,6 +21,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import UserRating from "@/components/UserRating";
 import FollowListModal from "@/components/FollowListModal";
 import LogoutModal from "@/components/LogoutModal";
+import LoginRequiredModal from "@/components/LoginRequiredModal";
 import { createFollowNotification } from "@/lib/notifications";
 import toast from "react-hot-toast";
 
@@ -57,6 +58,8 @@ export default function UserProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followDocId, setFollowDocId] = useState<string | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
 
   // 対象ユーザーのプロフィールを取得
   const fetchUserProfile = async () => {
@@ -135,23 +138,24 @@ export default function UserProfilePage() {
   useEffect(() => {
     fetchUserProfile();
     fetchFollowCounts();
-    checkFollowStatus();
+    // ログイン時のみフォロー状態をチェック
+    if (user) {
+      checkFollowStatus();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, user]);
-
-  // ログインしていない場合の処理
-  useEffect(() => {
-    if (!authLoading && user === null) {
-      router.push("/login");
-    }
-  }, [user, authLoading, router]);
 
   // 自分のプロフィールかどうかを判定
   const isOwnProfile = user?.uid === userId;
 
   // フォロー/フォロー解除処理
   const handleFollowToggle = async () => {
-    if (!user || !targetProfile) return;
+    if (!user) {
+      setLoginRequiredAction('フォロー');
+      setShowLoginModal(true);
+      return;
+    }
+    if (!targetProfile) return;
 
     try {
       if (isFollowing && followDocId) {
@@ -177,12 +181,17 @@ export default function UserProfilePage() {
       }
     } catch (error) {
       console.error('フォロー処理エラー:', error);
-      alert('フォロー処理に失敗しました');
+      toast.error('フォロー処理に失敗しました');
     }
   };
 
   // メッセージページへ遷移
   const handleSendMessage = () => {
+    if (!user) {
+      setLoginRequiredAction('メッセージを送る');
+      setShowLoginModal(true);
+      return;
+    }
     if (!targetProfile) return;
     router.push(`/message?userId=${targetProfile.uid}`);
   };
@@ -197,7 +206,7 @@ export default function UserProfilePage() {
       await signOut(auth);
       setShowLogoutModal(false);
       toast.success('ログアウトしました');
-      router.push('/login');
+      router.push('/');
     } catch (error) {
       console.error('ログアウトエラー:', error);
       setShowLogoutModal(false);
@@ -209,7 +218,7 @@ export default function UserProfilePage() {
     setShowLogoutModal(false);
   };
 
-  if (loading || authLoading || !user || !targetProfile) {
+  if (loading || authLoading || !targetProfile) {
     return <LoadingSpinner message="プロフィールを読み込み中……" size="lg" fullScreen />;
   }
 
@@ -238,6 +247,13 @@ export default function UserProfilePage() {
         isOpen={showLogoutModal}
         onConfirm={handleLogoutConfirm}
         onCancel={handleLogoutCancel}
+      />
+
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
       />
 
       {/* ページ */}
