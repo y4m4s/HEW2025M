@@ -16,12 +16,13 @@ import ProfHistory from "@/components/ProfHistory";
 import ProfBookmark from "@/components/ProfBookmark";
 import ProfLikedPosts from "@/components/ProfLikedPosts";
 import RecentlyViewed from "@/components/RecentlyViewed";
-import ProfPurchases from "@/components/ProfPurchases";
 import UserRating from "@/components/UserRating";
 import FollowListModal from "@/components/FollowListModal";
 import LogoutModal from "@/components/LogoutModal";
 import { createFollowNotification } from "@/lib/notifications";
 import toast from "react-hot-toast";
+import PurchaseHistory from '@/components/PurchaseHistory';
+
 
 type TabType = "selling" | "history" | "purchases" | "bookmarks" | "likedPosts";
 interface UserProfile {
@@ -432,9 +433,9 @@ export default function UserProfilePage() {
               <div style={{ display: activeTab === "history" ? "block" : "none" }}>
                 <ProfHistory onCountChange={setHistoryCount} userId={userId} />
               </div>
-                            {isOwnProfile && (
+              {isOwnProfile && (
                 <div style={{ display: activeTab === "purchases" ? "block" : "none" }}>
-                  <ProfPurchases onCountChange={setPurchasesCount} />
+                  <PurchaseHistory onCountChange={setPurchasesCount} />
                 </div>
               )}
               {isOwnProfile && (

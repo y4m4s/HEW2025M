@@ -13,24 +13,46 @@ import { useCartStore } from '@/components/useCartStore';
 import { useAuth } from '@/lib/useAuth';
 import { Lock, CreditCard, Smartphone } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { addDoc, collection, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
-// Carrega a chave pública
+//keyの取得
 const stripePublicKey = process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY; 
 const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
+
+// アイコンコンポーネント
+const ApplePayIcon = () => (
+  <svg className="w-6 h-6" viewBox="0 0 32 32" fill="currentColor"><path d="M19.5 13.5C19.5 15.5 21.2 16.5 21.3 16.6C21.2 17 20.7 18.5 19.5 20.2C18.5 21.6 17.5 21.6 16.5 21.6C15.4 21.6 14.5 20.9 13.8 20.9C13.1 20.9 12 21.6 11 21.6C9.9 21.6 8.5 20.5 7.7 19.3C6.1 17 6.1 13.6 8.6 12.2C9.8 11.5 10.9 11.5 11.7 11.5C12.8 11.5 13.6 12.2 14.2 12.2C14.8 12.2 15.9 11.3 17.2 11.3C17.7 11.3 19.3 11.5 20.3 12.9C20.2 13 19.5 13.3 19.5 13.5ZM16.3 9.5C16.8 8.9 17.1 8.1 17 7.3C16.3 7.3 15.4 7.8 14.9 8.4C14.4 8.9 14 9.8 14.1 10.6C14.9 10.6 15.8 10.1 16.3 9.5Z"/></svg>
+);
+
+const GooglePayIcon = () => (
+  <svg className="w-6 h-6" viewBox="0 0 32 32" fill="currentColor"><path d="M16 13.5V18.5H23.5C23.2 20.3 21.5 23.5 16 23.5C11.5 23.5 8 19.8 8 15.5C8 11.2 11.5 7.5 16 7.5C18.5 7.5 20.2 8.6 21.1 9.5L24.7 6C22.4 3.8 19.5 2.5 16 2.5C8.8 2.5 3 8.3 3 15.5C3 22.7 8.8 28.5 16 28.5C23.5 28.5 28.5 23.2 28.5 15.5C28.5 14.8 28.4 14.1 28.3 13.5H16Z"/></svg>
+);
 
 const PAYMENT_METHODS = [
   {
     id: 'card',
-    // Apple Pay e Google Pay aparecem automaticamente dentro do Elemento do Cartão
-    name: 'クレジットカード / Apple Pay / Google Pay', 
+    name: 'クレジットカード', 
     icon: <CreditCard className="w-6 h-6 text-blue-600" />,
-    brands: ['visa', 'master', 'jcb', 'amex']
+    description: 'Visa, Mastercard, JCB, Amex'
+  },
+  {
+    id: 'apple_pay',
+    name: 'Apple Pay',
+    icon: <ApplePayIcon />,
+    description: 'Apple Payで支払う'
+  },
+  {
+    id: 'google_pay',
+    name: 'Google Pay',
+    icon: <GooglePayIcon />,
+    description: 'Google Payで支払う'
   },
   {
     id: 'paypay',
     name: 'PayPay', 
     icon: <Smartphone className="w-6 h-6 text-red-500" />,
-    brands: []
+    description: 'PayPay残高払い'
   }
 ];
 
@@ -53,8 +75,35 @@ function PayCheckForm() {
     setIsLoading(true);
     setErrorMessage(null);
 
-    // Lógica 1: Cartão, Apple Pay e Google Pay (Processados pelo Stripe)
-    if (selectedMethod === 'card') {
+    if (!user) {
+      toast.error('ログインが必要です。');
+      setIsLoading(false);
+      return;
+    }
+
+    // 注文データをFirestoreに保存
+    let orderId = '';
+    try {
+      const orderData = {
+        buyerId: user.uid,
+        items: items,
+        totalAmount: total,
+        paymentMethod: selectedMethod,
+        status: 'completed', // 簡易的に完了とする
+        createdAt: Timestamp.now(),
+      };
+      
+      const docRef = await addDoc(collection(db, 'orders'), orderData);
+      orderId = docRef.id;
+      clearCart();
+    } catch (error) {
+      console.error('注文保存エラー:', error);
+      setErrorMessage('注文の保存に失敗しました。');
+      setIsLoading(false);
+      return;
+    }
+
+    if (['card', 'apple_pay', 'google_pay', 'paypay'].includes(selectedMethod)) {
       if (!stripe || !elements) {
         toast.error('システムエラー: Stripeが読み込まれていません。');
         setIsLoading(false);
@@ -65,7 +114,8 @@ function PayCheckForm() {
         const { error } = await stripe.confirmPayment({
           elements,
           confirmParams: {
-            return_url: `${window.location.origin}/order-success`,
+            // orderIdをURLパラメータとして渡す
+            return_url: `${window.location.origin}/order-success?orderId=${orderId}`,
             payment_method_data: {
               billing_details: {
                 name: user?.displayName || 'Guest',
@@ -83,18 +133,6 @@ function PayCheckForm() {
         console.error(err);
         setErrorMessage('システムエラーが発生しました。');
       }
-    } 
-    
-    // Lógica 2: PayPay (Simulação para escola)
-    else if (selectedMethod === 'paypay') {
-        toast.success('PayPay: 決済画面へリダイレクト中...');
-        
-        setTimeout(() => {
-            // Simula sucesso e redireciona
-            window.location.href = `/order-success?payment=paypay`;
-            clearCart();
-        }, 2000);
-        return;
     }
 
     setIsLoading(false);
@@ -115,7 +153,8 @@ function PayCheckForm() {
         
         {PAYMENT_METHODS.map((method) => {
           const isSelected = selectedMethod === method.id;
-          
+          const isStripeMethod = ['card', 'apple_pay', 'google_pay', 'paypay'].includes(method.id);
+
           return (
             <div key={method.id} className={`border-b border-gray-200 last:border-0 transition-colors ${isSelected ? 'bg-blue-50/30' : 'bg-white'}`}>
               
@@ -134,30 +173,25 @@ function PayCheckForm() {
                   <span className={`font-bold ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>
                     {method.name}
                   </span>
+                  {method.description && !isSelected && (
+                    <span className="text-xs text-gray-400 hidden sm:inline-block"> - {method.description}</span>
+                  )}
                 </div>
               </label>
 
-              {/* Formulário do Stripe (Só aparece se for Card) */}
-              {isSelected && method.id === 'card' && (
+              {/* stripe forms*/}
+              {isSelected && isStripeMethod && (
                 <div className="px-6 pb-6 pt-0 animate-in slide-in-from-top-2 duration-300">
                   <div className="p-5 bg-white border border-gray-200 rounded-lg shadow-inner mt-2 min-h-[150px]">
                     <PaymentElement 
                       id="payment-element"
-                      options={{ layout: "tabs" }}
+                      options={{ 
+                        layout: "tabs",
+                        // PayPay選択時はPayPayのみ、それ以外はカード（+ウォレット）を表示
+                        paymentMethodOrder: method.id === 'paypay' ? ['paypay'] : ['card']
+                      }}
                     />
                   </div>
-                  <p className="text-xs text-gray-400 mt-2 text-center">
-                    ※ Apple Pay / Google Pay は対応デバイスでのみ表示されます
-                  </p>
-                </div>
-              )}
-
-              {/* Mensagem do PayPay */}
-              {isSelected && method.id === 'paypay' && (
-                <div className="px-12 pb-6 pt-0 text-sm text-gray-600 animate-in slide-in-from-top-1">
-                  <p className="bg-gray-100 p-3 rounded-lg border border-gray-200">
-                    「支払う」ボタンを押すと、PayPayアプリまたはウェブサイトで決済を完了します。
-                  </p>
                 </div>
               )}
             </div>
@@ -173,7 +207,7 @@ function PayCheckForm() {
 
       <Button
         type="submit"
-        disabled={isLoading || (selectedMethod === 'card' && !stripe)}
+        disabled={isLoading || (['card', 'apple_pay', 'google_pay', 'paypay'].includes(selectedMethod) && !stripe)}
         className={`w-full py-4 text-lg font-bold shadow-lg rounded-full transition-all transform hover:-translate-y-1 ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#2FA3E3] hover:bg-[#2589bf] text-white'}`}
       >
         {isLoading ? '処理中...' : `￥${total.toLocaleString()} を支払う`}
@@ -204,7 +238,8 @@ export default function PayCheck() {
         body: JSON.stringify({ 
            items, 
            userId: user.uid, 
-           amount: items.reduce((a, b) => a + b.price * b.quantity, 0) + 500 
+           amount: items.reduce((a, b) => a + b.price * b.quantity, 0) + 500,
+           paymentMethodTypes: ['card', 'paypay']
         }),
       })
       .then(async (res) => {
