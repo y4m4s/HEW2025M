@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link';
+import Button from "@/components/Button";
 import { auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, signInWithPopup, TwitterAuthProvider, OAuthProvider, GoogleAuthProvider, fetchSignInMethodsForEmail, AuthProvider } from "firebase/auth";
 import { useState, useEffect } from "react";
@@ -9,8 +10,8 @@ import { useAuth } from "@/lib/useAuth";
 function SuccessToast({ message }: { message: string }) {
   return (
     <div className="fixed top-8 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] text-white px-6 py-4 rounded-xl shadow-lg z-50 flex items-center gap-3 animate-fadein">
-      <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#14ba53"/><path d="M16 10l-4.5 4.5L8 11.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-      <span className="text-lg font-bold drop-shadow-lg" style={{fontFamily: 'せのびゴシック, sans-serif'}}>{message}</span>
+      <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#14ba53" /><path d="M16 10l-4.5 4.5L8 11.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      <span className="text-lg font-bold drop-shadow-lg" style={{ fontFamily: 'せのびゴシック, sans-serif' }}>{message}</span>
     </div>
   );
 }
@@ -54,7 +55,7 @@ export default function RegisterPage() {
     } catch (error: unknown) {
       let errorMessage = "登録エラーが発生しました";
       const firebaseError = error as { code?: string };
-      
+
       if (firebaseError.code === "auth/email-already-in-use") {
         errorMessage = "このメールアドレスは既に登録されています。";
       } else if (firebaseError.code === "auth/invalid-email") {
@@ -147,133 +148,161 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef] flex items-center justify-center p-5">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="text-6xl font-bold text-[#2FA3E3] tracking-wider" style={{ fontFamily: "せのびゴシック, sans-serif", textShadow: "0 2px 4px rgba(47, 163, 227, 0.1)" }}>
-            ツリマチ
-          </Link>
+    <div className="min-h-screen flex items-center justify-center p-4 font-sans text-gray-800 bg-[#f0f4f8]">
+      {/* メインカード */}
+      <div className="w-full max-w-5xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-[600px]">
+
+        {/* 左側：ブランディングセクション（デスクトップでは左側、モバイルでは上部） */}
+        <div className="lg:w-5/12 bg-gradient-to-br from-[#2FA3E3] to-[#1d7bb8] relative overflow-hidden flex flex-col justify-center items-center text-white p-5 lg:p-12">
+          {/* 背景装飾 */}
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-white/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+
+          <div className="relative z-10 text-center">
+            <Link href="/" className="inline-block mb-6 transition-transform hover:scale-105">
+              <h1 className="text-5xl lg:text-6xl font-bold tracking-tight drop-shadow-md" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+                ツリマチ
+              </h1>
+            </Link>
+            <div className="h-1 w-16 bg-white/50 mx-auto rounded-full mb-6"></div>
+            <p className="text-lg lg:text-xl leading-relaxed font-light opacity-95 tracking-wide">
+              新たなマッチングを求めて、<br />
+              釣り人の集まる街へ<br />ようこそ。
+            </p>
+          </div>
         </div>
-        
-        <div className="text-center text-base text-gray-600 mb-9 leading-6 p-5 bg-white rounded-xl shadow-sm">
-          新たなマッチングを求めて<br />
-          釣り人の集まる街「ツリマチ」に参加しよう。
-        </div>
-        
-        <div className="bg-white rounded-2xl p-10 shadow-xl relative overflow-hidden mb-6">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8]"></div>
-          
-          <h2 className="text-3xl font-bold text-center mb-9 text-gray-800 relative" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
-            新規登録
-            <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 w-12 h-0.5 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8]"></div>
-          </h2>
-          
-          <form onSubmit={handleRegister}>
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-gray-700 mb-2">メールアドレス</label>
-              <input
-                type="email"
-                className="w-full p-4 border border-gray-300 rounded-lg text-base transition-all duration-300 focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20"
-                placeholder="example@email.com"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-              />
+
+        {/* 右側：フォームセクション */}
+        <div className="w-full lg:w-7/12 p-8 lg:p-16 bg-white flex flex-col justify-center">
+          <div className="max-w-md mx-auto w-full">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 tracking-tight mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>アカウント作成</h2>
+              <p className="text-sm text-gray-500">
+                必要な情報を入力して、コミュニティに参加しましょう
+              </p>
             </div>
 
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-gray-700 mb-2">パスワード</label>
-              <input
-                type="password"
-                className="w-full p-4 border border-gray-300 rounded-lg text-base transition-all duration-300 focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20"
-                placeholder="8文字以上で入力"
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-              />
-            </div>
+            <form onSubmit={handleRegister} className="space-y-5">
+              <div className="space-y-4">
+                {/* メールアドレス */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">メールアドレス</label>
+                  <input
+                    type="email"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 focus:bg-white focus:border-[#2FA3E3] focus:ring-4 focus:ring-[#2FA3E3]/10 transition-all duration-200 outline-none"
+                    placeholder="name@example.com"
+                    required
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                  />
+                </div>
 
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-gray-700 mb-2">パスワード確認</label>
-              <input
-                type="password"
-                className="w-full p-4 border border-gray-300 rounded-lg text-base transition-all duration-300 focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20"
-                placeholder="パスワードを再入力"
-                required
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-              />
-            </div>
+                {/* パスワード */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">パスワード</label>
+                  <input
+                    type="password"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 focus:bg-white focus:border-[#2FA3E3] focus:ring-4 focus:ring-[#2FA3E3]/10 transition-all duration-200 outline-none"
+                    placeholder="8文字以上で入力"
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                  />
+                </div>
 
-            <button 
-              type="submit" 
-              className="w-full p-4 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] text-white border-none rounded-lg text-base font-bold cursor-pointer transition-all duration-300 mt-5 relative overflow-hidden hover:transform hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#2FA3E3]/30 active:transform active:translate-y-0"
-              disabled={loading}
-            >
-              {loading ? "処理中..." : "アカウント作成"}
-            </button>
+                {/* パスワード確認 */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">パスワード（確認）</label>
+                  <input
+                    type="password"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 focus:bg-white focus:border-[#2FA3E3] focus:ring-4 focus:ring-[#2FA3E3]/10 transition-all duration-200 outline-none"
+                    placeholder="パスワードを再入力"
+                    required
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+              </div>
 
-            {/* Googleでの登録ボタン */}
-            <button
-              type="button"
-              className="w-full mt-3 p-4 flex justify-center items-center border border-[#2FA3E3] text-[#2FA3E3] bg-white rounded-lg text-base font-bold cursor-pointer transition-all duration-300 hover:bg-[#f0faff]"
-              onClick={() => handleSocialRegister('google')}
-              disabled={loading}
-              style={{ fontFamily: 'せのびゴシック, sans-serif' }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3C34.7 32 30 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z"/><path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.4 16.4 18.7 13 24 13c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z"/><path fill="#FBBC05" d="M24 44c5.6 0 10.4-1.8 13.8-4.8l-6.4-5.3c-1.9 1.3-4.3 2.1-7.4 2.1-5.8 0-10.7-3.9-12.5-9h-7v5.7C7 40.3 14.9 44 24 44z"/><path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3-4.9 5-11.3 5z"/></g></svg>
-              Googleで登録／ログイン
-            </button>
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full py-3.5 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] hover:from-[#2FA3E3] hover:to-[#2FA3E3] text-white rounded-xl text-base font-bold shadow-lg shadow-blue-500/30 transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95 active:shadow-none disabled:opacity-70 disabled:cursor-not-allowed"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      作成中...
+                    </span>
+                  ) : "アカウント作成"}
+                </button>
+              </div>
 
-            {/* X (Twitter)での登録ボタン */}
-            <button
-              type="button"
-              className="w-full mt-3 p-4 flex justify-center items-center bg-black text-white border border-black rounded-lg text-base font-bold cursor-pointer transition-all duration-300 hover:bg-gray-800 hover:shadow-md"
-              onClick={() => handleSocialRegister('twitter')}
-              disabled={loading}
-              style={{ fontFamily: 'せのびゴシック, sans-serif' }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-              </svg>
-              X (Twitter)で登録／ログイン
-            </button>
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-white text-gray-500 font-medium">または外部アカウントで登録</span>
+                </div>
+              </div>
 
-            {/* Yahoo!での登録ボタン */}
-            <button
-              type="button"
-              className="w-full mt-3 p-4 flex justify-center items-center bg-[#6001d2] text-white border border-[#6001d2] rounded-lg text-base font-bold cursor-pointer transition-all duration-300 hover:bg-[#5001b0] hover:shadow-md"
-              onClick={() => handleSocialRegister('yahoo')}
-              disabled={loading}
-              style={{ fontFamily: 'せのびゴシック, sans-serif' }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.52 18.217l-3.26-5.252-2.36 3.792H8.62l3.697-5.94-3.58-5.756h2.278l2.28 3.66 3.26-5.24h2.278l-4.52 7.26 4.637 7.453h-2.28z"/>
-              </svg>
-              Yahoo!で登録／ログイン
-            </button>
+              {/* SNSボタン */}
+              <div className="grid grid-cols-1 gap-3">
+                <button
+                  type="button"
+                  className="flex items-center justify-center w-full px-4 py-3 border border-gray-200 bg-white rounded-xl hover:bg-gray-50 transition-colors gap-3 group relative overflow-hidden"
+                  onClick={() => handleSocialRegister('google')}
+                  disabled={loading}
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3C34.7 32 30 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.4 16.4 18.7 13 24 13c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#FBBC05" d="M24 44c5.6 0 10.4-1.8 13.8-4.8l-6.4-5.3c-1.9 1.3-4.3 2.1-7.4 2.1-5.8 0-10.7-3.9-12.5-9h-7v5.7C7 40.3 14.9 44 24 44z" /><path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3-4.9 5-11.3 5z" /></g></svg>
+                  <span className="text-sm font-semibold text-gray-700">Googleで登録</span>
+                </button>
 
-          </form>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    className="flex items-center justify-center w-full px-4 py-3 bg-black text-white border border-black rounded-xl hover:bg-gray-800 transition-colors gap-2"
+                    onClick={() => handleSocialRegister('twitter')}
+                    disabled={loading}
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                    <span className="text-sm font-semibold">X (Twitter)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="flex items-center justify-center w-full px-4 py-3 bg-[#6001d2] text-white border border-[#6001d2] rounded-xl hover:bg-[#5001b0] transition-colors gap-2"
+                    onClick={() => handleSocialRegister('yahoo')}
+                    disabled={loading}
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.52 18.217l-3.26-5.252-2.36 3.792H8.62l3.697-5.94-3.58-5.756h2.278l2.28 3.66 3.26-5.24h2.278l-4.52 7.26 4.637 7.453h-2.28z" /></svg>
+                    <span className="text-sm font-semibold">Yahoo!</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col items-center gap-4">
+                <p className="text-sm text-gray-500">既にアカウントをお持ちですか？</p>
+
+                <Button
+                  variant="ghost"
+                  href="/login"
+                  className="gap-2"
+                >
+                  ログインする
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
 
-        <div className="text-center">
-          <p className="text-gray-600 mb-2">既にアカウントをお持ちですか？</p>
-          <Link 
-            href="/login" 
-            className="text-[#2FA3E3] no-underline font-medium transition-colors duration-300 hover:text-[#1d7bb8] hover:underline"
-          >
-            ログイン
-          </Link>
-        </div>
+        {successMessage && <SuccessToast message={successMessage} />}
       </div>
-
-      {successMessage && <SuccessToast message={successMessage} />}
-
-      <footer className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-[#2c3e50] to-[#34495e] text-white py-5">
-        <div className="container mx-auto px-5 text-center">
-          <p className="text-sm text-gray-400 m-0">&copy; 2024 ツリマチ. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   );
 }

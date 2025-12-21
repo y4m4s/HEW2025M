@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link';
+import Button from "@/components/Button";
 import { auth } from "@/lib/firebase";
 import {
   signInWithEmailAndPassword,
@@ -15,18 +16,18 @@ import { useAuth } from "@/lib/useAuth";
 
 // 通知トーストコンポーネント
 function NotificationToast({ message, isError }: { message: string, isError?: boolean }) {
-  const bgColor = isError 
-    ? "bg-gradient-to-r from-red-500 to-red-700" 
+  const bgColor = isError
+    ? "bg-gradient-to-r from-red-500 to-red-700"
     : "bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8]";
-  
+
   return (
     <div className={`fixed top-8 left-1/2 transform -translate-x-1/2 text-white px-6 py-4 rounded-xl shadow-lg z-50 flex items-center gap-3 animate-fadein ${bgColor}`}>
       {isError ? (
         <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><path stroke="#fff" strokeLinecap="round" strokeWidth="2" d="M12 7v6m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
       ) : (
-        <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#14ba53"/><path d="M16 10l-4.5 4.5L8 11.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#14ba53" /><path d="M16 10l-4.5 4.5L8 11.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
       )}
-      <span className="text-lg font-bold drop-shadow-lg" style={{fontFamily: 'せのびゴシック, sans-serif'}}>{message}</span>
+      <span className="text-lg font-bold drop-shadow-lg" style={{ fontFamily: 'せのびゴシック, sans-serif' }}>{message}</span>
     </div>
   );
 }
@@ -61,11 +62,31 @@ export default function LoginPage() {
       setTimeout(() => router.push("/"), 1800); // Redireciona para a página principal
     } catch (error: unknown) {
       const firebaseError = error as { code?: string };
-      let errorMessage = "ログインエラーが発生しました。";
-      if (firebaseError.code === 'auth/user-not-found' || firebaseError.code === 'auth/wrong-password' || firebaseError.code === 'auth/invalid-credential') {
-        errorMessage = "メールアドレスまたはパスワードが間違っています。";
+      let errorMessage = "ログインに失敗しました。もう一度お試しください。";
+
+      // ユーザーフレンドリーなエラーメッセージに変換
+      switch (firebaseError.code) {
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+        case 'auth/invalid-email':
+          errorMessage = "メールアドレスまたはパスワードが正しくありません。";
+          break;
+        case 'auth/user-disabled':
+          errorMessage = "このアカウントは無効化されています。管理者にお問い合わせください。";
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = "ログイン試行回数が多すぎます。しばらく時間をおいてから再度お試しください。";
+          break;
+        case 'auth/network-request-failed':
+          errorMessage = "ネットワークエラーが発生しました。インターネット接続を確認してください。";
+          break;
+        case 'auth/operation-not-allowed':
+          errorMessage = "メール/パスワードでのログインが無効になっています。";
+          break;
       }
-      showNotification(errorMessage, true, 3000);
+
+      showNotification(errorMessage, true, 3500);
     } finally {
       setLoading(false);
     }
@@ -98,13 +119,38 @@ export default function LoginPage() {
       setTimeout(() => router.push("/"), 1800);
     } catch (error: unknown) {
       const firebaseError = error as { code?: string };
-      let errorMessage = `${providerDisplayName}でのログイン中にエラーが発生しました。`;
-      if (firebaseError.code === 'auth/popup-closed-by-user') {
-        errorMessage = "ログインがキャンセルされました。";
-      } else if (firebaseError.code === 'auth/invalid-credential') {
-        errorMessage = `${providerDisplayName}との連携設定に問題があります。`;
+      let errorMessage = `${providerDisplayName}でのログインに失敗しました。`;
+
+      // ユーザーフレンドリーなエラーメッセージに変換
+      switch (firebaseError.code) {
+        case 'auth/popup-closed-by-user':
+          errorMessage = "ログインがキャンセルされました。";
+          break;
+        case 'auth/cancelled-popup-request':
+          errorMessage = "ログインがキャンセルされました。";
+          break;
+        case 'auth/popup-blocked':
+          errorMessage = "ポップアップがブロックされました。ブラウザの設定を確認してください。";
+          break;
+        case 'auth/invalid-credential':
+        case 'auth/account-exists-with-different-credential':
+          errorMessage = `このメールアドレスは既に別の方法で登録されています。`;
+          break;
+        case 'auth/user-disabled':
+          errorMessage = "このアカウントは無効化されています。管理者にお問い合わせください。";
+          break;
+        case 'auth/network-request-failed':
+          errorMessage = "ネットワークエラーが発生しました。インターネット接続を確認してください。";
+          break;
+        case 'auth/operation-not-allowed':
+          errorMessage = `${providerDisplayName}でのログインが無効になっています。`;
+          break;
+        case 'auth/unauthorized-domain':
+          errorMessage = "このドメインからのログインは許可されていません。";
+          break;
       }
-      showNotification(errorMessage, true);
+
+      showNotification(errorMessage, true, 3500);
     } finally {
       setLoading(false);
     }
@@ -128,111 +174,150 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef] flex items-center justify-center p-5">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="text-6xl font-bold text-[#2FA3E3] tracking-wider" style={{ fontFamily: "せのびゴシック, sans-serif", textShadow: "0 2px 4px rgba(47, 163, 227, 0.1)" }}>
-            ツリマチ
-          </Link>
-        </div>
-        
-        <div className="bg-white rounded-2xl p-10 shadow-xl relative overflow-hidden mb-6">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8]"></div>
-          
-          <h2 className="text-3xl font-bold text-center mb-9 text-gray-800 relative" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
-            ログイン
-            <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 w-12 h-0.5 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8]"></div>
-          </h2>
-          
-          <form onSubmit={handleLogin}>
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-gray-700 mb-2">メールアドレス</label>
-              <input
-                type="email"
-                className="w-full p-4 border border-gray-300 rounded-lg text-base transition-all duration-300 focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20"
-                placeholder="example@email.com"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-              />
-            </div>
+    <div className="min-h-screen flex items-center justify-center p-4 font-sans text-gray-800 bg-[#f0f4f8]">
+      {/* メインカード */}
+      <div className="w-full max-w-5xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-[600px]">
 
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-gray-700 mb-2">パスワード</label>
-              <input
-                type="password"
-                className="w-full p-4 border border-gray-300 rounded-lg text-base transition-all duration-300 focus:border-[#2FA3E3] focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/20"
-                placeholder="パスワードを入力"
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-              />
-            </div>
+        {/* 左側：ブランディングセクション */}
+        <div className="lg:w-5/12 bg-gradient-to-br from-[#2FA3E3] to-[#1d7bb8] relative overflow-hidden flex flex-col justify-center items-center text-white p-10 lg:p-12">
+          {/* 背景装飾 */}
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-white/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
 
-            <button 
-              type="submit" 
-              className="w-full p-4 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] text-white border-none rounded-lg text-base font-bold cursor-pointer transition-all duration-300 mt-5 hover:transform hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#2FA3E3]/30"
-              disabled={loading}
-            >
-              {loading ? "処理中..." : "ログイン"}
-            </button>
+          <div className="relative z-10 text-center">
+            <Link href="/" className="inline-block mb-6 transition-transform hover:scale-105">
+              <h1 className="text-5xl lg:text-6xl font-bold tracking-tight drop-shadow-md" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+                ツリマチ
+              </h1>
+            </Link>
+            <div className="h-1 w-16 bg-white/50 mx-auto rounded-full mb-6"></div>
+            <p className="text-lg lg:text-xl leading-relaxed font-light opacity-95 tracking-wide">
+              おかえりなさい。<br />
+              今日も素敵な釣果を。
+            </p>
+          </div>
 
-            {/* --- BOTÕES DE LOGIN SOCIAL --- */}
-            <div className="relative flex py-5 items-center">
-                <div className="flex-grow border-t border-gray-300"></div>
-                <span className="flex-shrink mx-4 text-gray-400 text-sm">または</span>
-                <div className="flex-grow border-t border-gray-300"></div>
-            </div>
-
-            {/* Google Button */}
-            <button
-              type="button"
-              className="w-full p-4 flex justify-center items-center border border-[#2FA3E3] text-[#2FA3E3] bg-white rounded-lg text-base font-bold cursor-pointer transition-all duration-300 hover:bg-[#f0faff]"
-              onClick={() => handleSocialLogin('google')}
-              disabled={loading}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3C34.7 32 30 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z"/><path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.4 16.4 18.7 13 24 13c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z"/><path fill="#FBBC05" d="M24 44c5.6 0 10.4-1.8 13.8-4.8l-6.4-5.3c-1.9 1.3-4.3 2.1-7.4 2.1-5.8 0-10.7-3.9-12.5-9h-7v5.7C7 40.3 14.9 44 24 44z"/><path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3-4.9 5-11.3 5z"/></g></svg>
-              Googleでログイン
-            </button>
-
-            {/* X (Twitter) Button */}
-            <button
-              type="button"
-              className="w-full mt-3 p-4 flex justify-center items-center bg-black text-white border border-black rounded-lg text-base font-bold cursor-pointer transition-all duration-300 hover:bg-gray-800"
-              onClick={() => handleSocialLogin('twitter')}
-              disabled={loading}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-              X (Twitter)でログイン
-            </button>
-
-            {/* Yahoo Button */}
-            <button
-              type="button"
-              className="w-full mt-3 p-4 flex justify-center items-center bg-[#6001d2] text-white border border-[#6001d2] rounded-lg text-base font-bold cursor-pointer transition-all duration-300 hover:bg-[#5001b0]"
-              onClick={() => handleSocialLogin('yahoo')}
-              disabled={loading}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.52 18.217l-3.26-5.252-2.36 3.792H8.62l3.697-5.94-3.58-5.756h2.278l2.28 3.66 3.26-5.24h2.278l-4.52 7.26 4.637 7.453h-2.28z"/></svg>
-              Yahoo!でログイン
-            </button>
-
-          </form>
+          <div className="mt-8 relative z-10 lg:absolute lg:bottom-8 lg:mt-0 text-xs text-white/60 font-light">
+            &copy; 2024 ツリマチ. All rights reserved.
+          </div>
         </div>
 
-        <div className="text-center">
-          <p className="text-gray-600 mb-2">アカウントをお持ちでないですか？</p>
-          <Link 
-            href="/register" 
-            className="text-[#2FA3E3] no-underline font-medium transition-colors duration-300 hover:text-[#1d7bb8] hover:underline"
-          >
-            新規登録
-          </Link>
+        {/* 右側：フォームセクション */}
+        <div className="w-full lg:w-7/12 p-8 lg:p-16 bg-white flex flex-col justify-center">
+          <div className="max-w-md mx-auto w-full">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 tracking-tight mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>ログイン</h2>
+              <p className="text-sm text-gray-500">
+                アカウント情報を入力してログインしてください
+              </p>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-5">
+              <div className="space-y-4">
+                {/* メールアドレス */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">メールアドレス</label>
+                  <input
+                    type="email"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 focus:bg-white focus:border-[#2FA3E3] focus:ring-4 focus:ring-[#2FA3E3]/10 transition-all duration-200 outline-none"
+                    placeholder="name@example.com"
+                    required
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                  />
+                </div>
+
+                {/* パスワード */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">パスワード</label>
+                  <input
+                    type="password"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 focus:bg-white focus:border-[#2FA3E3] focus:ring-4 focus:ring-[#2FA3E3]/10 transition-all duration-200 outline-none"
+                    placeholder="パスワードを入力"
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full py-3.5 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] hover:from-[#2FA3E3] hover:to-[#2FA3E3] text-white rounded-xl text-base font-bold shadow-lg shadow-blue-500/30 transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95 active:shadow-none disabled:opacity-70 disabled:cursor-not-allowed"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      認証中...
+                    </span>
+                  ) : "ログイン"}
+                </button>
+              </div>
+
+              {/* SNS Divider */}
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-gray-200"></div>
+                <span className="flex-shrink mx-4 text-gray-400 text-xs font-medium">または外部アカウントでログイン</span>
+                <div className="flex-grow border-t border-gray-200"></div>
+              </div>
+
+              {/* SNS Buttons */}
+              <div className="grid grid-cols-1 gap-3">
+                <button
+                  type="button"
+                  className="flex items-center justify-center w-full px-4 py-3 border border-gray-200 bg-white rounded-xl hover:bg-gray-50 transition-colors gap-3"
+                  onClick={() => handleSocialLogin('google')}
+                  disabled={loading}
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3C34.7 32 30 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.4 16.4 18.7 13 24 13c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#FBBC05" d="M24 44c5.6 0 10.4-1.8 13.8-4.8l-6.4-5.3c-1.9 1.3-4.3 2.1-7.4 2.1-5.8 0-10.7-3.9-12.5-9h-7v5.7C7 40.3 14.9 44 24 44z" /><path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3-4.9 5-11.3 5z" /></g></svg>
+                  <span className="text-sm font-semibold text-gray-700">Googleでログイン</span>
+                </button>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    className="flex items-center justify-center w-full px-4 py-3 bg-black text-white border border-black rounded-xl hover:bg-gray-800 transition-colors gap-2"
+                    onClick={() => handleSocialLogin('twitter')}
+                    disabled={loading}
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                    <span className="text-sm font-semibold">X (Twitter)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="flex items-center justify-center w-full px-4 py-3 bg-[#6001d2] text-white border border-[#6001d2] rounded-xl hover:bg-[#5001b0] transition-colors gap-2"
+                    onClick={() => handleSocialLogin('yahoo')}
+                    disabled={loading}
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.52 18.217l-3.26-5.252-2.36 3.792H8.62l3.697-5.94-3.58-5.756h2.278l2.28 3.66 3.26-5.24h2.278l-4.52 7.26 4.637 7.453h-2.28z" /></svg>
+                    <span className="text-sm font-semibold">Yahoo!</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 新規登録リンク */}
+              <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col items-center gap-4">
+                <p className="text-sm text-gray-500">アカウントをお持ちでないですか？</p>
+                <Button
+                  variant="ghost"
+                  href="/register"
+                  className="gap-2"
+                >
+                  新規登録する
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
 
       {notification && <NotificationToast message={notification.message} isError={notification.isError} />}
-
     </div>
   );
 }

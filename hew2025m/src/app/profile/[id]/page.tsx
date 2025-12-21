@@ -15,6 +15,7 @@ import ProfSelling from "@/components/ProfSelling";
 import ProfHistory from "@/components/ProfHistory";
 import ProfBookmark from "@/components/ProfBookmark";
 import ProfLikedPosts from "@/components/ProfLikedPosts";
+import ProfPost from "@/components/ProfPost";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
@@ -25,7 +26,7 @@ import LoginRequiredModal from "@/components/LoginRequiredModal";
 import { createFollowNotification } from "@/lib/notifications";
 import toast from "react-hot-toast";
 
-type TabType = "selling" | "history" | "bookmarks" | "likedPosts";
+type TabType = "selling" | "history" | "bookmarks" | "likedPosts" | "posts";
 
 interface UserProfile {
   uid: string;
@@ -51,6 +52,7 @@ export default function UserProfilePage() {
   const [historyCount, setHistoryCount] = useState(0);
   const [bookmarkCount, setBookmarkCount] = useState(0);
   const [likedPostsCount, setLikedPostsCount] = useState(0);
+  const [postsCount, setPostsCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
   const [followModalOpen, setFollowModalOpen] = useState(false);
@@ -367,9 +369,9 @@ export default function UserProfilePage() {
 
             {/* 商品タブ */}
             <div className="lg:col-span-2 bg-white rounded-xl shadow-lg">
-              <div className="flex border-b text-sm">
+              <div className="flex border-b text-sm overflow-x-auto">
                 <button
-                  className={`px-6 py-4 font-medium transition-colors ${
+                  className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
                     activeTab === "selling"
                       ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                       : "text-gray-600 hover:text-[#2FA3E3]"
@@ -379,7 +381,7 @@ export default function UserProfilePage() {
                   出品中 ({sellingCount})
                 </button>
                 <button
-                  className={`px-6 py-4 font-medium transition-colors ${
+                  className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
                     activeTab === "history"
                       ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                       : "text-gray-600 hover:text-[#2FA3E3]"
@@ -388,10 +390,20 @@ export default function UserProfilePage() {
                 >
                   出品履歴 ({historyCount})
                 </button>
+                <button
+                  className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
+                    activeTab === "posts"
+                      ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
+                      : "text-gray-600 hover:text-[#2FA3E3]"
+                  }`}
+                  onClick={() => setActiveTab("posts")}
+                >
+                  投稿 ({postsCount})
+                </button>
                 {/* ブックマークは自分のプロフィールの場合のみ表示 */}
                 {isOwnProfile && (
                   <button
-                    className={`px-6 py-4 font-medium transition-colors ${
+                    className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
                       activeTab === "bookmarks"
                         ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                         : "text-gray-600 hover:text-[#2FA3E3]"
@@ -404,7 +416,7 @@ export default function UserProfilePage() {
                 {/* いいねは自分のプロフィールの場合のみ表示 */}
                 {isOwnProfile && (
                   <button
-                    className={`px-6 py-4 font-medium transition-colors ${
+                    className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
                       activeTab === "likedPosts"
                         ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                         : "text-gray-600 hover:text-[#2FA3E3]"
@@ -421,6 +433,9 @@ export default function UserProfilePage() {
               </div>
               <div style={{ display: activeTab === "history" ? "block" : "none" }}>
                 <ProfHistory onCountChange={setHistoryCount} userId={userId} />
+              </div>
+              <div style={{ display: activeTab === "posts" ? "block" : "none" }}>
+                <ProfPost onCountChange={setPostsCount} userId={userId} />
               </div>
               {isOwnProfile && (
                 <>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { Megaphone, MessageSquare, Trash2, Heart, Star, ShoppingCart, UserPlus, Mail, Bell, CheckCheck, ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -16,6 +16,7 @@ import {
   updateDoc,
   deleteDoc,
   Timestamp,
+  writeBatch,
 } from 'firebase/firestore';
 
 interface NotificationItem {
@@ -95,6 +96,40 @@ export default function NotificationPage() {
     return () => unsubscribe();
   }, [user]); // userに依存します
 
+  // 未読IDを追跡するためのRef
+  const unreadIdsRef = useRef<string[]>([]);
+
+  // 通知が更新されたら未読IDリストを更新
+  useEffect(() => {
+    unreadIdsRef.current = notifications
+      .filter(n => n.isUnread)
+      .map(n => n.id);
+  }, [notifications]);
+
+  // コンポーネントのアンマウント時（ページ遷移時など）にまとめて既読にする
+  useEffect(() => {
+    return () => {
+      const idsToMark = unreadIdsRef.current;
+      if (idsToMark.length > 0 && user) {
+        // バッチ書き込みを行う非同期関数を即時実行
+        const markAllRead = async () => {
+          try {
+            const batch = writeBatch(db);
+            idsToMark.forEach(id => {
+              const docRef = doc(db, 'users', user.uid, 'notifications', id);
+              batch.update(docRef, { isUnread: false });
+            });
+            await batch.commit();
+            console.log('Marked notifications as read on cleanup');
+          } catch (error) {
+            console.error('Error marking notifications as read:', error);
+          }
+        };
+        markAllRead();
+      }
+    };
+  }, [user]); // userが変わるとき（ログアウト時）も実行される
+
   // Timestampをフォーマットする関数
   const formatTimestamp = (timestamp: Timestamp | string) => {
     if (typeof timestamp === 'string') return timestamp;
@@ -133,7 +168,7 @@ export default function NotificationPage() {
       console.error("Erro ao deletar: ", error);
     }
   };
-  
+
   // すべてを既読にする処理
   const handleMarkAllAsRead = () => {
     // 未読の通知それぞれに対して、handleMarkAsReadを呼び出します
@@ -220,14 +255,7 @@ export default function NotificationPage() {
             通知
           </h1>
           <div className="flex items-center gap-4">
-            <Button
-              onClick={handleMarkAllAsRead}
-              variant="primary"
-              size="sm"
-              icon={<CheckCheck size={16} />}
-            >
-              すべて既読にする
-            </Button>
+            {/* <Button onClick={handleMarkAllAsRead} ... removed> */}
             <Button
               onClick={handleDeleteAll}
               variant="secondary"
@@ -263,11 +291,10 @@ export default function NotificationPage() {
           {paginatedNotifications.map((notification) => (
             <div
               key={notification.id}
-              className={`bg-white rounded-xl p-5 flex items-start gap-4 transition-all duration-300 relative ${
-                notification.isUnread
-                  ? 'border-l-4 border-[#2FA3E3] shadow-lg'
-                  : 'border-l-4 border-transparent shadow-md'
-              } ${notification.link || notification.linkUserId ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-l-[#2FA3E3]' : ''}`}
+              className={`bg-white rounded-xl p-5 flex items-start gap-4 transition-all duration-300 relative ${notification.isUnread
+                ? 'border-l-4 border-[#2FA3E3] shadow-lg'
+                : 'border-l-4 border-transparent shadow-md'
+                } ${notification.link || notification.linkUserId ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-l-[#2FA3E3]' : ''}`}
               onClick={() => handleNotificationClick(notification)}
             >
               {/* 削除ボタン（右上） */}
@@ -317,15 +344,9 @@ export default function NotificationPage() {
                     {notification.tag}
                   </span>
                   {notification.isUnread && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMarkAsRead(notification.id);
-                      }}
-                      className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-lg text-xs font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
-                    >
-                      既読
-                    </button>
+                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm animate-pulse">
+                      New
+                    </span>
                   )}
                 </div>
               </div>
@@ -351,11 +372,10 @@ export default function NotificationPage() {
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`w-10 h-10 rounded-lg font-semibold transition-all duration-200 ${
-                    currentPage === page
-                      ? 'bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] text-white shadow-md'
-                      : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                  }`}
+                  className={`w-10 h-10 rounded-lg font-semibold transition-all duration-200 ${currentPage === page
+                    ? 'bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] text-white shadow-md'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                    }`}
                 >
                   {page}
                 </button>

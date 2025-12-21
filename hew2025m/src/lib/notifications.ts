@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { collection, addDoc, Timestamp, getDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, getDoc, doc, query, where, getDocs, writeBatch } from 'firebase/firestore';
 
 /**
  * フォロー通知を作成する関数
@@ -96,7 +96,7 @@ export async function createRatingNotification(
 }
 
 /**
- * コメント通知を作成する関数（サーバーサイド用）
+ * コメント通知を作成する関数（クライアントサイド用）
  * @param productOwnerId - 商品の出品者ID
  * @param commenterUserId - コメントしたユーザーのID
  * @param commenterName - コメントしたユーザーの表示名
@@ -105,7 +105,7 @@ export async function createRatingNotification(
  * @param commentId - コメントID
  * @param commentContent - コメント内容
  */
-export async function createCommentNotificationServer(
+export async function createCommentNotification(
   productOwnerId: string,
   commenterUserId: string,
   commenterName: string,
@@ -139,7 +139,7 @@ export async function createCommentNotificationServer(
 }
 
 /**
- * 投稿コメント通知を作成する関数（サーバーサイド用）
+ * 投稿コメント通知を作成する関数（クライアントサイド用）
  * @param postOwnerId - 投稿の作成者ID
  * @param commenterUserId - コメントしたユーザーのID
  * @param commenterName - コメントしたユーザーの表示名
@@ -148,7 +148,7 @@ export async function createCommentNotificationServer(
  * @param commentId - コメントID
  * @param commentContent - コメント内容
  */
-export async function createPostCommentNotificationServer(
+export async function createPostCommentNotification(
   postOwnerId: string,
   commenterUserId: string,
   commenterName: string,
@@ -182,7 +182,7 @@ export async function createPostCommentNotificationServer(
 }
 
 /**
- * 返信通知を作成する関数（サーバーサイド用）
+ * 返信通知を作成する関数（クライアントサイド用）
  * @param parentCommentUserId - 親コメントの投稿者ID
  * @param replierUserId - 返信したユーザーのID
  * @param replierName - 返信したユーザーの表示名
@@ -192,7 +192,7 @@ export async function createPostCommentNotificationServer(
  * @param replyContent - 返信内容
  * @param itemType - 'product' or 'post'
  */
-export async function createReplyNotificationServer(
+export async function createReplyNotification(
   parentCommentUserId: string,
   replierUserId: string,
   replierName: string,
@@ -229,29 +229,31 @@ export async function createReplyNotificationServer(
 }
 
 /**
- * 投稿へのいいね通知を作成する関数（サーバーサイド用）
+ * 投稿へのいいね通知を作成する関数（クライアントサイド用）
  * @param postAuthorId - 投稿の作成者ID
  * @param likerUserId - いいねしたユーザーのID
+ * @param likerName - いいねしたユーザーの表示名
  * @param postId - 投稿ID
  * @param postTitle - 投稿タイトル
  */
-export async function createPostLikeNotificationServer(
+export async function createPostLikeNotification(
   postAuthorId: string,
   likerUserId: string,
+  likerName: string,
   postId: string,
   postTitle: string
 ): Promise<void> {
   try {
-    // いいねしたユーザーの情報をFirestoreから取得
+    // いいねしたユーザーの情報を取得
     const userDoc = await getDoc(doc(db, 'users', likerUserId));
 
-    if (!userDoc.exists()) {
-      console.error('いいねしたユーザーが見つかりません');
-      return;
+    let displayName = likerName;
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      if (userData.displayName) {
+        displayName = userData.displayName;
+      }
     }
-
-    const userData = userDoc.data();
-    const displayName = userData.displayName || '不明なユーザー';
 
     const notificationData = {
       iconType: 'like',
@@ -262,6 +264,12 @@ export async function createPostLikeNotificationServer(
       tag: 'いいね',
       isUnread: true,
       link: `/postDetail/${postId}`,
+      // 識別用メタデータ（削除時に使用）
+      metadata: {
+        type: 'post_like',
+        likerUserId: likerUserId,
+        postId: postId
+      }
     };
 
     // 通知をFirestoreに保存
@@ -273,5 +281,45 @@ export async function createPostLikeNotificationServer(
     console.log('いいね通知を作成しました');
   } catch (error) {
     console.error('いいね通知の作成に失敗しました:', error);
+  }
+}
+
+/**
+ * 投稿へのいいね通知を削除する関数（クライアントサイド用）
+ * @param postAuthorId - 投稿の作成者ID
+ * @param likerUserId - いいねしたユーザーのID
+ * @param postId - 投稿ID
+ */
+export async function deletePostLikeNotification(
+  postAuthorId: string,
+  likerUserId: string,
+  postId: string
+): Promise<void> {
+  try {
+    // 該当する通知を検索
+    const q = query(
+      collection(db, 'users', postAuthorId, 'notifications'),
+      where('metadata.type', '==', 'post_like'),
+      where('metadata.likerUserId', '==', likerUserId),
+      where('metadata.postId', '==', postId)
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return;
+    }
+
+    // バッチ処理で削除（もし複数あれば全て削除）
+    const batch = writeBatch(db);
+    snapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+
+    console.log('いいね通知を削除しました');
+  } catch (error) {
+    console.error('いいね通知の削除に失敗しました:', error);
   }
 }

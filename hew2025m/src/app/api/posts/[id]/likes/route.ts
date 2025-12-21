@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import PostLike from '@/models/PostLike';
 import Post from '@/models/Post';
-import { createPostLikeNotificationServer } from '@/lib/notifications';
+
 
 // 投稿のいいね一覧を取得
 export async function GET(
@@ -92,19 +92,7 @@ export async function POST(
     // 投稿のlikesカウントを更新
     await Post.findByIdAndUpdate(id, { $inc: { likes: 1 } });
 
-    // 通知を作成（自分の投稿でない場合のみ）
-    const postAuthorId = post.authorId.startsWith('user-')
-      ? post.authorId.replace('user-', '')
-      : post.authorId;
 
-    if (postAuthorId && postAuthorId !== userId) {
-      await createPostLikeNotificationServer(
-        postAuthorId,
-        userId,
-        id,
-        post.title || '投稿'
-      );
-    }
 
     return NextResponse.json(
       {
@@ -166,6 +154,8 @@ export async function DELETE(
       updatedPost.likes -= 1;
       await updatedPost.save();
     }
+
+
 
     return NextResponse.json({
       success: true,

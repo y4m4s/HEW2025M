@@ -11,7 +11,7 @@ import CancelModal from '@/components/CancelModal';
 import LoginRequiredModal from '@/components/LoginRequiredModal';
 import ProductCard from '@/components/Productcard';
 
-import SmartRakuten from '@/components/SmartRakuten'; 
+import SmartRakuten from '@/components/SmartRakuten';
 import SellerInfo from '@/components/SellerInfo';
 
 import { useAuth } from '@/lib/useAuth';
@@ -393,7 +393,7 @@ export default function SellDetailPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <main className="flex-1 container mx-auto px-4 py-6">
+      <main className="flex-1 container mx-auto max-w-5xl px-4 py-6">
 
         {/* 戻るボタン */}
         <Button onClick={() => router.back()} variant="ghost" size="sm" icon={<ArrowLeft size={16} />} className="mb-6">
@@ -407,13 +407,19 @@ export default function SellDetailPage() {
           <section className="space-y-6">
             <div>
               <h1 className="text-2xl font-bold mb-2">{product.title}</h1>
-              <div className="flex gap-4 text-sm text-gray-600">
-                <div className="flex items-center gap-1"><Calendar size={14} /><span>{formatDate(product.createdAt)}</span></div>
-              </div>
-              <div className="mt-2">
+              <div className="flex justify-between text-sm text-gray-600 p-2">
+                <div className="flex items-center gap-1">
+                  <Calendar size={14} /><span>{formatDate(product.createdAt)}</span>
+                </div>
                 <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${product.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                   {getStatusLabel(product.status)}
                 </span>
+              </div>
+              <div className="mt-2">
+              </div>
+              <div className="border-b flex justify-between">
+                <h2 className="text-3xl font-bold text-[#2FA3E3] mb-2">{formatPrice(product.price)}</h2>
+                <p className="my-auto pr-3 text-sm text-gray-600">{product.shippingPayer === 'seller' ? '送料込み' : '送料別'}</p>
               </div>
             </div>
 
@@ -482,10 +488,6 @@ export default function SellDetailPage() {
 
           {/* 右側: 商品詳細 */}
           <section className="space-y-6">
-            <div className="border-b pb-4">
-              <h2 className="text-3xl font-bold text-[#2FA3E3] mb-2">{formatPrice(product.price)}</h2>
-              <p className="text-sm text-gray-600">{product.shippingPayer === 'seller' ? '送料込み' : '送料別'}</p>
-            </div>
             <div>
               <h3 className="text-xl font-semibold mb-3">商品詳細</h3>
               <p className="text-gray-700 whitespace-pre-wrap leading-relaxed break-words overflow-wrap-anywhere">
@@ -572,14 +574,18 @@ export default function SellDetailPage() {
         {/* コメントセクション */}
         <section className="mt-8 bg-white rounded-lg shadow-md p-6">
           <h3 className="text-xl font-bold mb-4">コメント</h3>
-          <Comment productId={params.id as string} />
+          <Comment
+            productId={params.id as string}
+            itemOwnerId={product.sellerId.startsWith('user-') ? product.sellerId.replace('user-', '') : product.sellerId}
+            itemTitle={product.title}
+          />
         </section>
 
         {/* ✅ AI検索用コンポーネント (カテゴリも渡す) */}
         {product && (
-          <SmartRakuten 
-            productName={product.title} 
-            description={product.description} 
+          <SmartRakuten
+            productName={product.title}
+            description={product.description}
             category={getCategoryLabel(product.category)}
           />
         )}

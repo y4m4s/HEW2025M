@@ -27,6 +27,19 @@ export default function Post() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  // タグの選択肢
+  const availableTags = [
+    '釣行記',
+    '情報共有',
+    '質問',
+    'レビュー',
+    '雑談',
+    '初心者向け',
+    'トラブル相談',
+    '釣果報告'
+  ];
 
   // 認証チェック：未ログインならログインページへリダイレクト
   useEffect(() => {
@@ -130,6 +143,15 @@ export default function Post() {
     setLocation(null);
   };
 
+  // タグの選択/選択解除
+  const toggleTag = (tag: string) => {
+    if (selectedTags.includes(tag)) {
+      setSelectedTags(selectedTags.filter(t => t !== tag));
+    } else {
+      setSelectedTags([...selectedTags, tag]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -227,7 +249,7 @@ export default function Post() {
           media: uploadedMedia,
           authorId,
           authorName,
-          tags: address ? [address] : [],
+          tags: selectedTags,
           address: address || undefined,
           location: location || undefined,
         }),
@@ -376,6 +398,32 @@ export default function Post() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-3">
+                  タグ
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {availableTags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      disabled={isSubmitting}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                        selectedTags.includes(tag)
+                          ? 'bg-[#2FA3E3] text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  複数選択可能です
+                </p>
               </div>
 
               <div>

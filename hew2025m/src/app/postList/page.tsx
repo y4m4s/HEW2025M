@@ -50,7 +50,7 @@ export default function PostList() {
 
       const params = new URLSearchParams();
       if (activeFilter !== 'all') {
-        params.append('category', activeFilter);
+        params.append('tag', activeFilter);
       }
       if (keyword) {
         params.append('keyword', keyword);
@@ -103,7 +103,8 @@ export default function PostList() {
             isLiked: false,
             imageUrl: post.media && post.media.length > 0
               ? post.media.sort((a, b) => a.order - b.order)[0].url
-              : undefined
+              : undefined,
+            tags: post.tags || []
           };
         })
       );
@@ -147,10 +148,14 @@ export default function PostList() {
 
   const filterTabs = [
     { key: 'all', label: 'すべて' },
-    { key: 'sea', label: '海釣り' },
-    { key: 'river', label: '川釣り' },
-    { key: 'lure', label: 'ルアー' },
-    { key: 'bait', label: 'エサ釣り' }
+    { key: '釣行記', label: '釣行記' },
+    { key: '情報共有', label: '情報共有' },
+    { key: '質問', label: '質問' },
+    { key: 'レビュー', label: 'レビュー' },
+    { key: '雑談', label: '雑談' },
+    { key: '初心者向け', label: '初心者向け' },
+    { key: 'トラブル相談', label: 'トラブル相談' },
+    { key: '釣果報告', label: '釣果報告' }
   ];
 
   const SORT_OPTIONS = [
@@ -198,7 +203,7 @@ export default function PostList() {
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
 
-      <div className="flex-1 container mx-auto px-4 py-6">
+      <div className="flex-1 container mx-auto max-w-7xl px-4 py-6">
         <main>
           <div className="flex justify-between items-center mb-8">
             <div>
@@ -235,8 +240,20 @@ export default function PostList() {
             </form>
           </div>
 
-          <div className="flex justify-between items-center mb-8">
-            <div className="flex gap-2">
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-700">タグで絞り込み</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">並び替え:</span>
+                <CustomSelect
+                  value={sortBy}
+                  onChange={setSortBy}
+                  options={SORT_OPTIONS}
+                  className="min-w-[200px]"
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
               {filterTabs.map((tab) => (
                 <Button
                   key={tab.key}
@@ -248,16 +265,6 @@ export default function PostList() {
                   {tab.label}
                 </Button>
               ))}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">並び替え:</span>
-              <CustomSelect
-                value={sortBy}
-                onChange={setSortBy}
-                options={SORT_OPTIONS}
-                className="min-w-[200px]"
-              />
             </div>
           </div>
 

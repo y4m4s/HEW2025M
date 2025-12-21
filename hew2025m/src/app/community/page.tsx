@@ -304,15 +304,42 @@ export default function CommunityPage() {
           {/* サイドバー */}
           <aside className="lg:w-80 space-y-6">
             {/* マップカード */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
-              <div className="h-48 bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-gray-600 relative overflow-hidden">
-                <div className="absolute inset-0 bg-blue-400 opacity-10"></div>
-                <div className="relative text-center">
-                  <MapPin className="mx-auto mb-2 text-blue-600" size={40} />
-                  <p className="font-semibold text-gray-700">釣りスポットマップ</p>
+            <div className="bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500 rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] group">
+              <Link href="/map" className="block">
+                <div className="relative h-56 overflow-hidden">
+                  {/* 背景のアニメーション効果 */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400/30 to-transparent opacity-50 group-hover:opacity-70 transition-opacity duration-300"></div>
+
+                  {/* マップのイメージ的な装飾 */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="relative">
+                      {/* 背景の円 */}
+                      <div className="absolute inset-0 bg-white/20 rounded-full blur-3xl scale-150 group-hover:scale-175 transition-transform duration-500"></div>
+
+                      {/* メインアイコン */}
+                      <div className="relative bg-white/90 backdrop-blur-sm rounded-full p-6 shadow-2xl group-hover:bg-white transition-colors duration-300">
+                        <MapPin className="text-blue-600" size={56} strokeWidth={2.5} />
+                      </div>
+
+                      {/* 周りの小さなピン */}
+                      <div className="absolute -top-4 -right-4 bg-white/80 backdrop-blur-sm rounded-full p-2 shadow-lg animate-bounce">
+                        <MapPin className="text-cyan-500" size={20} />
+                      </div>
+                      <div className="absolute -bottom-2 -left-6 bg-white/80 backdrop-blur-sm rounded-full p-2 shadow-lg animate-pulse">
+                        <MapPin className="text-teal-500" size={16} />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="p-5">
+              </Link>
+
+              <div className="bg-white p-6">
+                <h3 className="text-2xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors duration-300" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+                  釣りスポットマップ
+                </h3>
+                <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+                  みんなの釣果情報から、人気の釣りスポットを地図で確認できます
+                </p>
                 <Button href="/map" variant="primary" size="md" className="w-full shadow-md hover:shadow-lg transition-shadow">
                   マップを見る
                 </Button>

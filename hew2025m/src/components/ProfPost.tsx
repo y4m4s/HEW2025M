@@ -1,101 +1,99 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Fish, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
-import { db } from "@/lib/firebase";
-import { collection, getDocs } from "firebase/firestore";
-import ProductCard, { Product } from "./Productcard";
+import ProfilePostCard, { ProfilePost } from "@/components/ProfilePostCard";
 import Button from "@/components/Button";
 
-interface Bookmark {
-  id: string;
-  productId: string;
-  title: string;
-  price: number;
-  image: string;
-  createdAt: string;
-}
-
-interface ProfBookmarkProps {
+interface ProfPostProps {
   onCountChange?: (count: number) => void;
+  userId: string; // 表示対象のユーザーID
 }
 
-export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
+export default function ProfPost({ onCountChange, userId }: ProfPostProps) {
   const { user } = useAuth();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [posts, setPosts] = useState<ProfilePost[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 12;
+  const ITEMS_PER_PAGE = 9;
+
+  // 日付のフォーマット
+  const formatDate = useCallback((dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return '今日';
+    } else if (diffDays === 1) {
+      return '昨日';
+    } else if (diffDays < 7) {
+      return `${diffDays}日前`;
+    } else {
+      return date.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchBookmarks = async () => {
-      if (!user) {
+    const fetchPosts = async () => {
+      if (!userId) {
         setLoading(false);
         return;
       }
 
       try {
-        const bookmarksRef = collection(db, 'users', user.uid, 'bookmarks');
-        const bookmarksSnap = await getDocs(bookmarksRef);
+        const authorId = `user-${userId}`;
+        const response = await fetch(`/api/posts?authorId=${authorId}`);
 
-        const bookmarkList: Bookmark[] = [];
-        bookmarksSnap.forEach((doc) => {
-          bookmarkList.push({
-            id: doc.id,
-            ...doc.data() as Omit<Bookmark, 'id'>
-          });
+        if (!response.ok) {
+          throw new Error("投稿の取得に失敗しました");
+        }
+
+        const data = await response.json();
+
+        // データベースのデータをProfilePost型に変換
+        const formattedPosts: ProfilePost[] = data.posts.map((post: {
+          _id: string;
+          title: string;
+          content: string;
+          tags?: string[];
+          address?: string;
+          createdAt: string;
+          likes?: number;
+          comments?: unknown[];
+          media?: Array<{ url: string; order: number }>;
+        }) => {
+          return {
+            id: post._id,
+            title: post.title,
+            excerpt: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
+            location: post.address || '場所未設定',
+            date: formatDate(post.createdAt),
+            likes: post.likes || 0,
+            comments: post.comments?.length || 0,
+            isLiked: false,
+            imageUrl: post.media && post.media.length > 0
+              ? post.media.sort((a, b) => a.order - b.order)[0].url
+              : undefined,
+            tags: post.tags || []
+          };
         });
 
-        // 作成日時の降順でソート
-        bookmarkList.sort((a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+        setPosts(formattedPosts);
 
-        // 各ブックマークの商品詳細を取得
-        const productDetails = await Promise.all(
-          bookmarkList.map(async (bookmark) => {
-            try {
-              const response = await fetch(`/api/products/${bookmark.productId}`);
-              if (!response.ok) return null;
-
-              const data = await response.json();
-              const product = data.product;
-
-              // ProductCard用のフォーマットに変換
-              return {
-                id: product._id,
-                name: product.title,
-                price: product.price,
-                location: product.location || '場所未設定',
-                condition: product.condition || '状態不明',
-                postedDate: new Date(product.createdAt).toLocaleDateString('ja-JP', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                }),
-                imageUrl: product.images?.[0] || bookmark.image,
-                status: product.status || 'available',
-                sellerPhotoURL: product.sellerPhotoURL,
-              } as Product;
-            } catch (error) {
-              console.error(`商品 ${bookmark.productId} の取得エラー:`, error);
-              return null;
-            }
-          })
-        );
-
-        // 削除された商品を除外
-        const validProducts = productDetails.filter((p): p is Product => p !== null);
-        setProducts(validProducts);
-
-        // 親コンポーネントにブックマーク数を通知
+        // 親コンポーネントに投稿数を通知
         if (onCountChange) {
-          onCountChange(validProducts.length);
+          onCountChange(formattedPosts.length);
         }
       } catch (error) {
-        console.error("ブックマーク取得エラー:", error);
-        setProducts([]);
+        console.error("投稿の取得エラー:", error);
+        setPosts([]);
         if (onCountChange) {
           onCountChange(0);
         }
@@ -104,8 +102,8 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
       }
     };
 
-    fetchBookmarks();
-  }, [user, onCountChange]);
+    fetchPosts();
+  }, [userId, onCountChange, formatDate]);
 
   if (loading) {
     return (
@@ -115,20 +113,20 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
     );
   }
 
-  if (products.length === 0) {
+  if (posts.length === 0) {
     return (
       <div className="p-6 text-center">
         <Fish size={64} className="mx-auto text-gray-300 mb-4" />
-        <p className="text-gray-500">ブックマークした商品がありません</p>
+        <p className="text-gray-500">投稿がありません</p>
       </div>
     );
   }
 
   // ページネーション計算
-  const totalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(posts.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedProducts = products.slice(startIndex, endIndex);
+  const paginatedPosts = posts.slice(startIndex, endIndex);
 
   // ページ番号配列を生成
   const getPageNumbers = () => {
@@ -151,9 +149,9 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
 
   return (
     <div className="p-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {paginatedProducts.map((product) => (
-          <ProductCard key={product.id} product={product} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {paginatedPosts.map((post) => (
+          <ProfilePostCard key={post.id} post={post} />
         ))}
       </div>
 

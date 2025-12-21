@@ -16,6 +16,7 @@ export interface Post {
   category: 'sea' | 'river';
   isLiked?: boolean;
   imageUrl?: string;
+  tags?: string[];
 }
 
 interface PostCardProps {
@@ -44,6 +45,22 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
                 <h3 className="font-semibold text-lg mb-2 line-clamp-1 h-7">{post.title}</h3>
                 <p className="text-gray-600 text-sm m-1 line-clamp-2 break-all">{post.excerpt}</p>
 
+                {/* タグ */}
+                {post.tags && post.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {post.tags.slice(0, 2).map((tag, index) => (
+                      <span
+                        key={index}
+                        className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-medium"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                    {post.tags.length > 2 && (
+                      <span className="text-xs text-gray-500">+{post.tags.length - 2}</span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* 位置情報 - 常に表示（スペースを確保） */}
@@ -101,6 +118,20 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
             <h3 className="font-semibold text-xl mb-3 line-clamp-2">{post.title}</h3>
             <p className="text-gray-600 ml-2 mb-4 line-clamp-3">{post.excerpt}</p>
 
+            {/* タグ */}
+            {post.tags && post.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 ml-2 mb-4">
+                {post.tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* 位置情報 - 常に表示（スペースを確保） */}
             <div className="flex items-center text-sm text-gray-600 ml-2 mb-4 h-5">
               {post.location && post.location !== '場所未設定' ? (
@@ -149,10 +180,24 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
               </div>
             )}
           </div>
-          <div className={`absolute top-3 left-3 px-2 py-1 rounded text-xs font-medium text-white ${post.category === 'sea' ? 'bg-blue-500' : 'bg-green-500'
-            }`}>
-            {post.category === 'sea' ? '海釣り' : '川釣り'}
-          </div>
+          {post.tags && post.tags.length > 0 && (
+            <div className="absolute top-3 left-3 flex flex-wrap gap-2 max-w-[calc(100%-24px)]">
+              {post.tags.slice(0, 2).map((tag, index) => (
+                <span
+                  key={index}
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm hover:shadow-xl transition-shadow duration-200"
+                  style={{ backdropFilter: 'blur(8px)' }}
+                >
+                  {tag}
+                </span>
+              ))}
+              {post.tags.length > 2 && (
+                <span className="bg-gray-800/90 text-white px-2.5 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm">
+                  +{post.tags.length - 2}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="p-4 flex flex-col h-full">

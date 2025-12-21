@@ -11,6 +11,7 @@ import CancelModal from '@/components/CancelModal';
 import LoginRequiredModal from '@/components/LoginRequiredModal';
 import UserInfoCard from '@/components/UserInfoCard';
 import LikedUsersModal from '@/components/LikedUsersModal';
+import { createPostLikeNotification, deletePostLikeNotification } from '@/lib/notifications';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -169,6 +170,13 @@ export default function PostDetailPage() {
         if (!response.ok) throw new Error('いいねの削除に失敗しました');
         setIsLiked(false);
         setLikesCount((prev) => Math.max(0, prev - 1));
+
+        // 通知を削除
+        if (post.authorId !== user.uid && post.authorId !== `user-${user.uid}`) {
+          const authorId = post.authorId.startsWith('user-') ? post.authorId.replace('user-', '') : post.authorId;
+          deletePostLikeNotification(authorId, user.uid, params.id as string);
+        }
+
         toast.success('いいねを取り消しました');
       } else {
         // いいねを追加
@@ -187,6 +195,19 @@ export default function PostDetailPage() {
         }
         setIsLiked(true);
         setLikesCount((prev) => prev + 1);
+
+        // 通知を作成
+        if (post.authorId !== user.uid && post.authorId !== `user-${user.uid}`) {
+          const authorId = post.authorId.startsWith('user-') ? post.authorId.replace('user-', '') : post.authorId;
+          createPostLikeNotification(
+            authorId,
+            user.uid,
+            user.displayName || user.email?.split('@')[0] || '名無しユーザー',
+            params.id as string,
+            post.title
+          );
+        }
+
         toast.success('いいねしました');
       }
     } catch (error) {
@@ -272,23 +293,23 @@ export default function PostDetailPage() {
   };
 
   // カルーセルのナビゲーション
-    const nextSlide = () => {
-      if (post?.media && post.media.length > 0) {
-        const len = post.media.length;
-        setCurrentSlide((prev) => (prev + 1) % len);
-      }
-    };
-  
-    const prevSlide = () => {
-      if (post?.media && post.media.length > 0) {
-        const len = post.media.length;
-        setCurrentSlide((prev) => (prev - 1 + len) % len);
-      }
-    };
-  
-    const goToSlide = (index: number) => {
-      setCurrentSlide(index);
-    };
+  const nextSlide = () => {
+    if (post?.media && post.media.length > 0) {
+      const len = post.media.length;
+      setCurrentSlide((prev) => (prev + 1) % len);
+    }
+  };
+
+  const prevSlide = () => {
+    if (post?.media && post.media.length > 0) {
+      const len = post.media.length;
+      setCurrentSlide((prev) => (prev - 1 + len) % len);
+    }
+  };
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+  };
 
   // 画像クリック時にモーダルを開く
   const handleImageClick = (index: number) => {
@@ -328,7 +349,7 @@ export default function PostDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto max-w-4xl px-4 py-8">
         <Button
           onClick={() => router.back()}
           variant="ghost"
@@ -423,9 +444,8 @@ export default function PostDetailPage() {
                     <button
                       key={index}
                       onClick={() => goToSlide(index)}
-                      className={`w-3 h-3 rounded-full transition-colors ${
-                        currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
-                      }`}
+                      className={`w-3 h-3 rounded-full transition-colors ${currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
+                        }`}
                     />
                   ))}
                 </div>
@@ -517,7 +537,12 @@ export default function PostDetailPage() {
         {/* コメントセクション */}
         <section id="comment-section" className="mt-8 bg-white rounded-lg shadow-md p-6">
           <h3 className="text-xl font-bold mb-4">コメント</h3>
-          <Comment postId={params.id as string} onCommentCountChange={setCommentCount} />
+          <Comment
+            postId={params.id as string}
+            itemOwnerId={post.authorId.startsWith('user-') ? post.authorId.replace('user-', '') : post.authorId}
+            itemTitle={post.title}
+            onCommentCountChange={setCommentCount}
+          />
         </section>
       </div>
 
