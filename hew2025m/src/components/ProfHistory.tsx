@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Fish } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 
+
 interface Product {
   _id: string;
   title: string;
