@@ -6,6 +6,7 @@ import { Fish, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import Button from "@/components/Button";
 
+
 interface Product {
   _id: string;
   title: string;

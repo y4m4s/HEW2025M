@@ -26,8 +26,9 @@ import LogoutModal from "@/components/LogoutModal";
 import LoginRequiredModal from "@/components/LoginRequiredModal";
 import { createFollowNotification } from "@/lib/notifications";
 import toast from "react-hot-toast";
+import PurchaseHistory from '@/components/PurchaseHistory';
 
-type TabType = "selling" | "history" | "bookmarks" | "likedPosts" | "posts";
+type TabType = "selling" | "history" | "purchases" | "bookmarks" | "likedPosts" | "posts";
 
 interface UserProfile {
   uid: string;
@@ -54,6 +55,7 @@ export default function UserProfilePage() {
   const [bookmarkCount, setBookmarkCount] = useState(0);
   const [likedPostsCount, setLikedPostsCount] = useState(0);
   const [postsCount, setPostsCount] = useState(0);
+  const [purchasesCount, setPurchasesCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
   const [followModalOpen, setFollowModalOpen] = useState(false);
@@ -69,7 +71,6 @@ export default function UserProfilePage() {
   const fetchUserProfile = async () => {
     if (!userId) return;
 
-    setLoading(true);
     try {
       const userDoc = await getDoc(doc(db, "users", userId));
       if (userDoc.exists()) {
@@ -84,8 +85,6 @@ export default function UserProfilePage() {
     } catch (error) {
       console.error("プロフィール取得エラー:", error);
       router.push("/");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -147,6 +146,23 @@ export default function UserProfilePage() {
       checkFollowStatus();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    const loadAllData = async () => {
+      setLoading(true);
+      try {
+        // Executa todas as buscas de dados em paralelo para um carregamento mais rápido
+        await Promise.all([
+          fetchUserProfile(),
+          fetchFollowCounts(),
+          checkFollowStatus()
+        ]);
+      } catch (error) {
+        console.error("Failed to load profile data:", error);
+        // Opcional: redirecionar para uma página de erro ou mostrar uma mensagem
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAllData();
   }, [userId, user]);
 
   // 自分のプロフィールかどうかを判定
@@ -403,6 +419,19 @@ export default function UserProfilePage() {
                 >
                   投稿 ({postsCount})
                 </button>
+
+                {isOwnProfile && (
+                  <button
+                    className={`px-6 py-4 font-medium transition-colors ${
+                      activeTab === "purchases"
+                        ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
+                        : "text-gray-600 hover:text-[#2FA3E3]"
+                    }`}
+                    onClick={() => setActiveTab("purchases")}
+                  >
+                    購入履歴 ({purchasesCount})
+                  </button>
+                )}
                 {/* ブックマークは自分のプロフィールの場合のみ表示 */}
                 {isOwnProfile && (
                   <button
@@ -438,6 +467,11 @@ export default function UserProfilePage() {
               <div style={{ display: activeTab === "posts" ? "block" : "none" }}>
                 <ProfPost onCountChange={setPostsCount} userId={userId} />
               </div>
+              {isOwnProfile && (
+                <div style={{ display: activeTab === "purchases" ? "block" : "none" }}>
+                  <PurchaseHistory onCountChange={setPurchasesCount} />
+                </div>
+              )}
               {isOwnProfile && (
                 <>
                   <div style={{ display: activeTab === "bookmarks" ? "block" : "none" }}>

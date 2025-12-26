@@ -1,26 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 
 export async function POST(req: NextRequest) {
-  // 1. Gemini APIキーを環境変数から読み込む
-  const apiKey = process.env.GEMINI_API_KEY;
+  // 1. OpenAI APIキーを環境変数から読み込む
+  const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
     // キーがない場合のエラーメッセージ（日本語）
     return NextResponse.json({ 
       error: 'MISSING_KEY', 
-      message: 'GEMINI_API_KEY が見つかりません。環境変数を確認してください。' 
+      message: 'OPENAI_API_KEY が見つかりません。環境変数を確認してください。' 
     }, { status: 500 });
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    
-    // ✅ モデル指定: ユーザーが動作を確認済みのバージョンを使用
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const openai = new OpenAI({ apiKey });
 
     // フロントエンドから JSON データ（商品名、説明、カテゴリ）を受け取る
     const { productName, description, category } = await req.json();
+
+    // ✅ 入力バリデーション
+    if (!productName || !description) {
+      return NextResponse.json({ 
+        error: 'INVALID_INPUT', 
+        message: '商品名と商品説明は必須です。' 
+      }, { status: 400 });
+    }
 
     const prompt = `
       あなたは楽天市場の検索最適化スペシャリストです。
@@ -37,15 +42,20 @@ export async function POST(req: NextRequest) {
       商品説明: ${description}
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const keyword = response.text().trim();
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // 必要に応じて "gpt-3.5-turbo" などに変更してください
+      messages: [
+        { role: "user", content: prompt }
+      ],
+    });
+
+    const keyword = response.choices[0].message.content?.trim() || "";
 
     return NextResponse.json({ keyword });
 
-  } catch (error: unknown) {
-    console.error("Gemini APIエラー:", error);
-
+  } catch (error: any) {
+    console.error("OpenAI APIエラー:", error);
+    
     // エラーメッセージ（日本語）
     const errorMessage = error instanceof Error ? error.message : 'AIモデルの呼び出しに失敗しました。';
     return NextResponse.json({

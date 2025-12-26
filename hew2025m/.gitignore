@@ -44,3 +44,17 @@ next-env.d.ts
 /public/uploads/*
 !/public/uploads/.gitkeep
 /public/avatars/*
+
+.idea
+# IDE config
+.idea/
+
+# Next.js build output
+.next/
+out/
+
+# Node
+node_modules/
+
+# Environment variables
+.env.local
