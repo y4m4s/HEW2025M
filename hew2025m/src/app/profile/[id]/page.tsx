@@ -18,6 +18,7 @@ import ProfLikedPosts from "@/components/ProfLikedPosts";
 import ProfPost from "@/components/ProfPost";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import LoadingScreen from "@/components/LoadingScreen";
 
 import UserRating from "@/components/UserRating";
 import FollowListModal from "@/components/FollowListModal";
@@ -62,6 +63,7 @@ export default function UserProfilePage() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginRequiredAction, setLoginRequiredAction] = useState('');
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // 対象ユーザーのプロフィールを取得
   const fetchUserProfile = async () => {
@@ -205,6 +207,7 @@ export default function UserProfilePage() {
 
   const handleLogoutConfirm = async () => {
     try {
+      setIsLoggingOut(true);
       await signOut(auth);
       setShowLogoutModal(false);
       toast.success('ログアウトしました');
@@ -222,6 +225,10 @@ export default function UserProfilePage() {
 
   if (loading || authLoading || !targetProfile) {
     return <LoadingSpinner message="プロフィールを読み込み中……" size="lg" fullScreen />;
+  }
+
+  if (isLoggingOut) {
+    return <LoadingScreen message="ログアウトしています..." />;
   }
 
   return (
@@ -334,11 +341,10 @@ export default function UserProfilePage() {
                     // 他人のプロフィールの場合: フォローボタンとメッセージボタン
                     <>
                       <button
-                        className={`w-full py-3 rounded-lg transition-colors ${
-                          isFollowing
+                        className={`w-full py-3 rounded-lg transition-colors ${isFollowing
                             ? 'border border-gray-300 text-gray-700 hover:bg-red-50 hover:border-red-300 hover:text-red-600'
                             : 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
-                        }`}
+                          }`}
                         onClick={handleFollowToggle}
                       >
                         {isFollowing ? 'フォロー解除' : 'フォローする'}
@@ -371,31 +377,28 @@ export default function UserProfilePage() {
             <div className="lg:col-span-2 bg-white rounded-xl shadow-lg">
               <div className="flex border-b text-sm overflow-x-auto">
                 <button
-                  className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
-                    activeTab === "selling"
+                  className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "selling"
                       ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                       : "text-gray-600 hover:text-[#2FA3E3]"
-                  }`}
+                    }`}
                   onClick={() => setActiveTab("selling")}
                 >
                   出品中 ({sellingCount})
                 </button>
                 <button
-                  className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
-                    activeTab === "history"
+                  className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "history"
                       ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                       : "text-gray-600 hover:text-[#2FA3E3]"
-                  }`}
+                    }`}
                   onClick={() => setActiveTab("history")}
                 >
                   出品履歴 ({historyCount})
                 </button>
                 <button
-                  className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
-                    activeTab === "posts"
+                  className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "posts"
                       ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                       : "text-gray-600 hover:text-[#2FA3E3]"
-                  }`}
+                    }`}
                   onClick={() => setActiveTab("posts")}
                 >
                   投稿 ({postsCount})
@@ -403,11 +406,10 @@ export default function UserProfilePage() {
                 {/* ブックマークは自分のプロフィールの場合のみ表示 */}
                 {isOwnProfile && (
                   <button
-                    className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
-                      activeTab === "bookmarks"
+                    className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "bookmarks"
                         ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                         : "text-gray-600 hover:text-[#2FA3E3]"
-                    }`}
+                      }`}
                     onClick={() => setActiveTab("bookmarks")}
                   >
                     ブックマーク ({bookmarkCount})
@@ -416,11 +418,10 @@ export default function UserProfilePage() {
                 {/* いいねは自分のプロフィールの場合のみ表示 */}
                 {isOwnProfile && (
                   <button
-                    className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
-                      activeTab === "likedPosts"
+                    className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "likedPosts"
                         ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                         : "text-gray-600 hover:text-[#2FA3E3]"
-                    }`}
+                      }`}
                     onClick={() => setActiveTab("likedPosts")}
                   >
                     いいね ({likedPostsCount})

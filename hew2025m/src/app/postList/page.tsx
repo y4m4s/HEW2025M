@@ -7,8 +7,15 @@ import CustomSelect from '@/components/CustomSelect';
 import { Fish, Plus, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useAuth } from "@/lib/useAuth";
+import { useRouter } from "next/navigation";
+import LoginRequiredModal from "@/components/LoginRequiredModal";
 
 export default function PostList() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('投稿');
   const [activeFilter, setActiveFilter] = useState('all');
   const [sortBy, setSortBy] = useState('latest');
   const [posts, setPosts] = useState<Post[]>([]);
@@ -200,6 +207,15 @@ export default function PostList() {
     return pages;
   };
 
+  const handleNewPost = () => {
+    if (!user) {
+      setLoginRequiredAction('投稿');
+      setShowLoginModal(true);
+    } else {
+      router.push('/post');
+    }
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
 
@@ -209,13 +225,13 @@ export default function PostList() {
             <div>
               <h2 className="flex items-center gap-3 text-2xl font-bold mb-2">
                 <Fish className="text-blue-600" />
-                釣果投稿一覧
+                投稿一覧
               </h2>
               <p className="text-gray-600">みんなの釣果や釣り場情報をチェック</p>
             </div>
 
             <Button
-              href="/post"
+              onClick={handleNewPost}
               variant="primary"
               size="md"
               icon={<Plus size={18} />}
@@ -339,6 +355,11 @@ export default function PostList() {
         </main>
       </div>
 
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 import Link from 'next/link';
 import Button from "@/components/Button";
+import LoadingScreen from "@/components/LoadingScreen";
 import { auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, signInWithPopup, TwitterAuthProvider, OAuthProvider, GoogleAuthProvider, fetchSignInMethodsForEmail, AuthProvider } from "firebase/auth";
 import { useState, useEffect } from "react";
@@ -23,6 +24,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
 
   // ログイン済みユーザーをホームにリダイレクト
@@ -36,6 +38,7 @@ export default function RegisterPage() {
     setSuccessMessage(msg);
     setTimeout(() => {
       setSuccessMessage("");
+      setIsRedirecting(true);
       router.push(to);
     }, 1800);
   };
@@ -132,14 +135,11 @@ export default function RegisterPage() {
 
   // 認証チェック中はローディング表示
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2FA3E3] mx-auto mb-4"></div>
-          <p className="text-gray-600">読み込み中...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="読み込み中..." />;
+  }
+
+  if (isRedirecting) {
+    return <LoadingScreen message="画面を移動しています..." />;
   }
 
   // ログイン済みの場合は何も表示しない（リダイレクト中）

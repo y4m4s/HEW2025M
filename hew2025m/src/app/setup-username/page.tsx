@@ -124,10 +124,6 @@ export default function SetupUsernamePage() {
               あなたのことを教えてください。
             </p>
           </div>
-
-          <div className="mt-8 relative z-10 lg:absolute lg:bottom-8 lg:mt-0 text-xs text-white/60 font-light">
-            &copy; 2024 ツリマチ. All rights reserved.
-          </div>
         </div>
 
         {/* 右側：フォームセクション */}

@@ -490,9 +490,11 @@ export default function SellDetailPage() {
           <section className="space-y-6">
             <div>
               <h3 className="text-xl font-semibold mb-3">商品詳細</h3>
-              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed break-words overflow-wrap-anywhere">
-                {product.description}
-              </p>
+              <div className="h-80 overflow-y-auto rounded-lg border border-gray-200 p-4 bg-gray-50/50">
+                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed break-words overflow-wrap-anywhere">
+                  {product.description}
+                </p>
+              </div>
             </div>
 
             <div className="space-y-3">

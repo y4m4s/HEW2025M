@@ -10,7 +10,7 @@ import toast from "react-hot-toast";
 
 interface UserProfile {
   displayName: string;
-  username: string;
+  username?: string;
   bio: string;
   photoURL: string;
 }
@@ -230,11 +230,10 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile, onSaveSuc
             type="text"
             value={editProfile.displayName}
             onChange={(e) => setEditProfile({ ...editProfile, displayName: e.target.value })}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
-              editProfile.displayName.length > 15
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${editProfile.displayName.length > 15
                 ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
                 : 'border-gray-300 focus:ring-[#2FA3E3]'
-            }`}
+              }`}
             placeholder="表示名を入力"
           />
           <div className={`text-right text-sm mt-1 ${editProfile.displayName.length > 15 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
@@ -268,18 +267,16 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile, onSaveSuc
           <textarea
             value={editProfile.bio}
             onChange={(e) => setEditProfile({ ...editProfile, bio: e.target.value })}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 resize-none transition-colors ${
-              editProfile.bio.length > 140
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 resize-none transition-colors ${editProfile.bio.length > 140
                 ? "border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500"
                 : "border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]"
-            }`}
+              }`}
             rows={4}
             placeholder="自己紹介を140字以内で入力してください。"
           />
           <div
-            className={`text-right text-sm mt-1 ${
-              editProfile.bio.length > 140 ? "text-red-600 font-semibold" : "text-gray-500"
-            }`}
+            className={`text-right text-sm mt-1 ${editProfile.bio.length > 140 ? "text-red-600 font-semibold" : "text-gray-500"
+              }`}
           >
             {editProfile.bio.length}/140文字
             {editProfile.bio.length > 140 && (
