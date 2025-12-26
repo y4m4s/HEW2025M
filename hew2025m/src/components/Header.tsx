@@ -30,16 +30,16 @@ import { useRouter } from "next/navigation";
 
 // カテゴリーリストを釣り関連のアイテムに修正（DBの保存値と一致させる）
 const categories = [
-  { name: "ロッド/竿", href: "/productList?category=rod", Icon: GiFishingPole },
-  { name: "リール", href: "/productList?category=reel", Icon: FaTape },
-  { name: "ルアー", href: "/productList?category=lure", Icon: GiFishingLure },
-  { name: "ライン/糸", href: "/productList?category=line", Icon: SiHelix },
-  { name: "ハリ/針", href: "/productList?category=hook", Icon: GiFishingHook },
-  { name: "餌", href: "/productList?category=bait", Icon: GiEarthWorm },
-  { name: "ウェア", href: "/productList?category=wear", Icon: FaTshirt },
-  { name: "セット用品", href: "/productList?category=set", Icon: FaBox },
-  { name: "サービス", href: "/productList?category=service", Icon: GiSpanner },
-  { name: "その他", href: "/productList?category=other", Icon: Puzzle },
+  { name: "ロッド/竿", href: "/product-list?category=rod", Icon: GiFishingPole },
+  { name: "リール", href: "/product-list?category=reel", Icon: FaTape },
+  { name: "ルアー", href: "/product-list?category=lure", Icon: GiFishingLure },
+  { name: "ライン/糸", href: "/product-list?category=line", Icon: SiHelix },
+  { name: "ハリ/針", href: "/product-list?category=hook", Icon: GiFishingHook },
+  { name: "餌", href: "/product-list?category=bait", Icon: GiEarthWorm },
+  { name: "ウェア", href: "/product-list?category=wear", Icon: FaTshirt },
+  { name: "セット用品", href: "/product-list?category=set", Icon: FaBox },
+  { name: "サービス", href: "/product-list?category=service", Icon: GiSpanner },
+  { name: "その他", href: "/product-list?category=other", Icon: Puzzle },
 ];
 
 export default function Header() {
@@ -67,7 +67,7 @@ export default function Header() {
         }
       }
     },
-    { name: "投稿一覧", href: "/postList", Icon: List },
+    { name: "投稿一覧", href: "/post-list", Icon: List },
     { name: "地図", href: "/map", Icon: Map },
   ];
 
@@ -141,7 +141,7 @@ export default function Header() {
           {/* --- 商品を探すドロップダウンメニュー --- */}
           <div className="relative group py-2">
             <Link
-              href="/productList"
+              href="/product-list"
               className="relative no-underline text-gray-800 text-base hover:text-[#2FA3E3] transition-colors duration-300 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#2FA3E3] after:transition-all after:duration-300 hover:after:w-full flex items-center gap-1"
             >
               商品を探す

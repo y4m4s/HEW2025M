@@ -12,6 +12,8 @@ export async function GET(request: NextRequest) {
     const condition = searchParams.get('condition');
     const sellerId = searchParams.get('sellerId');
     const status = searchParams.get('status');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '12');
 
     let query: any = {};
     if (category) {
@@ -27,13 +29,25 @@ export async function GET(request: NextRequest) {
       query.status = status;
     }
 
+    // 総数を取得
+    const total = await Product.countDocuments(query);
+
+    // ページネーションを適用
+    const skip = (page - 1) * limit;
     const products = await Product.find(query)
       .sort({ createdAt: -1 })
-      .limit(100);
+      .skip(skip)
+      .limit(limit);
 
     return NextResponse.json({
       success: true,
       products,
+      pagination: {
+        total,
+        page,
+        limit,
+        hasMore: skip + products.length < total,
+      },
     });
   } catch (error) {
     console.error('Get products error:', error);

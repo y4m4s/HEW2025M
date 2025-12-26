@@ -67,13 +67,13 @@ export default function Footer() {
                 </button>
               </li>
               <li>
-                <Link href="/productList" className="text-gray-400 text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1">商品を探す</Link>
+                <Link href="/product-list" className="text-gray-400 text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1">商品を探す</Link>
               </li>
               <li>
                 <Link href="/community" className="text-gray-400 text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1">コミュニティ</Link>
               </li>
               <li>
-                <Link href="/postList" className="text-gray-400 text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1">投稿一覧</Link>
+                <Link href="/post-list" className="text-gray-400 text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1">投稿一覧</Link>
               </li>
               <li>
                 <Link href="/map" className="text-gray-400 text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1">マップ</Link>

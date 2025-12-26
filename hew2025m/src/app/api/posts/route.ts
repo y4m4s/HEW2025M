@@ -11,6 +11,8 @@ export async function GET(request: NextRequest) {
     const authorId = searchParams.get('authorId');
     const keyword = searchParams.get('keyword');
     const tag = searchParams.get('tag');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '12');
 
     let query: any = {};
 
@@ -35,12 +37,25 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    // 総数を取得
+    const total = await Post.countDocuments(query);
+
+    // ページネーションを適用
+    const skip = (page - 1) * limit;
     const posts = await Post.find(query)
       .sort({ createdAt: -1 })
-      .limit(50);
+      .skip(skip)
+      .limit(limit);
+
     return NextResponse.json({
       success: true,
       posts,
+      pagination: {
+        total,
+        page,
+        limit,
+        hasMore: skip + posts.length < total,
+      },
     });
   } catch (error) {
     console.error('Get posts error:', error);

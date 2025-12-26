@@ -139,7 +139,7 @@ export default function CartPage() {
 
   // 決済ページへ進むための関数
   const proceedToPayment = () => {
-    router.push('/Pay');
+    router.push('/pay');
   };
 
   return (
@@ -153,7 +153,7 @@ export default function CartPage() {
         {validProducts.length === 0 && !loading ? (
           <div className="text-center bg-white p-12 rounded-lg shadow-md">
             <p className="text-gray-600 text-lg">カートは空です。</p>
-            <Button onClick={() => router.push('/productList')} variant="primary" size="lg" className="mt-6">
+            <Button onClick={() => router.push('/product-list')} variant="primary" size="lg" className="mt-6">
               お買い物を続ける
             </Button>
           </div>

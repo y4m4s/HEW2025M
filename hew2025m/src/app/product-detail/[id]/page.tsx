@@ -9,7 +9,7 @@ import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
 import CancelModal from '@/components/CancelModal';
 import LoginRequiredModal from '@/components/LoginRequiredModal';
-import ProductCard from '@/components/Productcard';
+import ProductCard from '@/components/ProductCard';
 
 import SmartRakuten from '@/components/SmartRakuten';
 import SellerInfo from '@/components/SellerInfo';

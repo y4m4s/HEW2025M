@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import ProductCard, { Product } from '@/components/Productcard';
+import ProductCard, { Product } from '@/components/ProductCard';
 import Button from '@/components/Button';
-import { Fish, Search, ChevronLeft, ChevronRight, Puzzle } from 'lucide-react';
+import { Fish, Search, Puzzle } from 'lucide-react';
 import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from 'react-icons/gi';
 import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
 import { SiHelix } from 'react-icons/si';
@@ -55,6 +55,8 @@ export default function SearchPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
 
   // フィルター状態（URLパラメータから初期値を取得）
   const [category, setCategory] = useState(() => searchParams.get('category') || '');
@@ -63,9 +65,9 @@ export default function SearchPage() {
   const [sortBy, setSortBy] = useState('newest');
   const [keyword, setKeyword] = useState('');
 
-  // ページネーション
-  const [currentPage, setCurrentPage] = useState(1);
-  const PRODUCTS_PER_PAGE = 12;
+  // Intersection Observer用のref
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   // URLパラメータが変更された時にカテゴリを更新
   useEffect(() => {
@@ -73,39 +75,38 @@ export default function SearchPage() {
     setCategory(categoryParam);
   }, [searchParams]);
 
-  // フィルター変更時にデータ取得
-  useEffect(() => {
-    setCurrentPage(1); // Reset to first page when filters change
-    fetchProducts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, condition, priceRange, sortBy, keyword]);
+  // Firestoreからユーザー情報を取得（バッチ処理）
+  const fetchUserProfiles = async (sellerIds: string[]) => {
+    const uniqueIds = [...new Set(sellerIds)];
+    const profiles: Record<string, { displayName?: string; photoURL?: string }> = {};
 
-  // Firestoreからユーザー情報を取得
-  const fetchUserProfile = async (sellerId: string) => {
-    try {
-      const uid = sellerId.startsWith('user-') ? sellerId.replace('user-', '') : sellerId;
-      const userDocRef = doc(db, 'users', uid);
-      const userDocSnap = await getDoc(userDocRef);
+    await Promise.all(
+      uniqueIds.map(async (sellerId) => {
+        try {
+          const uid = sellerId.startsWith('user-') ? sellerId.replace('user-', '') : sellerId;
+          const userDocRef = doc(db, 'users', uid);
+          const userDocSnap = await getDoc(userDocRef);
 
-      if (userDocSnap.exists()) {
-        const userData = userDocSnap.data();
-        return {
-          displayName: userData.displayName || undefined,
-          photoURL: userData.photoURL || undefined,
-        };
-      }
-      return null;
-    } catch (error) {
-      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
-      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
-        return null;
-      }
-      console.error('ユーザー情報取得エラー:', error);
-      return null;
-    }
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            profiles[sellerId] = {
+              displayName: userData.displayName || undefined,
+              photoURL: userData.photoURL || undefined,
+            };
+          }
+        } catch (error) {
+          if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
+            return;
+          }
+          console.error('ユーザー情報取得エラー:', error);
+        }
+      })
+    );
+
+    return profiles;
   };
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async (pageNum: number, resetProducts = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -113,7 +114,9 @@ export default function SearchPage() {
       const params = new URLSearchParams();
       if (category) params.append('category', category);
       if (condition) params.append('condition', condition);
-      params.append('status', 'available'); // 販売中のみ表示
+      params.append('status', 'available');
+      params.append('page', pageNum.toString());
+      params.append('limit', '12');
 
       const response = await fetch(`/api/products?${params}`);
       if (!response.ok) {
@@ -122,39 +125,36 @@ export default function SearchPage() {
 
       const data = await response.json();
 
-      // データベースのデータをProduct型に変換 + Firestoreからユーザー情報取得
-      const formattedProducts: Product[] = await Promise.all(
-        data.products.map(async (product: {
-          _id: string;
-          title: string;
-          price: number;
-          condition: string;
-          images?: string[];
-          sellerId?: string;
-          sellerName?: string;
-          createdAt: string;
-        }) => {
-          // Firestoreから最新のユーザー情報を取得
-          let sellerDisplayName: string = product.sellerName || '出品者未設定';
-          let sellerPhotoURL: string | undefined;
-          if (product.sellerId) {
-            const userProfile = await fetchUserProfile(product.sellerId);
-            sellerDisplayName = userProfile?.displayName || product.sellerName || '出品者未設定';
-            sellerPhotoURL = userProfile?.photoURL;
-          }
+      // ユーザー情報をバッチで取得
+      const sellerIds = data.products.map((p: { sellerId?: string }) => p.sellerId).filter(Boolean);
+      const userProfiles = await fetchUserProfiles(sellerIds);
 
-          return {
-            id: product._id,
-            name: product.title,
-            price: product.price,
-            location: sellerDisplayName,
-            condition: formatCondition(product.condition),
-            postedDate: formatDate(product.createdAt),
-            imageUrl: product.images?.[0],
-            sellerPhotoURL,
-          };
-        })
-      );
+      // データベースのデータをProduct型に変換
+      const formattedProducts: Product[] = data.products.map((product: {
+        _id: string;
+        title: string;
+        price: number;
+        condition: string;
+        images?: string[];
+        sellerId?: string;
+        sellerName?: string;
+        createdAt: string;
+      }) => {
+        const userProfile = product.sellerId ? userProfiles[product.sellerId] : null;
+        const sellerDisplayName = userProfile?.displayName || product.sellerName || '出品者未設定';
+        const sellerPhotoURL = userProfile?.photoURL;
+
+        return {
+          id: product._id,
+          name: product.title,
+          price: product.price,
+          location: sellerDisplayName,
+          condition: formatCondition(product.condition),
+          postedDate: formatDate(product.createdAt),
+          imageUrl: product.images?.[0],
+          sellerPhotoURL,
+        };
+      });
 
       // フィルタリング（価格帯とキーワード）
       let filtered = formattedProducts;
@@ -168,14 +168,54 @@ export default function SearchPage() {
       // ソート
       filtered = sortProducts(filtered, sortBy);
 
-      setProducts(filtered);
+      if (resetProducts) {
+        setProducts(filtered);
+      } else {
+        setProducts((prev) => [...prev, ...filtered]);
+      }
+
+      setHasMore(data.pagination.hasMore);
+      setTotalCount(data.pagination.total);
     } catch (err) {
       console.error('商品取得エラー:', err);
       setError(err instanceof Error ? err.message : '商品の取得に失敗しました');
     } finally {
       setLoading(false);
     }
-  };
+  }, [category, condition, priceRange, sortBy, keyword]);
+
+  // フィルター変更時にリセット
+  useEffect(() => {
+    setProducts([]);
+    setHasMore(true);
+    fetchProducts(1, true);
+  }, [category, condition, priceRange, sortBy, keyword, fetchProducts]);
+
+  // Intersection Observerの設定
+  useEffect(() => {
+    if (loading || !hasMore) return;
+
+    const currentPage = Math.floor(products.length / 12) + 1;
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          fetchProducts(currentPage, false);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [loading, hasMore, fetchProducts, products.length]);
 
   // 状態を日本語に変換
   const formatCondition = (cond: string): string => {
@@ -247,44 +287,12 @@ export default function SearchPage() {
     } else if (sort === 'price-high') {
       sorted.sort((a, b) => b.price - a.price);
     }
-    // 'newest' と 'popular' はAPIでソート済み
 
     return sorted;
   };
 
-  // Pagination calculations
-  const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
-  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-  const endIndex = startIndex + PRODUCTS_PER_PAGE;
-  const paginatedProducts = products.slice(startIndex, endIndex);
-
-  // Generate page numbers to display
-  const range = (start: number, end: number) =>
-  Array.from({ length: end - start + 1 }, (_, i) => start + i);
-
-const getPageNumbers = () => {
-  if (totalPages <= 7) return range(1, totalPages);
-
-  const firstPage = 1;
-  const lastPage = totalPages;
-  const start = Math.max(firstPage + 1, currentPage - 1);
-  const end = Math.min(lastPage - 1, currentPage + 1);
-
-  const pages: (number | string)[] = [
-    firstPage,
-    ...(start > firstPage + 1 ? ['...'] : []),
-    ...range(start, end),
-    ...(end < lastPage - 1 ? ['...'] : []),
-    lastPage
-  ];
-
-  return pages;
-};
-
-
   return (
     <div>
-      
       <div className="bg-gray-50 min-h-screen">
         <div className="container mx-auto px-5 py-8">
           <div className="max-w-7xl mx-auto">
@@ -346,7 +354,7 @@ const getPageNumbers = () => {
 
             {/* 並び替え */}
             <div className="flex justify-between items-center mb-6">
-              <p className="text-gray-600">検索結果: {products.length}件</p>
+              <p className="text-gray-600">検索結果: {products.length}件{totalCount > products.length ? ` (全${totalCount}件)` : ''}</p>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600">並び替え:</span>
                 <CustomSelect
@@ -359,14 +367,14 @@ const getPageNumbers = () => {
             </div>
 
             {/* 商品一覧 */}
-            {loading ? (
+            {loading && products.length === 0 ? (
               <div className="flex justify-center items-center py-20">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2FA3E3]"></div>
               </div>
             ) : error ? (
               <div className="text-center py-20">
                 <p className="text-red-600 mb-4">{error}</p>
-                <Button onClick={fetchProducts} variant="primary" size="md">
+                <Button onClick={() => fetchProducts(1, true)} variant="primary" size="md">
                   再読み込み
                 </Button>
               </div>
@@ -379,54 +387,23 @@ const getPageNumbers = () => {
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
-                  {paginatedProducts.map((product) => (
+                  {products.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
 
-                {products.length > PRODUCTS_PER_PAGE && (
-                  <div className="flex justify-center items-center gap-4 mt-8">
-                    <Button
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(prev => prev - 1)}
-                      variant="ghost"
-                      size="md"
-                      className={currentPage === 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}
-                      icon={<ChevronLeft size={16} />}
-                    >
-                      前へ
-                    </Button>
-
-                    <div className="flex gap-2">
-                      {getPageNumbers().map((page, index) => (
-                        page === '...' ? (
-                          <span key={`ellipsis-${index}`} className="px-2 flex items-center">...</span>
-                        ) : (
-                          <Button
-                            key={page}
-                            onClick={() => setCurrentPage(page as number)}
-                            variant={currentPage === page ? "primary" : "ghost"}
-                            size="sm"
-                            className={currentPage === page ? "w-8 h-8 p-0" : "w-8 h-8 p-0 bg-gray-100 hover:bg-gray-200"}
-                          >
-                            {page}
-                          </Button>
-                        )
-                      ))}
+                {/* 無限スクロール用のローディングインジケーター */}
+                <div ref={loadMoreRef} className="flex justify-center items-center py-8">
+                  {loading && (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2FA3E3]"></div>
+                      <p className="text-sm text-gray-500">読み込み中...</p>
                     </div>
-
-                    <Button
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage(prev => prev + 1)}
-                      variant={currentPage === totalPages ? "ghost" : "primary"}
-                      size="md"
-                      className={currentPage === totalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""}
-                      icon={<ChevronRight size={16} />}
-                    >
-                      次へ
-                    </Button>
-                  </div>
-                )}
+                  )}
+                  {!hasMore && products.length > 0 && (
+                    <p className="text-sm text-gray-500">すべての商品を表示しました</p>
+                  )}
+                </div>
               </>
             )}
           </div>

@@ -27,7 +27,7 @@ interface PostCardProps {
 export default function PostCard({ post, variant = 'default' }: PostCardProps) {
   if (variant === 'simple') {
     return (
-      <Link href={`/postDetail/${post.id}`}>
+      <Link href={`/post-detail/${post.id}`}>
         <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg hover:transform hover:-translate-y-1 transition-all duration-300 cursor-pointer h-[180px]">
           <div className="flex h-full">
             {/* 画像 */}
@@ -100,7 +100,7 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
 
   if (variant === 'compact') {
     return (
-      <Link href={`/postDetail/${post.id}`}>
+      <Link href={`/post-detail/${post.id}`}>
         <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg hover:transform hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col">
           {/* 画像 - 固定の高さ */}
           <div className="h-80 bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -167,7 +167,7 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
   }
 
   return (
-    <Link href={`/postDetail/${post.id}`}>
+    <Link href={`/post-detail/${post.id}`}>
       <article className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-lg hover:transform hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col h-[420px]">
         <div className="relative flex-shrink-0">
           <div className="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center overflow-hidden">

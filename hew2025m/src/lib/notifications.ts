@@ -123,7 +123,7 @@ export async function createCommentNotification(
       timestamp: Timestamp.now(),
       tag: 'コメント',
       isUnread: true,
-      link: `/productDetail/${productId}#comment-${commentId}`, // コメント位置へのリンク
+      link: `/product-detail/${productId}#comment-${commentId}`, // コメント位置へのリンク
     };
 
     // 通知をFirestoreに保存
@@ -166,7 +166,7 @@ export async function createPostCommentNotification(
       timestamp: Timestamp.now(),
       tag: 'コメント',
       isUnread: true,
-      link: `/postDetail/${postId}#comment-${commentId}`, // コメント位置へのリンク
+      link: `/post-detail/${postId}#comment-${commentId}`, // コメント位置へのリンク
     };
 
     // 通知をFirestoreに保存
@@ -203,7 +203,7 @@ export async function createReplyNotification(
   itemType: 'product' | 'post'
 ): Promise<void> {
   try {
-    const linkPath = itemType === 'product' ? 'productDetail' : 'postDetail';
+    const linkPath = itemType === 'product' ? 'product-detail' : 'post-detail';
 
     const notificationData = {
       iconType: 'comment',
@@ -263,7 +263,7 @@ export async function createPostLikeNotification(
       timestamp: Timestamp.now(),
       tag: 'いいね',
       isUnread: true,
-      link: `/postDetail/${postId}`,
+      link: `/post-detail/${postId}`,
       // 識別用メタデータ（削除時に使用）
       metadata: {
         type: 'post_like',

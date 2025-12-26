@@ -28,7 +28,7 @@ const RecentlyViewed = () => {
       </h2>
       <div className="flex overflow-x-auto space-x-4 pb-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
         {products.map((product) => (
-          <Link href={`/productDetail/${product.id}`} key={product.id}>
+          <Link href={`/product-detail/${product.id}`} key={product.id}>
             <div className="flex-shrink-0 w-36 md:w-40 group">
               <div className="relative w-full h-36 md:h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden transition-transform duration-300 ease-in-out group-hover:scale-105">
                 <Image

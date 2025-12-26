@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import ProductCard, { Product } from '@/components/Productcard';
+import ProductCard, { Product } from '@/components/ProductCard';
 import Button from '@/components/Button';
 
 import { Fish, Search, MapPin, Users, ArrowRight, Puzzle } from 'lucide-react';
@@ -181,7 +181,7 @@ export default function Home() {
                 >
                   商品を出品
                 </Button>
-                <Button href="/productList" variant="outline" size="lg" className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-[#2FA3E3] py-5 px-9" icon={<Search size={20} />}>
+                <Button href="/product-list" variant="outline" size="lg" className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-[#2FA3E3] py-5 px-9" icon={<Search size={20} />}>
                   用品を探す
                 </Button>
               </div>
@@ -216,7 +216,7 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {/* ロッド/竿 */}
-            <Link href="/productList?category=rod">
+            <Link href="/product-list?category=rod">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
                   <GiFishingPole size={28} />
@@ -227,7 +227,7 @@ export default function Home() {
             </Link>
 
             {/* リール */}
-            <Link href="/productList?category=reel">
+            <Link href="/product-list?category=reel">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
                   <FaTape size={28} />
@@ -238,7 +238,7 @@ export default function Home() {
             </Link>
 
             {/* ルアー */}
-            <Link href="/productList?category=lure">
+            <Link href="/product-list?category=lure">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
                   <GiFishingLure size={28} />
@@ -249,7 +249,7 @@ export default function Home() {
             </Link>
 
             {/* ライン/糸 */}
-            <Link href="/productList?category=line">
+            <Link href="/product-list?category=line">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
                   <SiHelix size={28} />
@@ -260,7 +260,7 @@ export default function Home() {
             </Link>
 
             {/* ハリ/針 */}
-            <Link href="/productList?category=hook">
+            <Link href="/product-list?category=hook">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
                   <GiFishingHook size={28} />
@@ -271,7 +271,7 @@ export default function Home() {
             </Link>
 
             {/* 餌 */}
-            <Link href="/productList?category=bait">
+            <Link href="/product-list?category=bait">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
                   <GiEarthWorm size={28} />
@@ -282,7 +282,7 @@ export default function Home() {
             </Link>
 
             {/* ウェア */}
-            <Link href="/productList?category=wear">
+            <Link href="/product-list?category=wear">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
                   <FaTshirt size={28} />
@@ -293,7 +293,7 @@ export default function Home() {
             </Link>
 
             {/* セット用品 */}
-            <Link href="/productList?category=set">
+            <Link href="/product-list?category=set">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
                   <FaBox size={28} />
@@ -304,7 +304,7 @@ export default function Home() {
             </Link>
 
             {/* サービス */}
-            <Link href="/productList?category=service">
+            <Link href="/product-list?category=service">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
                   <GiSpanner size={28} />
@@ -315,7 +315,7 @@ export default function Home() {
             </Link>
 
             {/* その他 */}
-            <Link href="/productList?category=other">
+            <Link href="/product-list?category=other">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
                   <Puzzle size={28} />
@@ -354,7 +354,7 @@ export default function Home() {
                 ))}
               </div>
               <div className="text-center">
-                <Button href="/productList" variant="primary" size="lg" icon={<ArrowRight size={20} />}>
+                <Button href="/product-list" variant="primary" size="lg" icon={<ArrowRight size={20} />}>
                   すべての商品を見る
                 </Button>
               </div>
@@ -369,7 +369,7 @@ export default function Home() {
             <p className="text-base text-gray-600">釣り用品の取引から情報交換まで</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            <Link href="/postList">
+            <Link href="/post-list">
               <div className="bg-white text-center py-8 px-5 rounded-2xl shadow-lg transition-all duration-300 relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-green-500 before:to-emerald-500 before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
                   <MessageSquare size={32} />
@@ -412,7 +412,7 @@ export default function Home() {
                 <Button href="/register" variant="primary" size="lg" className="py-5 px-9" icon={<Fish size={20} />}>
                   釣り人として参加
                 </Button>
-                <Button href="/productList" variant="outline" size="lg" className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-gray-700 py-5 px-9" icon={<Search size={20} />}>
+                <Button href="/product-list" variant="outline" size="lg" className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-gray-700 py-5 px-9" icon={<Search size={20} />}>
                   釣り用品を探す
                 </Button>
               </div>

@@ -274,7 +274,7 @@ export default function SellPage() {
 
       // 少し待ってから遷移（トーストが表示されるように）
       setTimeout(() => {
-        router.push('/productList');
+        router.push('/product-list');
       }, 500);
     } catch (error) {
       console.error('出品エラー:', error);

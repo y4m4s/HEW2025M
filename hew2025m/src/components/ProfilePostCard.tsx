@@ -21,7 +21,7 @@ interface ProfilePostCardProps {
 
 export default function ProfilePostCard({ post }: ProfilePostCardProps) {
   return (
-    <Link href={`/postDetail/${post.id}`}>
+    <Link href={`/post-detail/${post.id}`}>
       <article className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-lg hover:transform hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col h-full">
         <div className="relative flex-shrink-0">
           <div className="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center overflow-hidden">

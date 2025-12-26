@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Package, Loader2, MapPin, CreditCard } from "lucide-react";
+import Link from "next/link";
+import { Package, Loader2, MapPin, CreditCard, Fish, Calendar } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
@@ -38,7 +39,7 @@ export default function ProfPurchases({ onCountChange, userId }: ProfPurchasesPr
           id: doc.id,
           ...doc.data()
         } as Order));
-        
+
         setPurchases(purchasesList);
         if (onCountChange) {
           onCountChange(purchasesList.length);
@@ -82,93 +83,175 @@ export default function ProfPurchases({ onCountChange, userId }: ProfPurchasesPr
   const getStatusColor = (status: string): string => {
     switch (status) {
       case 'delivered':
-        return 'text-green-600';
+        return 'bg-green-100 text-green-800';
       case 'shipped':
-        return 'text-blue-600';
+        return 'bg-blue-100 text-blue-800';
       case 'cancelled':
-        return 'text-red-600';
+        return 'bg-red-100 text-red-800';
+      case 'confirmed':
+        return 'bg-purple-100 text-purple-800';
       default:
-        return 'text-yellow-600';
+        return 'bg-yellow-100 text-yellow-800';
+    }
+  };
+
+  const formatDate = (timestamp: Date | { toDate: () => Date }): string => {
+    if (!timestamp) return '';
+
+    const date = 'toDate' in timestamp ? timestamp.toDate() : new Date(timestamp);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return '今日';
+    } else if (diffDays === 1) {
+      return '昨日';
+    } else if (diffDays < 7) {
+      return `${diffDays}日前`;
+    } else {
+      return date.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
     }
   };
 
   if (isLoading) {
     return (
-      <div className="p-6 text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#2FA3E3] mx-auto" />
-        <p className="text-gray-500 mt-2">読み込み中...</p>
+      <div className="flex justify-center items-center py-20">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-12 w-12 animate-spin text-[#2FA3E3]" />
+          <p className="text-gray-500">読み込み中...</p>
+        </div>
       </div>
     );
   }
 
   if (purchases.length === 0) {
     return (
-      <div className="p-12 text-center">
-        <Package className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+      <div className="p-6 text-center">
+        <Package size={64} className="mx-auto text-gray-300 mb-4" />
         <p className="text-gray-500">購入履歴がありません</p>
       </div>
     );
   }
 
   return (
-    <div className="divide-y">
+    <div className="grid grid-cols-1 gap-6">
       {purchases.map((order) => (
-        <div key={order.id} className="p-6 hover:bg-gray-50 transition-colors">
-          {/* Header with order info */}
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <p className="text-sm text-gray-500">Order ID: {order.id.slice(0, 12)}</p>
-              <p className="text-sm text-gray-500">
-                {new Date(order.createdAt).toLocaleDateString('ja-JP')}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-lg">¥{order.totalAmount.toLocaleString()}</p>
-              <p className={`text-xs font-semibold mt-1 ${getStatusColor(order.orderStatus)}`}>
-                {getOrderStatusLabel(order.orderStatus)}
-              </p>
-            </div>
-          </div>
-
-          {/* Items list */}
-          <div className="space-y-3 mb-4">
-            {order.items.map((item, index) => (
-              <div key={index} className="flex gap-3 bg-gray-50 p-3 rounded">
-                {item.productImage && (
-                  <div className="relative w-16 h-16 flex-shrink-0">
-                    <Image
-                      src={item.productImage}
-                      alt={item.productName}
-                      fill
-                      className="object-cover rounded"
-                    />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">{item.productName}</p>
-                  <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
-                  <p className="text-sm font-bold text-[#2FA3E3]">
-                    ¥{item.price.toLocaleString()}
-                  </p>
-                </div>
+        <div
+          key={order.id}
+          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg hover:transform hover:-translate-y-1 transition-all duration-300"
+        >
+          {/* ヘッダー部分 */}
+          <div className="bg-gray-50 px-6 py-4 border-b">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-2">
+                <Calendar size={16} className="text-gray-400" />
+                <p className="text-sm text-gray-600">
+                  {formatDate(order.createdAt)}
+                </p>
               </div>
-            ))}
+              <div className="flex flex-col items-end gap-2">
+                <span className={`text-xs px-3 py-1 rounded-full font-semibold ${getStatusColor(order.orderStatus)}`}>
+                  {getOrderStatusLabel(order.orderStatus)}
+                </span>
+                <p className="text-xs text-gray-500">注文ID: {order.id.slice(0, 12)}...</p>
+              </div>
+            </div>
           </div>
 
-          {/* Footer with payment and shipping info */}
-          <div className="grid grid-cols-2 gap-4 text-sm pt-4 border-t">
-            <div className="flex items-center gap-2">
-              <CreditCard size={16} className="text-gray-400" />
-              <span className="text-gray-600">
-                {getPaymentMethodLabel(order.paymentMethod)}
+          {/* 商品リスト */}
+          <div className="p-6">
+            <div className="space-y-4 mb-4">
+              {order.items.map((item, index) => (
+                <Link
+                  key={index}
+                  href={`/product-detail/${item.productId}`}
+                  className="flex gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  {/* 商品画像 */}
+                  <div className="w-24 h-24 flex-shrink-0 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+                    {item.productImage ? (
+                      <Image
+                        src={item.productImage}
+                        alt={item.productName}
+                        width={96}
+                        height={96}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Fish size={32} className="text-gray-400" />
+                    )}
+                  </div>
+
+                  {/* 商品情報 */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-semibold text-gray-800 mb-1 line-clamp-2">
+                        {item.productName}
+                      </h3>
+                      <p className="text-sm text-gray-600">数量: {item.quantity}</p>
+                    </div>
+                    <p className="text-lg font-bold text-[#2FA3E3]">
+                      ¥{item.price.toLocaleString()}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* 区切り線 */}
+            <div className="border-t my-4"></div>
+
+            {/* 支払い情報と配送情報 */}
+            <div className="space-y-3">
+              {/* 支払い方法 */}
+              <div className="flex items-center gap-2 text-sm">
+                <CreditCard size={16} className="text-gray-400 flex-shrink-0" />
+                <span className="text-gray-600">
+                  {getPaymentMethodLabel(order.paymentMethod)}
+                </span>
+              </div>
+
+              {/* 追跡番号 */}
+              {order.trackingNumber && (
+                <div className="flex items-center gap-2 text-sm">
+                  <MapPin size={16} className="text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-600">
+                    追跡番号: {order.trackingNumber}
+                  </span>
+                </div>
+              )}
+
+              {/* 配送先住所 */}
+              {order.shippingAddress && (
+                <div className="flex items-start gap-2 text-sm">
+                  <MapPin size={16} className="text-gray-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-gray-600">
+                    <p>〒{order.shippingAddress.zipCode}</p>
+                    <p>
+                      {order.shippingAddress.prefecture}
+                      {order.shippingAddress.city}
+                      {order.shippingAddress.street}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 区切り線 */}
+            <div className="border-t my-4"></div>
+
+            {/* 合計金額 */}
+            <div className="flex justify-between items-center">
+              <span className="text-lg font-semibold text-gray-800">合計金額</span>
+              <span className="text-2xl font-bold text-[#2FA3E3]">
+                ¥{order.totalAmount.toLocaleString()}
               </span>
             </div>
-            {order.trackingNumber && (
-              <div className="flex items-center gap-2">
-                <MapPin size={16} className="text-gray-400" />
-                <span className="text-gray-600 text-xs">#{order.trackingNumber}</span>
-              </div>
-            )}
           </div>
         </div>
       ))}

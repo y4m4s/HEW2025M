@@ -5,7 +5,7 @@ import { Fish, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
-import ProductCard, { Product } from "./Productcard";
+import ProductCard, { Product } from "./ProductCard";
 import Button from "@/components/Button";
 
 interface Bookmark {
