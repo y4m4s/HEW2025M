@@ -3,11 +3,19 @@
 import { useState, useEffect } from 'react';
 import PostCard, { Post } from '@/components/PostCard';
 import Button from '@/components/Button';
+import CustomSelect from '@/components/CustomSelect';
 import { Fish, Plus, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useAuth } from "@/lib/useAuth";
+import { useRouter } from "next/navigation";
+import LoginRequiredModal from "@/components/LoginRequiredModal";
 
 export default function PostList() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('投稿');
   const [activeFilter, setActiveFilter] = useState('all');
   const [sortBy, setSortBy] = useState('latest');
   const [posts, setPosts] = useState<Post[]>([]);
@@ -33,6 +41,10 @@ export default function PostList() {
       }
       return null;
     } catch (error) {
+      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
+        return null;
+      }
       console.error('ユーザー情報取得エラー:', error);
       return null;
     }
@@ -45,7 +57,7 @@ export default function PostList() {
 
       const params = new URLSearchParams();
       if (activeFilter !== 'all') {
-        params.append('category', activeFilter);
+        params.append('tag', activeFilter);
       }
       if (keyword) {
         params.append('keyword', keyword);
@@ -87,10 +99,6 @@ export default function PostList() {
             id: post._id,
             title: post.title,
             excerpt: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
-            fishName: extractFishName(post.tags),
-            fishSize: extractFishSize(post.tags),
-            fishWeight: extractFishWeight(post.tags),
-            fishCount: extractFishCount(post.tags),
             location: post.address || '場所未設定',
             author: authorDisplayName,
             authorId: post.authorId,
@@ -102,7 +110,8 @@ export default function PostList() {
             isLiked: false,
             imageUrl: post.media && post.media.length > 0
               ? post.media.sort((a, b) => a.order - b.order)[0].url
-              : undefined
+              : undefined,
+            tags: post.tags || []
           };
         })
       );
@@ -121,30 +130,6 @@ export default function PostList() {
     fetchPosts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFilter, keyword]);
-
-  // タグから魚の名前を抽出
-  const extractFishName = (tags: string[] = []): string => {
-    const fishTag = tags.find(tag => tag.startsWith('魚:'));
-    return fishTag ? fishTag.replace('魚:', '') : '';
-  };
-
-  // タグからサイズを抽出
-  const extractFishSize = (tags: string[] = []): string => {
-    const sizeTag = tags.find(tag => tag.includes('cm'));
-    return sizeTag || '';
-  };
-
-  // タグから重さを抽出
-  const extractFishWeight = (tags: string[] = []): string => {
-    const weightTag = tags.find(tag => tag.includes('kg') || tag.includes('g'));
-    return weightTag || '';
-  };
-
-  // タグから匹数を抽出
-  const extractFishCount = (tags: string[] = []): string => {
-    const countTag = tags.find(tag => tag.includes('匹'));
-    return countTag || '';
-  };
 
   // 日付をフォーマット
   const formatDate = (dateString: string): string => {
@@ -170,10 +155,19 @@ export default function PostList() {
 
   const filterTabs = [
     { key: 'all', label: 'すべて' },
-    { key: 'sea', label: '海釣り' },
-    { key: 'river', label: '川釣り' },
-    { key: 'lure', label: 'ルアー' },
-    { key: 'bait', label: 'エサ釣り' }
+    { key: '釣行記', label: '釣行記' },
+    { key: '情報共有', label: '情報共有' },
+    { key: '質問', label: '質問' },
+    { key: 'レビュー', label: 'レビュー' },
+    { key: '雑談', label: '雑談' },
+    { key: '初心者向け', label: '初心者向け' },
+    { key: 'トラブル相談', label: 'トラブル相談' },
+    { key: '釣果報告', label: '釣果報告' }
+  ];
+
+  const SORT_OPTIONS = [
+    { label: '新着順', value: 'latest' },
+    { label: 'おすすめ順', value: 'popular' },
   ];
 
   // Pagination calculations
@@ -213,22 +207,31 @@ export default function PostList() {
     return pages;
   };
 
+  const handleNewPost = () => {
+    if (!user) {
+      setLoginRequiredAction('投稿');
+      setShowLoginModal(true);
+    } else {
+      router.push('/post');
+    }
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
 
-      <div className="flex-1 container mx-auto px-4 py-6">
+      <div className="flex-1 container mx-auto max-w-7xl px-4 py-6">
         <main>
           <div className="flex justify-between items-center mb-8">
             <div>
               <h2 className="flex items-center gap-3 text-2xl font-bold mb-2">
                 <Fish className="text-blue-600" />
-                釣果投稿一覧
+                投稿一覧
               </h2>
               <p className="text-gray-600">みんなの釣果や釣り場情報をチェック</p>
             </div>
 
             <Button
-              href="/post"
+              onClick={handleNewPost}
               variant="primary"
               size="md"
               icon={<Plus size={18} />}
@@ -253,8 +256,20 @@ export default function PostList() {
             </form>
           </div>
 
-          <div className="flex justify-between items-center mb-8">
-            <div className="flex gap-2">
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-700">タグで絞り込み</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">並び替え:</span>
+                <CustomSelect
+                  value={sortBy}
+                  onChange={setSortBy}
+                  options={SORT_OPTIONS}
+                  className="min-w-[200px]"
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
               {filterTabs.map((tab) => (
                 <Button
                   key={tab.key}
@@ -267,17 +282,6 @@ export default function PostList() {
                 </Button>
               ))}
             </div>
-
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-2 text-sm"
-            >
-              <option value="latest">新着順</option>
-              <option value="popular">人気順</option>
-              <option value="size">魚のサイズ順</option>
-              <option value="location">場所別</option>
-            </select>
           </div>
 
           {loading ? (
@@ -351,6 +355,11 @@ export default function PostList() {
         </main>
       </div>
 
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
+      />
     </div>
   );
 }

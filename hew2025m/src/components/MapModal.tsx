@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { X, MapPin, Navigation, Search } from 'lucide-react';
 import Button from './Button';
+import toast from 'react-hot-toast';
 
 const containerStyle = {
   width: '100%',
@@ -111,12 +112,11 @@ const MapModal: React.FC<MapModalProps> = ({
         setSelectedPosition(newCenter);
         // 住所を取得
         getAddressFromLatLng(newCenter.lat, newCenter.lng);
-      } else {
-        alert('指定された場所が見つかりませんでした。別の住所を試してください。');
       }
+      // 場所が見つからなくてもエラーは表示しない
     } catch (error) {
       console.error('場所の検索に失敗しました:', error);
-      alert('場所の検索に失敗しました。別の住所を試してください。');
+      // エラーが発生してもトーストは表示しない
     } finally {
       setIsSearching(false);
     }
@@ -151,11 +151,11 @@ const MapModal: React.FC<MapModalProps> = ({
         },
         (error) => {
           console.error('現在地の取得に失敗しました:', error);
-          alert('現在地を取得できませんでした。位置情報の使用を許可してください。');
+          toast.error('現在地を取得できませんでした。位置情報の使用を許可してください。');
         }
       );
     } else {
-      alert('お使いのブラウザは位置情報に対応していません。');
+      toast.error('お使いのブラウザは位置情報に対応していません。');
     }
   }, [getAddressFromLatLng]);
 
@@ -164,7 +164,7 @@ const MapModal: React.FC<MapModalProps> = ({
     if (selectedPosition) {
       // 住所が取得できていない場合は警告
       if (!address) {
-        alert('住所を取得できませんでした。別の位置を選択してください。');
+        toast.error('住所を取得できませんでした。別の位置を選択してください。');
         return;
       }
       onSelectLocation({
@@ -179,10 +179,10 @@ const MapModal: React.FC<MapModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-800/30 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full my-8">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[100vh] flex flex-col overflow-hidden">
         {/* ヘッダー */}
-        <div className="bg-gray-50 px-6 py-4 border-b flex justify-between items-center sticky top-0 z-10">
+        <div className="bg-gray-50 px-6 py-4 border-b flex justify-between items-center flex-shrink-0">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <MapPin size={20} className="text-blue-600" />
             位置情報を選択
@@ -196,7 +196,7 @@ const MapModal: React.FC<MapModalProps> = ({
         </div>
 
         {/* コンテンツ */}
-        <div className="p-6 max-h-[calc(90vh-140px)] overflow-y-auto">
+        <div className="px-6 py-3 overflow-y-auto flex-1">
           {/* 住所検索 */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -232,43 +232,21 @@ const MapModal: React.FC<MapModalProps> = ({
             </div>
           </div>
 
-          {/* 案内メッセージ */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <p className="text-sm text-blue-800 flex items-center gap-2">
-              <MapPin size={16} className="text-blue-600" />
-              地図上をクリックして位置を選択してください
-            </p>
-          </div>
-
           {/* 選択された住所（自動生成・表示専用） */}
-          {selectedPosition && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                選択された位置
-              </label>
-              <div className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800">
-                {isLoadingAddress ? (
-                  <span className="text-gray-500">住所を取得中...</span>
-                ) : (
-                  address || '住所を取得できませんでした'
-                )}
-              </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              選択された位置
+            </label>
+            <div className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800">
+              {isLoadingAddress ? (
+                <span className="text-gray-500">住所を取得中...</span>
+              ) : selectedPosition && address ? (
+                address
+              ) : (
+                <span className="text-gray-400">地図をクリックするか検索で位置情報を登録してください。</span>
+              )}
             </div>
-          )}
-
-          {/* 選択された位置情報（緯度経度） */}
-          {selectedPosition && (
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-                <div className="text-gray-600 text-xs mb-1">緯度</div>
-                <div className="font-medium text-sm">{selectedPosition.lat.toFixed(6)}</div>
-              </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-                <div className="text-gray-600 text-xs mb-1">経度</div>
-                <div className="font-medium text-sm">{selectedPosition.lng.toFixed(6)}</div>
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* マップ */}
           <div className="mb-4">
@@ -279,42 +257,45 @@ const MapModal: React.FC<MapModalProps> = ({
                   center={mapCenter}
                   zoom={selectedPosition ? 15 : 12}
                   onClick={handleMapClick}
+                  options={{
+                    mapTypeControl: false,
+                  }}
                 >
                   {selectedPosition && <Marker position={selectedPosition} />}
                 </GoogleMap>
               </div>
             ) : (
-              <div className="h-[500px] bg-gray-100 rounded-lg flex items-center justify-center">
+              <div className="h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
                 <p className="text-gray-500">マップを読み込み中...</p>
               </div>
             )}
           </div>
+        </div>
 
-          {/* フッター */}
-          <div className="bg-gray-50 px-6 py-4 border-t flex justify-between">
-            {/* 現在地ボタン */}
-            <Button
-              variant="outline"
-              size="md"
-              onClick={handleGetCurrentLocation}
-              icon={<Navigation size={16} />}
-              className="w-full sm:w-auto"
-            >
-              現在地を取得
+        {/* フッター */}
+        <div className="bg-gray-50 px-6 py-4 border-t flex justify-between items-center flex-shrink-0 gap-3">
+          {/* 現在地ボタン */}
+          <Button
+            variant="outline"
+            size="md"
+            onClick={handleGetCurrentLocation}
+            icon={<Navigation size={16} />}
+            className="w-full sm:w-auto"
+          >
+            現在地を取得
+          </Button>
+          <div className="flex gap-3">
+            <Button variant="outline" size="md" onClick={onClose}>
+              キャンセル
             </Button>
-            <div className="flex gap-3">
-              <Button variant="outline" size="md" onClick={onClose}>
-                キャンセル
-              </Button>
-              <Button
-                variant="primary"
-                size="md"
-                onClick={handleConfirm}
-                disabled={!selectedPosition || !address || isLoadingAddress}
-              >
-                この位置に決定
-              </Button>
-            </div>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleConfirm}
+              disabled={!selectedPosition || !address || isLoadingAddress}
+            >
+              この位置に決定
+            </Button>
           </div>
         </div>
       </div>

@@ -1,23 +1,66 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import ProductCard, { Product } from '@/components/ProductCard';
+import { useRouter } from 'next/navigation';
+import ProductCard, { Product } from '@/components/Productcard';
 import Button from '@/components/Button';
-import { Fish, Search, MapPin, Users, ArrowRight, Circle, Bug, Package, Shirt, Ship, Zap, Info } from 'lucide-react';
+
+import { Fish, Search, MapPin, Users, ArrowRight, Puzzle } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
+import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from 'react-icons/gi';
+import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
+import { SiHelix } from 'react-icons/si';
+
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useAuth } from '@/lib/useAuth';
+import LoginRequiredModal from '@/components/LoginRequiredModal';
 
 export default function Home() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
 
-  useEffect(() => {
-    fetchFeaturedProducts();
+  // 状態を日本語に変換
+  const formatCondition = useCallback((cond: string): string => {
+    const conditionMap: Record<string, string> = {
+      'new': '新品・未使用',
+      'like-new': '未使用に近い',
+      'good': '目立った傷汚れなし',
+      'fair': 'やや傷や汚れあり',
+      'poor': '傷や汚れあり'
+    };
+    return conditionMap[cond] || cond;
+  }, []);
+
+  // 日付をフォーマット
+  const formatDate = useCallback((dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return '今日';
+    } else if (diffDays === 1) {
+      return '昨日';
+    } else if (diffDays < 7) {
+      return `${diffDays}日前`;
+    } else {
+      return date.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
   }, []);
 
   // Firestoreからユーザー情報を取得
-  const fetchUserProfile = async (sellerId: string) => {
+  const fetchUserProfile = useCallback(async (sellerId: string) => {
     try {
       const uid = sellerId.startsWith('user-') ? sellerId.replace('user-', '') : sellerId;
       const userDocRef = doc(db, 'users', uid);
@@ -32,12 +75,16 @@ export default function Home() {
       }
       return null;
     } catch (error) {
+      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
+        return null;
+      }
       console.error('ユーザー情報取得エラー:', error);
       return null;
     }
-  };
+  }, []);
 
-  const fetchFeaturedProducts = async () => {
+  const fetchFeaturedProducts = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -92,41 +139,11 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchUserProfile, formatCondition, formatDate]);
 
-  // 状態を日本語に変換
-  const formatCondition = (cond: string): string => {
-    const conditionMap: Record<string, string> = {
-      'new': '新品・未使用',
-      'like-new': '未使用に近い',
-      'good': '目立った傷汚れなし',
-      'fair': 'やや傷や汚れあり',
-      'poor': '傷や汚れあり'
-    };
-    return conditionMap[cond] || cond;
-  };
-
-  // 日付をフォーマット
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      return '今日';
-    } else if (diffDays === 1) {
-      return '昨日';
-    } else if (diffDays < 7) {
-      return `${diffDays}日前`;
-    } else {
-      return date.toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    }
-  };
+  useEffect(() => {
+    fetchFeaturedProducts();
+  }, [fetchFeaturedProducts]);
 
   return (
     <div>
@@ -148,10 +165,23 @@ export default function Home() {
                 釣り人の集まる街「ツリマチ」で、もっと釣りを楽しもう。
               </p>
               <div className="flex gap-5 flex-wrap">
-                <Button href="/sell" variant="primary" size="lg" className="bg-white text-[#2FA3E3] hover:shadow-xl" icon={<Fish size={20} />}>
-                  釣り用品を出品
+                <Button
+                  onClick={() => {
+                    if (!user) {
+                      setLoginRequiredAction('商品を出品');
+                      setShowLoginModal(true);
+                    } else {
+                      router.push('/sell');
+                    }
+                  }}
+                  variant="primary"
+                  size="lg"
+                  className="bg-white text-[#2FA3E3] hover:shadow-xl py-5 px-9"
+                  icon={<Fish size={20} />}
+                >
+                  商品を出品
                 </Button>
-                <Button href="/productList" variant="outline" size="lg" className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-[#2FA3E3]" icon={<Search size={20} />}>
+                <Button href="/productList" variant="outline" size="lg" className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-[#2FA3E3] py-5 px-9" icon={<Search size={20} />}>
                   用品を探す
                 </Button>
               </div>
@@ -166,11 +196,11 @@ export default function Home() {
                   <span>釣竿</span>
                 </div>
                 <div className="absolute bottom-[30%] left-[5%] bg-white text-[#2FA3E3] py-4 px-5 rounded-2xl shadow-lg flex items-center gap-3 font-bold animate-[float_3s_ease-in-out_infinite] [animation-delay:1s]">
-                  <Circle size={20} />
+                  <FaTape size={20} />
                   <span>リール</span>
                 </div>
                 <div className="absolute top-[60%] right-[20%] bg-white text-[#2FA3E3] py-4 px-5 rounded-2xl shadow-lg flex items-center gap-3 font-bold animate-[float_3s_ease-in-out_infinite] [animation-delay:2s]">
-                  <Bug size={20} />
+                  <GiFishingLure size={20} />
                   <span>ルアー</span>
                 </div>
               </div>
@@ -189,7 +219,7 @@ export default function Home() {
             <Link href="/productList?category=rod">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Fish size={28} />
+                  <GiFishingPole size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ロッド/竿</h4>
                 <p className="text-gray-600 text-sm mb-3">海釣り・川釣り用</p>
@@ -200,7 +230,7 @@ export default function Home() {
             <Link href="/productList?category=reel">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Circle size={28} />
+                  <FaTape size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>リール</h4>
                 <p className="text-gray-600 text-sm mb-3">スピニング・ベイト</p>
@@ -211,7 +241,7 @@ export default function Home() {
             <Link href="/productList?category=lure">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Bug size={28} />
+                  <GiFishingLure size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ルアー</h4>
                 <p className="text-gray-600 text-sm mb-3">ハード・ソフト</p>
@@ -222,7 +252,7 @@ export default function Home() {
             <Link href="/productList?category=line">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Zap size={28} />
+                  <SiHelix size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ライン/糸</h4>
                 <p className="text-gray-600 text-sm mb-3">各種ライン</p>
@@ -233,7 +263,7 @@ export default function Home() {
             <Link href="/productList?category=hook">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Search size={28} />
+                  <GiFishingHook size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ハリ/針</h4>
                 <p className="text-gray-600 text-sm mb-3">各種フック</p>
@@ -244,7 +274,7 @@ export default function Home() {
             <Link href="/productList?category=bait">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Fish size={28} className="rotate-45" />
+                  <GiEarthWorm size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>餌</h4>
                 <p className="text-gray-600 text-sm mb-3">生餌・練り餌</p>
@@ -255,7 +285,7 @@ export default function Home() {
             <Link href="/productList?category=wear">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Shirt size={28} />
+                  <FaTshirt size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>ウェア</h4>
                 <p className="text-gray-600 text-sm mb-3">服・装備品</p>
@@ -266,7 +296,7 @@ export default function Home() {
             <Link href="/productList?category=set">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Package size={28} />
+                  <FaBox size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>セット用品</h4>
                 <p className="text-gray-600 text-sm mb-3">まとめてお得</p>
@@ -277,7 +307,7 @@ export default function Home() {
             <Link href="/productList?category=service">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Users size={28} />
+                  <GiSpanner size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>サービス</h4>
                 <p className="text-gray-600 text-sm mb-3">ガイド・修理</p>
@@ -288,7 +318,7 @@ export default function Home() {
             <Link href="/productList?category=other">
               <div className="bg-white p-6 rounded-2xl shadow-lg transition-all duration-300 text-center relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#2FA3E3] before:to-[#007bff] before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-16 h-16 bg-gradient-to-r from-[#2FA3E3] to-[#007bff] rounded-full flex items-center justify-center mx-auto mb-4 text-white">
-                  <Info size={28} />
+                  <Puzzle size={28} />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-gray-800" style={{fontFamily: "せのびゴシック, sans-serif"}}>その他</h4>
                 <p className="text-gray-600 text-sm mb-3">その他の用品</p>
@@ -342,7 +372,7 @@ export default function Home() {
             <Link href="/postList">
               <div className="bg-white text-center py-8 px-5 rounded-2xl shadow-lg transition-all duration-300 relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl cursor-pointer before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-green-500 before:to-emerald-500 before:scale-x-0 before:transition-transform before:duration-300 hover:before:scale-x-100">
                 <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
-                  <Fish size={32} />
+                  <MessageSquare size={32} />
                 </div>
                 <h4 className="text-xl font-bold mb-4 text-gray-800">釣果情報</h4>
                 <p className="text-gray-600 leading-relaxed">みんなの釣行記録をチェック</p>
@@ -370,24 +400,63 @@ export default function Home() {
         </section>
 
         {/* CTA セクション */}
-        <section className="bg-gradient-to-r from-gray-700 to-gray-600 text-white py-20 rounded-3xl text-center mb-10 relative overflow-hidden before:absolute before:top-[-50%] before:left-[-50%] before:w-[200%] before:h-[200%] before:bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,transparent_70%)] before:animate-[spin_20s_linear_infinite]">
-          <div className="relative z-10">
-            <h3 className="text-3xl lg:text-4xl font-bold mb-5" style={{fontFamily: "せのびゴシック, sans-serif"}}>釣り人のコミュニティに参加しよう</h3>
-            <p className="text-lg mb-10 opacity-90">
-              無料で簡単に始められます。あなたの釣り用品を必要な人に届けませんか？
-            </p>
-            <div className="flex gap-5 justify-center flex-wrap">
-              <Button href="/register" variant="primary" size="lg" className="py-5 px-9" icon={<Fish size={20} />}>
-                釣り人として参加
-              </Button>
-              <Button href="/productList" variant="outline" size="lg" className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-gray-700 py-5 px-9" icon={<Search size={20} />}>
-                釣り用品を探す
-              </Button>
+        {!user ? (
+          // 未ログインユーザー向け：参加を促すCTA
+          <section className="bg-gradient-to-r from-gray-700 to-gray-600 text-white py-20 rounded-3xl text-center mb-10 relative overflow-hidden before:absolute before:top-[-50%] before:left-[-50%] before:w-[200%] before:h-[200%] before:bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,transparent_70%)] before:animate-[spin_20s_linear_infinite]">
+            <div className="relative z-10">
+              <h3 className="text-3xl lg:text-4xl font-bold mb-5" style={{fontFamily: "せのびゴシック, sans-serif"}}>釣り人のコミュニティに参加しよう</h3>
+              <p className="text-lg mb-10 opacity-90">
+                無料で簡単に始められます。あなたの釣り用品を必要な人に届けませんか？
+              </p>
+              <div className="flex gap-5 justify-center flex-wrap">
+                <Button href="/register" variant="primary" size="lg" className="py-5 px-9" icon={<Fish size={20} />}>
+                  釣り人として参加
+                </Button>
+                <Button href="/productList" variant="outline" size="lg" className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-gray-700 py-5 px-9" icon={<Search size={20} />}>
+                  釣り用品を探す
+                </Button>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ) : (
+          // ログイン済みユーザー向け：出品や活動を促すCTA
+          <section className="bg-gradient-to-r from-[#2FA3E3] to-[#007bff] text-white py-20 rounded-3xl text-center mb-10 relative overflow-hidden before:absolute before:top-[-50%] before:left-[-50%] before:w-[200%] before:h-[200%] before:bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,transparent_70%)] before:animate-[spin_20s_linear_infinite]">
+            <div className="relative z-10">
+              <h3 className="text-3xl lg:text-4xl font-bold mb-5" style={{fontFamily: "せのびゴシック, sans-serif"}}>もっと釣りを楽しもう！</h3>
+              <p className="text-lg mb-10 opacity-90">
+                使わなくなった釣り用品を出品したり、釣果情報をシェアしたりして、コミュニティを盛り上げましょう！
+              </p>
+              <div className="flex gap-5 justify-center flex-wrap">
+                <Button
+                  onClick={() => router.push('/sell')}
+                  variant="primary"
+                  size="lg"
+                  className="bg-white text-[#2FA3E3] hover:shadow-xl py-5 px-9"
+                  icon={<Fish size={20} />}
+                >
+                  商品を出品
+                </Button>
+                <Button
+                  onClick={() => router.push('/post')}
+                  variant="outline"
+                  size="lg"
+                  className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-[#2FA3E3] py-5 px-9"
+                  icon={<MessageSquare size={20} />}
+                >
+                  釣果を投稿
+                </Button>
+              </div>
+            </div>
+          </section>
+        )}
       </main>
 
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
+      />
     </div>
   );
 }

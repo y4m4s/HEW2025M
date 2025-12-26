@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/useAuth';
 import { collection, query, where, getDocs, doc, getDoc, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { createFollowNotification } from '@/lib/notifications';
+import toast from 'react-hot-toast';
 
 interface UserInfo {
   uid: string;
@@ -208,7 +209,7 @@ export default function FollowListModal({ isOpen, onClose, userId, type: initial
       }
     } catch (error) {
       console.error('フォロー処理エラー:', error);
-      alert('フォロー処理に失敗しました');
+      toast.error('フォロー処理に失敗しました');
     }
   };
 

@@ -8,8 +8,10 @@ import Button from '@/components/Button';
 import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
 import CancelModal from '@/components/CancelModal';
+import LoginRequiredModal from '@/components/LoginRequiredModal';
 import UserInfoCard from '@/components/UserInfoCard';
 import LikedUsersModal from '@/components/LikedUsersModal';
+import { createPostLikeNotification, deletePostLikeNotification } from '@/lib/notifications';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -69,6 +71,10 @@ export default function PostDetailPage() {
   } | null>(null);
   const [authorProfileLoading, setAuthorProfileLoading] = useState(false);
 
+  // ログイン必須モーダル
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
+
   const fetchAuthorProfile = async (authorId: string) => {
     try {
       setAuthorProfileLoading(true);
@@ -87,7 +93,12 @@ export default function PostDetailPage() {
         });
       }
     } catch (error) {
-      console.error('投稿者プロフィール取得エラー:', error);
+      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
+        // エラーを静かに処理
+      } else {
+        console.error('投稿者プロフィール取得エラー:', error);
+      }
     } finally {
       setAuthorProfileLoading(false);
     }
@@ -143,8 +154,8 @@ export default function PostDetailPage() {
   // いいねをトグル
   const handleLikeToggle = async () => {
     if (!user) {
-      toast.error('いいねするにはログインが必要です');
-      router.push('/login');
+      setLoginRequiredAction('いいね');
+      setShowLoginModal(true);
       return;
     }
     if (!post) return;
@@ -159,6 +170,13 @@ export default function PostDetailPage() {
         if (!response.ok) throw new Error('いいねの削除に失敗しました');
         setIsLiked(false);
         setLikesCount((prev) => Math.max(0, prev - 1));
+
+        // 通知を削除
+        if (post.authorId !== user.uid && post.authorId !== `user-${user.uid}`) {
+          const authorId = post.authorId.startsWith('user-') ? post.authorId.replace('user-', '') : post.authorId;
+          deletePostLikeNotification(authorId, user.uid, params.id as string);
+        }
+
         toast.success('いいねを取り消しました');
       } else {
         // いいねを追加
@@ -177,6 +195,19 @@ export default function PostDetailPage() {
         }
         setIsLiked(true);
         setLikesCount((prev) => prev + 1);
+
+        // 通知を作成
+        if (post.authorId !== user.uid && post.authorId !== `user-${user.uid}`) {
+          const authorId = post.authorId.startsWith('user-') ? post.authorId.replace('user-', '') : post.authorId;
+          createPostLikeNotification(
+            authorId,
+            user.uid,
+            user.displayName || user.email?.split('@')[0] || '名無しユーザー',
+            params.id as string,
+            post.title
+          );
+        }
+
         toast.success('いいねしました');
       }
     } catch (error) {
@@ -230,7 +261,7 @@ export default function PostDetailPage() {
 
     // 自分の投稿かどうか確認
     if (post.authorId !== user.uid && post.authorId !== `user-${user.uid}`) {
-      alert('自分の投稿のみ削除できます');
+      toast.error('自分の投稿のみ削除できます');
       return;
     }
 
@@ -255,30 +286,30 @@ export default function PostDetailPage() {
       router.push('/community');
     } catch (err) {
       console.error('投稿削除エラー:', err);
-      alert(err instanceof Error ? err.message : '投稿の削除に失敗しました');
+      toast.error(err instanceof Error ? err.message : '投稿の削除に失敗しました');
     } finally {
       setDeleting(false);
     }
   };
 
   // カルーセルのナビゲーション
-    const nextSlide = () => {
-      if (post?.media && post.media.length > 0) {
-        const len = post.media.length;
-        setCurrentSlide((prev) => (prev + 1) % len);
-      }
-    };
-  
-    const prevSlide = () => {
-      if (post?.media && post.media.length > 0) {
-        const len = post.media.length;
-        setCurrentSlide((prev) => (prev - 1 + len) % len);
-      }
-    };
-  
-    const goToSlide = (index: number) => {
-      setCurrentSlide(index);
-    };
+  const nextSlide = () => {
+    if (post?.media && post.media.length > 0) {
+      const len = post.media.length;
+      setCurrentSlide((prev) => (prev + 1) % len);
+    }
+  };
+
+  const prevSlide = () => {
+    if (post?.media && post.media.length > 0) {
+      const len = post.media.length;
+      setCurrentSlide((prev) => (prev - 1 + len) % len);
+    }
+  };
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+  };
 
   // 画像クリック時にモーダルを開く
   const handleImageClick = (index: number) => {
@@ -318,7 +349,7 @@ export default function PostDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto max-w-4xl px-4 py-8">
         <Button
           onClick={() => router.back()}
           variant="ghost"
@@ -413,9 +444,8 @@ export default function PostDetailPage() {
                     <button
                       key={index}
                       onClick={() => goToSlide(index)}
-                      className={`w-3 h-3 rounded-full transition-colors ${
-                        currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
-                      }`}
+                      className={`w-3 h-3 rounded-full transition-colors ${currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
+                        }`}
                     />
                   ))}
                 </div>
@@ -507,7 +537,12 @@ export default function PostDetailPage() {
         {/* コメントセクション */}
         <section id="comment-section" className="mt-8 bg-white rounded-lg shadow-md p-6">
           <h3 className="text-xl font-bold mb-4">コメント</h3>
-          <Comment postId={params.id as string} onCommentCountChange={setCommentCount} />
+          <Comment
+            postId={params.id as string}
+            itemOwnerId={post.authorId.startsWith('user-') ? post.authorId.replace('user-', '') : post.authorId}
+            itemTitle={post.title}
+            onCommentCountChange={setCommentCount}
+          />
         </section>
       </div>
 
@@ -572,6 +607,13 @@ export default function PostDetailPage() {
         isOpen={showLikedUsersModal}
         onClose={() => setShowLikedUsersModal(false)}
         postId={params.id as string}
+      />
+
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
       />
     </div>
   );

@@ -33,7 +33,7 @@ let db: Firestore;
 try {
   // 既に初期化されているか確認
   db = getFirestore(app);
-} catch (e) {
+} catch {
   // 新規初期化（最もシンプルな設定）
   db = initializeFirestore(app, {
     ignoreUndefinedProperties: true,

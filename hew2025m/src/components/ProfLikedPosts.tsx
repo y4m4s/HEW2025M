@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Fish } from "lucide-react";
+import { Fish, ChevronLeft, ChevronRight } from "lucide-react";
 import PostCard, { Post } from "./PostCard";
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import Button from "@/components/Button";
 
 interface LikedPost {
   _id: string;
@@ -36,6 +37,8 @@ export default function ProfLikedPosts({ onCountChange, userId }: ProfLikedPosts
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
 
   // Firestoreからユーザー情報を取得
   const fetchUserProfile = async (authorId: string) => {
@@ -53,6 +56,10 @@ export default function ProfLikedPosts({ onCountChange, userId }: ProfLikedPosts
       }
       return null;
     } catch (error) {
+      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+      if ((error as any)?.code === 'permission-denied') {
+        return null;
+      }
       console.error('ユーザー情報取得エラー:', error);
       return null;
     }
@@ -148,11 +155,83 @@ export default function ProfLikedPosts({ onCountChange, userId }: ProfLikedPosts
     );
   }
 
+  // ページネーション計算
+  const totalPages = Math.ceil(posts.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedPosts = posts.slice(startIndex, endIndex);
+
+  // ページ番号配列を生成
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push('...');
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+        pages.push(i);
+      }
+      if (currentPage < totalPages - 2) pages.push('...');
+      pages.push(totalPages);
+    }
+    return pages;
+  };
+
   return (
-    <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {posts.map((post) => (
-        <PostCard key={post.id} post={post} variant="default" />
-      ))}
+    <div className="p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {paginatedPosts.map((post) => (
+          <PostCard key={post.id} post={post} variant="default" />
+        ))}
+      </div>
+
+      {/* ページネーション */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2">
+          <Button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+            variant="ghost"
+            size="sm"
+            className={currentPage === 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}
+            icon={<ChevronLeft size={16} />}
+          >
+            前へ
+          </Button>
+
+          <div className="flex gap-2">
+            {getPageNumbers().map((page, index) => (
+              page === '...' ? (
+                <span key={`ellipsis-${index}`} className="px-2 flex items-center">...</span>
+              ) : (
+                <Button
+                  key={page}
+                  onClick={() => setCurrentPage(page as number)}
+                  variant={currentPage === page ? "primary" : "ghost"}
+                  size="sm"
+                  className={currentPage === page ? "w-8 h-8 p-0" : "w-8 h-8 p-0 bg-gray-100 hover:bg-gray-200"}
+                >
+                  {page}
+                </Button>
+              )
+            ))}
+          </div>
+
+          <Button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+            variant="ghost"
+            size="sm"
+            className={currentPage === totalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}
+            icon={<ChevronRight size={16} />}
+          >
+            次へ
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

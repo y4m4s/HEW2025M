@@ -2,10 +2,12 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
-import { User, Send, Search, Menu, X } from 'lucide-react';
+import { User, Send, Search, Menu, X, Plus } from 'lucide-react';
 import Image from 'next/image';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/useAuth';
+import toast from 'react-hot-toast';
+import ImageModal from '@/components/ImageModal';
 import {
   collection,
   addDoc,
@@ -25,6 +27,7 @@ interface Message {
   senderId: string;
   content: string;
   timestamp: string;
+  imageUrl?: string;
 }
 
 // Firestoreのユーザー情報を表す型
@@ -45,6 +48,7 @@ interface Conversation {
   username?: string;
   bio?: string;
   lastMessageTime?: Date;
+  unreadCount?: number;
 }
 
 // 一貫性のある一意のチャットルームIDを作成する関数
@@ -76,8 +80,24 @@ export default function MessagePage() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showProfileSidebar, setShowProfileSidebar] = useState(false);
 
+  // 画像添付用の状態
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 画像モーダル用の状態
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [modalImageUrl, setModalImageUrl] = useState<string>('');
+
   // URLクエリパラメータから userId を取得して、自動的にユーザーを選択（初回のみ）
   const hasLoadedFromUrl = useRef(false);
+
+  // 認証チェック：未ログインならログインページへリダイレクト
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     const userId = searchParams.get('userId');
@@ -189,6 +209,7 @@ export default function MessagePage() {
                 username: partnerData.username || '',
                 bio: partnerData.bio || '',
                 lastMessageTime: data.lastMessageTime?.toDate() || new Date(),
+                unreadCount: data.unreadCount || 0,
               };
             }
           } catch (error) {
@@ -204,6 +225,7 @@ export default function MessagePage() {
             username: data.partnerUsername || '',
             bio: data.partnerBio || '',
             lastMessageTime: data.lastMessageTime?.toDate() || new Date(),
+            unreadCount: data.unreadCount || 0,
           };
         })
       );
@@ -282,6 +304,13 @@ export default function MessagePage() {
     const partnerId = selectedUser.id;
     const chatRoomId = getChatRoomId(MY_USER_ID, partnerId);
 
+    // チャットルームを開いたら未読カウントを0にリセット
+    const clearUnreadCount = async () => {
+      const conversationRef = doc(db, 'users', MY_USER_ID, 'conversations', partnerId);
+      await setDoc(conversationRef, { unreadCount: 0 }, { merge: true });
+    };
+    clearUnreadCount();
+
     // 参照はチャットルーム内のサブコレクション 'messages' を指すようになります
     const messagesRef = collection(db, 'chatRooms', chatRoomId, 'messages');
     const q = query(messagesRef, orderBy('timestamp', 'asc'));
@@ -293,6 +322,7 @@ export default function MessagePage() {
           id: doc.id,
           senderId: data.senderId,
           content: data.content,
+          imageUrl: data.imageUrl,
           timestamp:
             data.timestamp instanceof Timestamp
               ? data.timestamp.toDate().toLocaleTimeString('ja-JP', {
@@ -318,7 +348,8 @@ export default function MessagePage() {
         preview: `@${u.username}`,
         photoURL: u.photoURL,
         username: u.username,
-        bio: '' // 検索時はbioを取得しない
+        bio: '', // 検索時はbioを取得しない
+        unreadCount: 0 // 検索結果には未読カウント表示しない
       }));
     }
     return conversations;
@@ -375,89 +406,147 @@ export default function MessagePage() {
     prevMessagesLength.current = messages.length;
   }, [messages]);
 
+  // 画像選択ハンドラー
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // 画像削除ハンドラー
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // 画像クリック時のハンドラー
+  const handleImageClick = (imageUrl: string) => {
+    setModalImageUrl(imageUrl);
+    setIsImageModalOpen(true);
+  };
+
   // メッセージ送信処理
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || !selectedUser || !user) return;
+    // テキストまたは画像のいずれかが必要
+    if ((!inputValue.trim() && !selectedImage) || !selectedUser || !user) return;
 
-    // 正しいチャットルームIDを取得します
-    const MY_USER_ID = user.uid;
-    const partnerId = selectedUser.id;
-    const chatRoomId = getChatRoomId(MY_USER_ID, partnerId);
+    // 文字数制限チェック
+    if (inputValue.length > 500) return;
 
-    // 正しいサブコレクションへの参照
-    const messagesRef = collection(db, 'chatRooms', chatRoomId, 'messages');
+    try {
+      // 正しいチャットルームIDを取得します
+      const MY_USER_ID = user.uid;
+      const partnerId = selectedUser.id;
+      const chatRoomId = getChatRoomId(MY_USER_ID, partnerId);
 
-    // 送信者の実際のIDを保存します
-    const newMessage = {
-      senderId: MY_USER_ID,
-      content: inputValue.trim(),
-      timestamp: new Date(),
-    };
+      // 画像をアップロード（画像が選択されている場合）
+      let imageUrl: string | undefined;
+      if (selectedImage) {
+        const formData = new FormData();
+        formData.append('file', selectedImage);
+        formData.append('senderId', MY_USER_ID);
+        formData.append('chatRoomId', chatRoomId);
 
-    await addDoc(messagesRef, newMessage);
+        const uploadResponse = await fetch('/api/upload-message-image', {
+          method: 'POST',
+          body: formData,
+        });
 
-    // --- 会話履歴を両方のユーザーに保存 ---
-    const messageContent = inputValue.trim();
-    const messageTime = new Date();
+        if (!uploadResponse.ok) {
+          throw new Error('画像のアップロードに失敗しました');
+        }
 
-    // 相手のユーザー情報を取得
-    const partnerDocRef = doc(db, 'users', partnerId);
-    const partnerDoc = await getDoc(partnerDocRef);
-    const partnerData = partnerDoc.data();
+        const uploadData = await uploadResponse.json();
+        imageUrl = uploadData.imageUrl;
+      }
 
-    // 自分のユーザー情報を取得（Firestoreから）
-    const myDocRef = doc(db, 'users', MY_USER_ID);
-    const myDoc = await getDoc(myDocRef);
-    const myData = myDoc.data();
+      // 正しいサブコレクションへの参照
+      const messagesRef = collection(db, 'chatRooms', chatRoomId, 'messages');
 
-    // 相手の通知コレクションへの参照を作成
-    const notificationRef = collection(db, 'users', partnerId, 'notifications');
+      // 送信者の実際のIDを保存します
+      const newMessage: {
+        senderId: string;
+        content: string;
+        timestamp: Date;
+        imageUrl?: string;
+      } = {
+        senderId: MY_USER_ID,
+        content: inputValue.trim(),
+        timestamp: new Date(),
+      };
 
-    // 通知ドキュメントのデータを準備
-    const notificationData = {
-      iconType: 'message' as const,
-      iconBgColor: 'bg-green-500',
-      title: `${myData?.displayName || user.displayName || '不明なユーザー'}さんから新しいメッセージ`,
-      description: inputValue.trim(),
-      timestamp: new Date(),
-      tag: 'メッセージ',
-      isUnread: true,
-      linkUserId: MY_USER_ID, // 送信者のIDを保存（メッセージページで使用）
-    };
+      if (imageUrl) {
+        newMessage.imageUrl = imageUrl;
+      }
 
-    // 通知ドキュメントを作成
-    await addDoc(notificationRef, notificationData);
+      await addDoc(messagesRef, newMessage);
 
-    // 自分の会話リストを更新（相手の情報を保存）
-    await setDoc(
-      doc(db, 'users', MY_USER_ID, 'conversations', partnerId),
-      {
-        partnerName: partnerData?.displayName || selectedUser.name,
-        partnerUsername: partnerData?.username || '',
-        partnerPhotoURL: partnerData?.photoURL || '',
-        partnerBio: partnerData?.bio || '',
-        lastMessage: messageContent,
-        lastMessageTime: messageTime,
-      },
-      { merge: true }
-    );
+      // --- 会話履歴を両方のユーザーに保存 ---
+      const messageContent = inputValue.trim() || '画像を送信しました';
+      const messageTime = new Date();
 
-    // 相手の会話リストを更新（自分の情報を保存）
-    await setDoc(
-      doc(db, 'users', partnerId, 'conversations', MY_USER_ID),
-      {
-        partnerName: myData?.displayName || user.displayName || '不明なユーザー',
-        partnerUsername: myData?.username || '',
-        partnerPhotoURL: myData?.photoURL || user.photoURL || '',
-        partnerBio: myData?.bio || '',
-        lastMessage: messageContent,
-        lastMessageTime: messageTime,
-      },
-      { merge: true }
-    );
+      // 相手のユーザー情報を取得
+      const partnerDocRef = doc(db, 'users', partnerId);
+      const partnerDoc = await getDoc(partnerDocRef);
+      const partnerData = partnerDoc.data();
 
-    setInputValue('');
+      // 自分のユーザー情報を取得（Firestoreから）
+      const myDocRef = doc(db, 'users', MY_USER_ID);
+      const myDoc = await getDoc(myDocRef);
+      const myData = myDoc.data();
 
+      // 自分の会話リストを更新（相手の情報を保存）
+      await setDoc(
+        doc(db, 'users', MY_USER_ID, 'conversations', partnerId),
+        {
+          partnerName: partnerData?.displayName || selectedUser.name,
+          partnerUsername: partnerData?.username || '',
+          partnerPhotoURL: partnerData?.photoURL || '',
+          partnerBio: partnerData?.bio || '',
+          lastMessage: messageContent,
+          lastMessageTime: messageTime,
+          unreadCount: 0, // 自分が送信したので未読カウント0
+        },
+        { merge: true }
+      );
+
+      // 相手の会話リストを更新（自分の情報を保存）& 未読カウントを増やす
+      const partnerConversationRef = doc(db, 'users', partnerId, 'conversations', MY_USER_ID);
+      const partnerConversationDoc = await getDoc(partnerConversationRef);
+      const currentUnreadCount = partnerConversationDoc.exists()
+        ? (partnerConversationDoc.data().unreadCount || 0)
+        : 0;
+
+      await setDoc(
+        partnerConversationRef,
+        {
+          partnerName: myData?.displayName || user.displayName || '不明なユーザー',
+          partnerUsername: myData?.username || '',
+          partnerPhotoURL: myData?.photoURL || user.photoURL || '',
+          partnerBio: myData?.bio || '',
+          lastMessage: messageContent,
+          lastMessageTime: messageTime,
+          unreadCount: currentUnreadCount + 1, // 未読カウントを増やす
+        },
+        { merge: true }
+      );
+
+      // 入力をクリア
+      setInputValue('');
+      handleRemoveImage();
+    } catch (error) {
+      console.error('メッセージ送信エラー:', error);
+      toast.error('メッセージの送信に失敗しました。');
+    }
   };
 
   if (authLoading) {
@@ -523,7 +612,7 @@ export default function MessagePage() {
             conversationList.map((convo) => (
               <div
                 key={convo.id}
-                className={`flex items-center p-4 cursor-pointer border-l-4 transition-colors duration-150 ${selectedUser?.id === convo.id
+                className={`flex items-center p-4 cursor-pointer border-l-4 transition-colors duration-150 relative ${selectedUser?.id === convo.id
                   ? 'bg-blue-50 border-blue-500'
                   : 'border-transparent hover:bg-gray-100'
                   }`}
@@ -543,10 +632,16 @@ export default function MessagePage() {
                     <User size={20} className="text-gray-600" />
                   )}
                 </div>
-                <div className="overflow-hidden">
+                <div className="overflow-hidden flex-1">
                   <h3 className="text-md font-semibold text-gray-900">{convo.name}</h3>
                   <p className="text-sm text-gray-500 truncate">{convo.preview}</p>
                 </div>
+                {/* 未読バッジ */}
+                {convo.unreadCount && convo.unreadCount > 0 ? (
+                  <div className="bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 ml-2">
+                    {convo.unreadCount > 99 ? '99+' : convo.unreadCount}
+                  </div>
+                ) : null}
               </div>
             ))
           )}
@@ -619,11 +714,26 @@ export default function MessagePage() {
                   return (
                     <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                       <div className="flex flex-col max-w-[70%] md:max-w-[60%] lg:max-w-md">
-                        <div className={`rounded-lg px-4 py-3 shadow-sm break-words ${isMe
+                        <div className={`rounded-lg shadow-sm break-words overflow-hidden ${isMe
                           ? 'bg-[#2FA3E3] text-white'
                           : 'bg-white text-gray-800 border border-gray-200'
                           }`}>
-                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                          {msg.imageUrl && (
+                            <div className={msg.content ? "p-2 pb-0" : "p-2"}>
+                              <Image
+                                src={msg.imageUrl}
+                                alt="送信画像"
+                                width={300}
+                                height={300}
+                                className="rounded-lg object-cover max-w-full h-auto cursor-pointer"
+                                unoptimized
+                                onClick={() => handleImageClick(msg.imageUrl!)}
+                              />
+                            </div>
+                          )}
+                          {msg.content && (
+                            <p className="text-sm whitespace-pre-wrap px-4 py-3">{msg.content}</p>
+                          )}
                         </div>
                         <span className={`m-2 text-xs mt-1 text-gray-400 ${isMe ? 'text-right' : 'text-left'}`}>
                           {msg.timestamp}
@@ -639,22 +749,81 @@ export default function MessagePage() {
 
             {/* 入力エリア */}
             <div className="p-4 bg-white border-t border-gray-200 flex-shrink-0">
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  placeholder="メッセージを入力..."
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/50"
-                />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!inputValue.trim()}
-                  className="bg-[#2FA3E3] text-white p-3 rounded-lg hover:bg-[#1d7bb8] disabled:bg-gray-400 flex items-center justify-center transition-colors"
-                >
-                  <Send size={20} />
-                </button>
+              <div className="flex justify-center">
+                <div className="w-full flex flex-col gap-2">
+                  {/* 画像プレビュー */}
+                  {imagePreview && (
+                    <div className="relative inline-block">
+                      <Image
+                        src={imagePreview}
+                        alt="添付画像"
+                        width={200}
+                        height={200}
+                        className="rounded-lg border border-gray-300 object-cover"
+                      />
+                      <button
+                        onClick={handleRemoveImage}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 w-full">
+                    {/* 画像添付ボタン */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="bg-gray-100 text-gray-600 p-3 m-auto rounded-lg hover:bg-gray-200 flex items-center justify-center transition-colors self-end flex-shrink-0"
+                      title="画像を添付"
+                    >
+                      <Plus size={20} />
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+
+                    <textarea
+                      placeholder="メッセージを入力..."
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                      rows={2}
+                      className={`flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 resize-none transition-all duration-300 ${inputValue.length > 500
+                        ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
+                        : 'border-gray-300 focus:ring-[#2FA3E3]/50'
+                        }`}
+                    />
+                    <div className='flex-col m-auto'>
+                      <button
+                        onClick={handleSendMessage}
+                        disabled={(!inputValue.trim() && !selectedImage) || inputValue.length > 500}
+                        className="bg-[#2FA3E3] text-white p-3 m-auto rounded-lg hover:bg-[#1d7bb8] disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center transition-colors self-end flex-shrink-0"
+                      >
+                        <Send size={20} />
+                      </button>
+
+                      <div className={`text-right text-sm ${inputValue.length > 500 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                        {inputValue.length}/500文字
+                        {inputValue.length > 500 && (
+                          <>
+                            <br />
+                            <span className="ml-2">({inputValue.length - 500}文字超過)</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </>
@@ -737,6 +906,13 @@ export default function MessagePage() {
           </>
         ) : null}
       </div>
+
+      {/* 画像モーダル */}
+      <ImageModal
+        images={modalImageUrl ? [modalImageUrl] : []}
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
+      />
     </div>
   );
 }

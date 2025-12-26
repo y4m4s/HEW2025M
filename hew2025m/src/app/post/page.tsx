@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 export default function Post() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { profile } = useProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -27,6 +27,26 @@ export default function Post() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  // タグの選択肢
+  const availableTags = [
+    '釣行記',
+    '情報共有',
+    '質問',
+    'レビュー',
+    '雑談',
+    '初心者向け',
+    'トラブル相談',
+    '釣果報告'
+  ];
+
+  // 認証チェック：未ログインならログインページへリダイレクト
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
   // URLクエリパラメータから位置情報を取得
   useEffect(() => {
@@ -121,6 +141,15 @@ export default function Post() {
   const handleClearLocation = () => {
     setAddress('');
     setLocation(null);
+  };
+
+  // タグの選択/選択解除
+  const toggleTag = (tag: string) => {
+    if (selectedTags.includes(tag)) {
+      setSelectedTags(selectedTags.filter(t => t !== tag));
+    } else {
+      setSelectedTags([...selectedTags, tag]);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -220,7 +249,7 @@ export default function Post() {
           media: uploadedMedia,
           authorId,
           authorName,
-          tags: address ? [address] : [],
+          tags: selectedTags,
           address: address || undefined,
           location: location || undefined,
         }),
@@ -250,201 +279,233 @@ export default function Post() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-2xl">
-        <div className="bg-white rounded-lg shadow-sm border p-8">
-          <h2 className="text-2xl font-bold mb-2">投稿する</h2>
-          <p className="text-gray-600 mb-8">投稿の情報を入力してください。</p>
+    <div className="bg-gray-50 min-h-screen">
+      <div className="container mx-auto px-5 py-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-4xl font-bold text-center text-gray-800 mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+            投稿を作成する
+          </h1>
+          <p className="text-center text-gray-600 mb-12">
+            釣果情報や釣り場の様子を共有しましょう
+          </p>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                件名
-              </label>
-              <input
-                type="text"
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 outline-none transition-colors ${
-                  title.length > 30
-                    ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-                }`}
-                placeholder="件名を入力してください。"
-                required
-                disabled={isSubmitting}
-              />
-              <div className={`text-right text-sm mt-1 ${title.length > 30 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                {title.length}/30文字
-                {title.length > 30 && (
-                  <span className="ml-2">({title.length - 30}文字超過)</span>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
-                本文
-              </label>
-              <textarea
-                id="content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={5}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 outline-none transition-colors resize-none ${
-                  content.length > 140
-                    ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-                }`}
-                placeholder="本文を140字以内で入力してください。"
-                required
-                disabled={isSubmitting}
-              />
-              <div className={`text-right text-sm mt-1 ${content.length > 140 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                {content.length}/140文字
-                {content.length > 140 && (
-                  <span className="ml-2">({content.length - 140}文字超過)</span>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                メディアをアップロード（任意） ({selectedFiles.length}/4)
-              </label>
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                onClick={() => selectedFiles.length < 4 && fileInputRef.current?.click()}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-              >
-                <Upload size={32} className="mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-600">
-                  画像や動画をアップロードしてください
-                </p>
-                <p className="text-sm text-gray-500 mt-2">
-                  ファイルをドラッグ&ドロップするか、クリックして選択
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  (最大10MB、最大4つまで)
-                </p>
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div>
+                <label htmlFor="title" className="block text-lg font-semibold text-gray-700 mb-3">
+                  件名 <span className="text-red-500">*</span>
+                </label>
                 <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,video/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileSelect}
-                  disabled={isSubmitting || selectedFiles.length >= 4}
+                  type="text"
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                    title.length > 30
+                      ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
+                  }`}
+                  placeholder="件名を入力してください"
+                  required
+                  disabled={isSubmitting}
                 />
+                <div className={`text-right text-sm mt-1 ${title.length > 30 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                  {title.length}/30文字
+                  {title.length > 30 && (
+                    <span className="ml-2">({title.length - 30}文字超過)</span>
+                  )}
+                </div>
               </div>
 
-              {/* プレビュー表示 */}
-              {previewUrls.length > 0 && (
-                <div className="mt-4 grid grid-cols-3 gap-4">
-                  {previewUrls.map((url, index) => (
-                    <div key={index} className="relative group">
-                      <Image
-                        src={url}
-                        alt={`プレビュー ${index + 1}`}
-                        width={200}
-                        height={150}
-                        className="w-full h-24 object-cover rounded-lg border"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFile(index)}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        disabled={isSubmitting}
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
+              <div>
+                <label htmlFor="content" className="block text-lg font-semibold text-gray-700 mb-3">
+                  本文 <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  rows={6}
+                  className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none ${
+                    content.length > 140
+                      ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
+                  }`}
+                  placeholder="本文を140字以内で入力してください"
+                  required
+                  disabled={isSubmitting}
+                />
+                <div className={`text-right text-sm mt-1 ${content.length > 140 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                  {content.length}/140文字
+                  {content.length > 140 && (
+                    <span className="ml-2">({content.length - 140}文字超過)</span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-3">
+                  メディア ({selectedFiles.length}/4)
+                </label>
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-[#2FA3E3] transition-colors duration-300 cursor-pointer"
+                  onClick={() => selectedFiles.length < 4 && fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  <div className="flex justify-center text-gray-400 mb-4">
+                    <Upload size={64} />
+                  </div>
+                  <p className="text-gray-500 mb-4">
+                    画像や動画をドラッグ&ドロップまたはクリックして選択
+                  </p>
+                  <p className="text-sm text-gray-400 mb-4">最大4つまで、各ファイル10MB以下</p>
+                  <Button type="button" variant="primary" size="md" disabled={selectedFiles.length >= 4 || isSubmitting}>
+                    メディアを選択
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileSelect}
+                    disabled={isSubmitting || selectedFiles.length >= 4}
+                  />
+                </div>
+
+                {/* プレビュー表示 */}
+                {previewUrls.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                    {previewUrls.map((url, index) => (
+                      <div key={index} className="relative group">
+                        <Image
+                          src={url}
+                          alt={`プレビュー ${index + 1}`}
+                          width={200}
+                          height={200}
+                          className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(index)}
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          disabled={isSubmitting}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-3">
+                  タグ
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {availableTags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      disabled={isSubmitting}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                        selectedTags.includes(tag)
+                          ? 'bg-[#2FA3E3] text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {tag}
+                    </button>
                   ))}
                 </div>
-              )}
-            </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  複数選択可能です
+                </p>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <MapPin size={16} className="inline mr-1" />
-                位置情報（任意）
-              </label>
+              <div>
+                <label className="block text-lg font-semibold text-gray-700 mb-3">
+                  <MapPin size={16} className="inline mr-1" />
+                  位置情報
+                </label>
 
-              {!address ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="md"
-                  onClick={() => setIsMapModalOpen(true)}
-                  disabled={isSubmitting}
-                  icon={<MapPin size={16} />}
-                  className="w-full"
-                >
-                  位置情報を追加する
-                </Button>
-              ) : (
-                <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-5">
-                  {/* ヘッダー */}
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-2">
-                      <MapPin size={20} className="text-blue-600" />
-                      <h4 className="font-semibold text-gray-800">選択中の位置情報</h4>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleClearLocation}
-                      disabled={isSubmitting}
-                      className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                      title="位置情報をクリア"
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
-
-                  {/* 住所 */}
-                  <div className="bg-white rounded-lg p-4 mb-3">
-                    <div className="text-xs text-gray-600 mb-1">住所</div>
-                    <div className="font-medium text-gray-900">{address}</div>
-                  </div>
-
-                  {/* 変更ボタン */}
+                {!address ? (
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
+                    size="md"
                     onClick={() => setIsMapModalOpen(true)}
                     disabled={isSubmitting}
-                    className="w-full bg-white hover:bg-gray-50"
+                    icon={<MapPin size={16} />}
+                    className="w-full"
                   >
-                    位置を変更する
+                    位置情報を追加する
                   </Button>
+                ) : (
+                  <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-5">
+                    {/* ヘッダー */}
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-2">
+                        <MapPin size={20} className="text-blue-600" />
+                        <h4 className="font-semibold text-gray-800">選択中の位置情報</h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleClearLocation}
+                        disabled={isSubmitting}
+                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                        title="位置情報をクリア"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+
+                    {/* 住所 */}
+                    <div className="bg-white rounded-lg p-4 mb-3">
+                      <div className="text-xs text-gray-600 mb-1">住所</div>
+                      <div className="font-medium text-gray-900">{address}</div>
+                    </div>
+
+                    {/* 変更ボタン */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsMapModalOpen(true)}
+                      disabled={isSubmitting}
+                      className="w-full bg-white hover:bg-gray-50"
+                    >
+                      位置を変更する
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* 進行状況表示 */}
+              {uploadProgress && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                  <p className="text-blue-700">{uploadProgress}</p>
                 </div>
               )}
-            </div>
 
-            {/* 進行状況表示 */}
-            {uploadProgress && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                <p className="text-blue-700">{uploadProgress}</p>
+              <div className="text-center pt-6">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  className="px-12 text-xl"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? '投稿中...' : '投稿を作成する'}
+                </Button>
               </div>
-            )}
-
-            <div className="pt-6">
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                className="w-full"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? '投稿中...' : '投稿する'}
-              </Button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
-      </main>
+      </div>
 
       {/* マップモーダル */}
       <MapModal

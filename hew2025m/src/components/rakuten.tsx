@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Star, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
+import Image from 'next/image';
 
 // 楽天APIの型定義 (formatVersion=2)
 interface RakutenItem {
@@ -158,11 +159,14 @@ export default function RakutenProducts({
                 >
                   {/* 画像 */}
                   <div className="w-full aspect-square mb-2 border border-gray-100 rounded-md overflow-hidden bg-white">
-                    <img 
-                      src={imgUrl} 
-                      alt={item.itemName} 
+                    <Image
+                      src={imgUrl}
+                      alt={item.itemName}
+                      width={160}
+                      height={160}
                       className="w-full h-full object-contain p-1"
                       loading="lazy"
+                      unoptimized
                     />
                   </div>
 

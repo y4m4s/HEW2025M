@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
-import { Megaphone, MessageSquare, Trash2, Heart, Star, ShoppingCart, UserPlus, Mail } from 'lucide-react';
+import { Megaphone, MessageSquare, Trash2, Heart, Star, ShoppingCart, UserPlus, Mail, Bell, CheckCheck, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { db } from '@/lib/firebase';
+import CustomSelect from '@/components/CustomSelect';
+import Button from '@/components/Button';
 import {
   collection,
   query,
@@ -14,6 +16,7 @@ import {
   updateDoc,
   deleteDoc,
   Timestamp,
+  writeBatch,
 } from 'firebase/firestore';
 
 interface NotificationItem {
@@ -59,6 +62,16 @@ export default function NotificationPage() {
 
   // stateは空の配列で初期化します。
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [filterValue, setFilterValue] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // 認証チェック：未ログインならログインページへリダイレクト
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
   // Firestoreから通知を読み込みます
   useEffect(() => {
@@ -82,6 +95,40 @@ export default function NotificationPage() {
 
     return () => unsubscribe();
   }, [user]); // userに依存します
+
+  // 未読IDを追跡するためのRef
+  const unreadIdsRef = useRef<string[]>([]);
+
+  // 通知が更新されたら未読IDリストを更新
+  useEffect(() => {
+    unreadIdsRef.current = notifications
+      .filter(n => n.isUnread)
+      .map(n => n.id);
+  }, [notifications]);
+
+  // コンポーネントのアンマウント時（ページ遷移時など）にまとめて既読にする
+  useEffect(() => {
+    return () => {
+      const idsToMark = unreadIdsRef.current;
+      if (idsToMark.length > 0 && user) {
+        // バッチ書き込みを行う非同期関数を即時実行
+        const markAllRead = async () => {
+          try {
+            const batch = writeBatch(db);
+            idsToMark.forEach(id => {
+              const docRef = doc(db, 'users', user.uid, 'notifications', id);
+              batch.update(docRef, { isUnread: false });
+            });
+            await batch.commit();
+            console.log('Marked notifications as read on cleanup');
+          } catch (error) {
+            console.error('Error marking notifications as read:', error);
+          }
+        };
+        markAllRead();
+      }
+    };
+  }, [user]); // userが変わるとき（ログアウト時）も実行される
 
   // Timestampをフォーマットする関数
   const formatTimestamp = (timestamp: Timestamp | string) => {
@@ -121,7 +168,7 @@ export default function NotificationPage() {
       console.error("Erro ao deletar: ", error);
     }
   };
-  
+
   // すべてを既読にする処理
   const handleMarkAllAsRead = () => {
     // 未読の通知それぞれに対して、handleMarkAsReadを呼び出します
@@ -132,13 +179,23 @@ export default function NotificationPage() {
     });
   };
 
-  // すべて削除する処理（既読にすることで削除）
+  // すべて削除する処理
   const handleDeleteAll = () => {
-    // すべての通知を既読にします
+    // すべての通知を削除します
     notifications.forEach(notif => {
-      handleMarkAsRead(notif.id);
+      handleDelete(notif.id);
     });
   };
+
+  // ページ変更時は先頭にスクロール
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
+  // フィルター変更時はページを1に戻す
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterValue]);
 
   // 通知をクリックした際の処理（遷移先に移動して既読にする）
   const handleNotificationClick = async (notification: NotificationItem) => {
@@ -171,110 +228,171 @@ export default function NotificationPage() {
     return <div className="flex h-screen items-center justify-center">通知機能を利用するには<a href="/login" className="text-blue-500 underline ml-2">ログイン</a>が必要です。</div>;
   }
 
+  // フィルター適用後の通知リスト
+  const filteredNotifications = filterValue === 'all'
+    ? notifications
+    : notifications.filter(notif => notif.isUnread);
+
+  // ページング計算
+  const totalPages = Math.ceil(filteredNotifications.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedNotifications = filteredNotifications.slice(startIndex, endIndex);
+
+  // フィルターオプション
+  const filterOptions = [
+    { value: 'all', label: 'すべての通知' },
+    { value: 'unread', label: '未読の通知' },
+  ];
+
   return (
     <div className="bg-gray-100 min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
-        {/* パンくずリスト */}
-        <nav className="text-sm text-gray-600 mb-4">
-          <span>ホーム</span> &gt; <span>通知</span>
-        </nav>
-
         {/* ヘッダー（「すべて既読にする」ボタンが機能するようになりました） */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">✉️ 通知</h1>
+          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <Bell size={28} className="text-[#2FA3E3]" />
+            通知
+          </h1>
           <div className="flex items-center gap-4">
-            <button
-              onClick={handleMarkAllAsRead}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
-            >
-              すべて既読にする
-            </button>
-            <button
+            {/* <Button onClick={handleMarkAllAsRead} ... removed> */}
+            <Button
               onClick={handleDeleteAll}
-              className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
+              variant="secondary"
+              size="sm"
+              icon={<Trash2 size={16} />}
             >
               すべて削除する
-            </button>
-            {/* フィルター機能は未実装ですが、ボタンは配置済みです */}
-            <select className="border border-gray-300 rounded-md p-2 text-sm">
-              <option>すべての通知</option>
-              <option>未読の通知</option>
-            </select>
+            </Button>
+            {/* フィルター機能 */}
+            <div className="w-48">
+              <CustomSelect
+                value={filterValue}
+                onChange={setFilterValue}
+                options={filterOptions}
+                placeholder="フィルター"
+              />
+            </div>
           </div>
         </div>
 
         {/* 通知リスト */}
         <div className="space-y-4">
           {/* 通知がない場合にメッセージを表示します */}
-          {notifications.length === 0 && (
+          {filteredNotifications.length === 0 && (
             <div className="bg-white shadow-md rounded-lg p-6 text-center text-gray-500">
-              <p>🔔 まだ通知はありません。</p>
+              <div className="flex items-center justify-center gap-2">
+                <Bell size={20} />
+                <p>{filterValue === 'unread' ? '未読の通知はありません。' : 'まだ通知はありません。'}</p>
+              </div>
             </div>
           )}
 
-          {notifications.map((notification) => (
+          {paginatedNotifications.map((notification) => (
             <div
               key={notification.id}
-              className={`bg-white shadow-md rounded-lg p-4 flex items-start gap-4 ${
-                notification.isUnread
-                  ? 'border-l-4 border-blue-500'
-                  : 'border-l-4 border-transparent'
-              } ${notification.link || notification.linkUserId ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+              className={`bg-white rounded-xl p-5 flex items-start gap-4 transition-all duration-300 relative ${notification.isUnread
+                ? 'border-l-4 border-[#2FA3E3] shadow-lg'
+                : 'border-l-4 border-transparent shadow-md'
+                } ${notification.link || notification.linkUserId ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-l-[#2FA3E3]' : ''}`}
               onClick={() => handleNotificationClick(notification)}
             >
+              {/* 削除ボタン（右上） */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(notification.id);
+                }}
+                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-gray-500 hover:bg-red-500 text-white flex items-center justify-center transition-colors duration-200"
+                aria-label="削除"
+              >
+                <X size={16} />
+              </button>
+
               {/* 1. アイコン */}
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 bg-[#2FA3E3]"
+                className="w-14 h-14 my-auto rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-[#2FA3E3] to-[#1d7bb8] shadow-md"
               >
                 {getNotificationIcon(notification.iconType)}
               </div>
 
               {/* 2. コンテンツ */}
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-gray-900 break-words">
-                  {notification.title}
-                  {(notification.link || notification.linkUserId) && (
-                    <span className="ml-2 text-blue-500 text-xs">→ クリックして詳細を表示</span>
-                  )}
+              <div className="flex-1 min-w-0 pr-8">
+                <h3 className="text-gray-900 break-words text-base">
+                  {(() => {
+                    const match = notification.title.match(/^(.+?さん)(.+)$/);
+                    if (match) {
+                      return (
+                        <>
+                          <span className="font-bold">{match[1]}</span>
+                          <span className="font-normal">{match[2]}</span>
+                        </>
+                      );
+                    }
+                    return <span className="font-bold">{notification.title}</span>;
+                  })()}
                 </h3>
-                <p className="text-sm text-gray-700 mt-1 line-clamp-2 break-words">
+                <p className="text-sm text-gray-600 mt-2 line-clamp-2 break-words leading-relaxed">
                   {notification.description}
                 </p>
-                <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                  <span>{formatTimestamp(notification.timestamp)}</span>
-                  <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <Bell size={12} />
+                    {formatTimestamp(notification.timestamp)}
+                  </span>
+                  <span className="bg-gradient-to-r from-blue-50 to-cyan-50 text-[#2FA3E3] px-3 py-1 rounded-full font-medium border border-blue-100 w-20 text-center">
                     {notification.tag}
                   </span>
+                  {notification.isUnread && (
+                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm animate-pulse">
+                      New
+                    </span>
+                  )}
                 </div>
-              </div>
-
-              {/* 3. アクション */}
-              <div className="flex flex-col space-y-2">
-                {notification.isUnread && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // 親のクリックイベントを防止
-                      handleMarkAsRead(notification.id);
-                    }}
-                    className="bg-green-600 text-white px-3 py-1 rounded-md text-xs font-semibold hover:bg-green-700"
-                  >
-                    既読にする
-                  </button>
-                )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation(); // 親のクリックイベントを防止
-                    handleDelete(notification.id);
-                  }}
-                  className="bg-red-600 text-white px-3 py-1 rounded-md text-xs font-semibold hover:bg-red-700 flex items-center justify-center gap-1"
-                >
-                  <Trash2 className="w-3 h-3" />
-                  削除
-                </button>
               </div>
             </div>
           ))}
         </div>
+
+        {/* ページネーション */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            <Button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              variant="outline"
+              size="sm"
+              icon={<ChevronLeft size={16} />}
+            >
+              前へ
+            </Button>
+
+            <div className="flex items-center gap-2">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-10 h-10 rounded-lg font-semibold transition-all duration-200 ${currentPage === page
+                    ? 'bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] text-white shadow-md'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+
+            <Button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              variant="outline"
+              size="sm"
+              icon={<ChevronRight size={16} />}
+            >
+              次へ
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

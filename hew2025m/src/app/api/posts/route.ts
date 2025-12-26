@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const authorId = searchParams.get('authorId');
     const keyword = searchParams.get('keyword');
+    const tag = searchParams.get('tag');
 
     let query: any = {};
 
@@ -18,6 +19,9 @@ export async function GET(request: NextRequest) {
     }
     if (authorId) {
       query.authorId = authorId;
+    }
+    if (tag) {
+      query.tags = tag;
     }
 
     // キーワード検索: title, content, tags, addressを対象に検索

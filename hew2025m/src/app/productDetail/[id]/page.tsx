@@ -3,14 +3,15 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, ArrowLeft, Calendar, User, Bookmark, Fish } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, Calendar, Bookmark, Fish } from 'lucide-react';
 import Button from '@/components/Button';
 import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
 import CancelModal from '@/components/CancelModal';
-import ProductCard from '@/components/ProductCard';
+import LoginRequiredModal from '@/components/LoginRequiredModal';
+import ProductCard from '@/components/Productcard';
 
-import SmartRakuten from '@/components/SmartRakuten'; 
+import SmartRakuten from '@/components/SmartRakuten';
 import SellerInfo from '@/components/SellerInfo';
 
 import { useAuth } from '@/lib/useAuth';
@@ -67,6 +68,10 @@ export default function SellDetailPage() {
   // 画像モーダル
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalImageIndex, setModalImageIndex] = useState(0);
+
+  // ログイン必須モーダル
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
 
   useEffect(() => {
     if (params.id) {
@@ -186,11 +191,16 @@ export default function SellDetailPage() {
         });
       }
     } catch (err) {
-      console.error('出品者プロフィール取得エラー:', err);
+      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
+      if (err && typeof err === 'object' && 'code' in err && err.code === 'permission-denied') {
+        // エラーを静かに処理
+      } else {
+        console.error('出品者プロフィール取得エラー:', err);
+      }
       // エラーの場合もデフォルト値を設定
       setSellerProfile({
-        uid: '',
-        displayName: '名無しユーザー',
+        uid: sellerId.startsWith('user-') ? sellerId.replace('user-', '') : sellerId,
+        displayName: product?.sellerName || '名無しユーザー',
         username: 'user',
         photoURL: '',
         bio: '',
@@ -257,8 +267,8 @@ export default function SellDetailPage() {
 
   const handleBookmark = async () => {
     if (!user) {
-      alert('ブックマークするにはログインが必要です');
-      router.push('/login');
+      setLoginRequiredAction('ブックマーク');
+      setShowLoginModal(true);
       return;
     }
     if (!product) return;
@@ -281,7 +291,7 @@ export default function SellDetailPage() {
       }
     } catch (error) {
       console.error(error);
-      alert('操作に失敗しました');
+      toast.error('操作に失敗しました');
     } finally {
       setBookmarkLoading(false);
     }
@@ -296,9 +306,15 @@ export default function SellDetailPage() {
       removeItemFromCart(product._id);
       toast.success('商品をカートから削除しました。');
     } else {
-      // カートに追加
+      // カートに追加 - ログインチェック
+      if (!user) {
+        setLoginRequiredAction('カートに追加');
+        setShowLoginModal(true);
+        return;
+      }
+
       if (product.status !== 'available') {
-        alert('この商品は現在購入できません。');
+        toast.error('この商品は現在購入できません。');
         return;
       }
 
@@ -320,7 +336,7 @@ export default function SellDetailPage() {
     // 自分の商品かどうか確認
     const actualUserId = `user-${user.uid}`;
     if (product.sellerId !== actualUserId && product.sellerId !== user.uid) {
-      alert('自分の商品のみ削除できます');
+      toast.error('自分の商品のみ削除できます');
       return;
     }
 
@@ -346,7 +362,7 @@ export default function SellDetailPage() {
       router.push('/productList');
     } catch (err) {
       console.error('商品削除エラー:', err);
-      alert(err instanceof Error ? err.message : '商品の削除に失敗しました');
+      toast.error(err instanceof Error ? err.message : '商品の削除に失敗しました');
     } finally {
       setDeleting(false);
     }
@@ -377,7 +393,7 @@ export default function SellDetailPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <main className="flex-1 container mx-auto px-4 py-6">
+      <main className="flex-1 container mx-auto max-w-5xl px-4 py-6">
 
         {/* 戻るボタン */}
         <Button onClick={() => router.back()} variant="ghost" size="sm" icon={<ArrowLeft size={16} />} className="mb-6">
@@ -391,13 +407,19 @@ export default function SellDetailPage() {
           <section className="space-y-6">
             <div>
               <h1 className="text-2xl font-bold mb-2">{product.title}</h1>
-              <div className="flex gap-4 text-sm text-gray-600">
-                <div className="flex items-center gap-1"><Calendar size={14} /><span>{formatDate(product.createdAt)}</span></div>
-              </div>
-              <div className="mt-2">
+              <div className="flex justify-between text-sm text-gray-600 p-2">
+                <div className="flex items-center gap-1">
+                  <Calendar size={14} /><span>{formatDate(product.createdAt)}</span>
+                </div>
                 <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${product.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                   {getStatusLabel(product.status)}
                 </span>
+              </div>
+              <div className="mt-2">
+              </div>
+              <div className="border-b flex justify-between">
+                <h2 className="text-3xl font-bold text-[#2FA3E3] mb-2">{formatPrice(product.price)}</h2>
+                <p className="my-auto pr-3 text-sm text-gray-600">{product.shippingPayer === 'seller' ? '送料込み' : '送料別'}</p>
               </div>
             </div>
 
@@ -466,15 +488,13 @@ export default function SellDetailPage() {
 
           {/* 右側: 商品詳細 */}
           <section className="space-y-6">
-            <div className="border-b pb-4">
-              <h2 className="text-3xl font-bold text-[#2FA3E3] mb-2">{formatPrice(product.price)}</h2>
-              <p className="text-sm text-gray-600">{product.shippingPayer === 'seller' ? '送料込み' : '送料別'}</p>
-            </div>
             <div>
               <h3 className="text-xl font-semibold mb-3">商品詳細</h3>
-              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed break-words overflow-wrap-anywhere">
-                {product.description}
-              </p>
+              <div className="h-80 overflow-y-auto rounded-lg border border-gray-200 p-4 bg-gray-50/50">
+                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed break-words overflow-wrap-anywhere">
+                  {product.description}
+                </p>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -556,14 +576,18 @@ export default function SellDetailPage() {
         {/* コメントセクション */}
         <section className="mt-8 bg-white rounded-lg shadow-md p-6">
           <h3 className="text-xl font-bold mb-4">コメント</h3>
-          <Comment productId={params.id as string} />
+          <Comment
+            productId={params.id as string}
+            itemOwnerId={product.sellerId.startsWith('user-') ? product.sellerId.replace('user-', '') : product.sellerId}
+            itemTitle={product.title}
+          />
         </section>
 
         {/* ✅ AI検索用コンポーネント (カテゴリも渡す) */}
         {product && (
-          <SmartRakuten 
-            productName={product.title} 
-            description={product.description} 
+          <SmartRakuten
+            productName={product.title}
+            description={product.description}
             category={getCategoryLabel(product.category)}
           />
         )}
@@ -606,6 +630,13 @@ export default function SellDetailPage() {
           />
         </div>
       </CancelModal>
+
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
+      />
     </div>
   );
 }

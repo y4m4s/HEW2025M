@@ -8,6 +8,8 @@ import { User, Star, MessageCircle } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
+import LoginRequiredModal from "./LoginRequiredModal";
+import toast from "react-hot-toast";
 
 interface SellerInfoProps {
   sellerProfile: {
@@ -31,6 +33,8 @@ export default function SellerInfo({
   const router = useRouter();
   const [averageRating, setAverageRating] = useState<number>(0);
   const [totalRatings, setTotalRatings] = useState<number>(0);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
 
   // 出品者の評価情報を取得（UserRatingと同じロジック）
   useEffect(() => {
@@ -71,8 +75,8 @@ export default function SellerInfo({
 
   const handleMessageClick = () => {
     if (!user) {
-      alert("メッセージを送るにはログインが必要です");
-      router.push("/login");
+      setLoginRequiredAction("メッセージを送る");
+      setShowLoginModal(true);
       return;
     }
 
@@ -84,8 +88,8 @@ export default function SellerInfo({
 
   const handleRatingClick = () => {
     if (!user) {
-      alert("評価するにはログインが必要です");
-      router.push("/login");
+      setLoginRequiredAction("評価する");
+      setShowLoginModal(true);
       return;
     }
 
@@ -192,6 +196,13 @@ export default function SellerInfo({
           </div>
         )}
       </div>
+
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
+      />
     </section>
   );
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Comment from '@/models/Comment';
 import Product from '@/models/Product';
-import { createCommentNotificationServer, createReplyNotificationServer } from '@/lib/notifications';
+
 
 // コメントを階層構造に変換するヘルパー関数
 function organizeComments(comments: any[]) {
@@ -136,35 +136,7 @@ export async function POST(
       parentId: parentId || undefined,
     });
 
-    // 通知を作成
-    if (parentId && parentComment) {
-      // 返信の場合：親コメントの投稿者に通知（自分への返信でない場合のみ）
-      if (parentComment.userId && parentComment.userId !== userId) {
-        await createReplyNotificationServer(
-          parentComment.userId,
-          userId,
-          userName,
-          id,
-          product.title || '商品',
-          comment._id.toString(),
-          content.trim(),
-          'product'
-        );
-      }
-    } else {
-      // 新規コメントの場合：商品の出品者に通知（自分の商品でない場合のみ）
-      if (product.userId && product.userId !== userId) {
-        await createCommentNotificationServer(
-          product.userId,
-          userId,
-          userName,
-          id,
-          product.title || '商品',
-          comment._id.toString(),
-          content.trim()
-        );
-      }
-    }
+
 
     return NextResponse.json(
       {

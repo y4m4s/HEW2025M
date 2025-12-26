@@ -1,27 +1,36 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { useProfile } from '@/contexts/ProfileContext';
 import { Comment as CommentType } from '@/types/comment';
 import CommentInput from './CommentInput';
 import CommentList from './CommentList';
+import LoginRequiredModal from './LoginRequiredModal';
+import toast from 'react-hot-toast';
+import {
+  createCommentNotification,
+  createPostCommentNotification,
+  createReplyNotification
+} from '@/lib/notifications';
 
 interface CommentProps {
   productId?: string;
   postId?: string;
+  itemOwnerId?: string; // Add this
+  itemTitle?: string; // Add this
   onCommentCountChange?: (count: number) => void;
 }
 
-export default function Comment({ productId, postId, onCommentCountChange }: CommentProps) {
-  const router = useRouter();
+export default function Comment({ productId, postId, itemOwnerId, itemTitle, onCommentCountChange }: CommentProps) {
   const { user } = useAuth();
   const { profile } = useProfile();
 
   const [comments, setComments] = useState<CommentType[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
 
   // どちらのIDが渡されたかに基づいてAPIエンドポイントを決定
   const targetId = productId || postId;
@@ -60,18 +69,18 @@ export default function Comment({ productId, postId, onCommentCountChange }: Com
   // コメントを投稿
   const handleSubmitComment = async (content: string, parentId?: string) => {
     if (!user) {
-      alert('コメントするにはログインが必要です');
-      router.push('/login');
+      setLoginRequiredAction('コメント');
+      setShowLoginModal(true);
       return;
     }
 
     if (!content.trim()) {
-      alert('コメント内容を入力してください');
+      toast.error('コメント内容を入力してください');
       return;
     }
 
     if (content.length > 140) {
-      alert('コメントは140文字以内で入力してください');
+      toast.error('コメントは140文字以内で入力してください');
       return;
     }
 
@@ -97,11 +106,77 @@ export default function Comment({ productId, postId, onCommentCountChange }: Com
         throw new Error('コメントの投稿に失敗しました');
       }
 
+      const responseData = await response.json();
+      const newComment = responseData.comment;
+
+      // 通知を作成
+      if (parentId) {
+        // 返信の場合、親コメントを探してそのユーザーに通知
+        // コメントリストは階層化されている可能性があるため、フラットに探すか、再帰的に探す必要があるが、
+        // CommentListに渡しているcommentsはすでに階層化されているか？
+        // organizeCommentsはサーバー側でやってる。
+        // クライアント側のcommentsは階層化されている。
+        // 簡易的に通知するために、親コメントのauthorIdが必要。
+        // ここではcommentsから探すのが難しい場合もある（ページネーションなどあれば）。
+        // しかしここでは全件取得している前提で探してみる。
+        // 再帰関数で探す。
+
+        const findComment = (list: CommentType[], id: string): CommentType | undefined => {
+          for (const c of list) {
+            if (c._id === id) return c;
+            if (c.replies && c.replies.length > 0) {
+              const found = findComment(c.replies, id);
+              if (found) return found;
+            }
+          }
+          return undefined;
+        };
+
+        const parentComment = findComment(comments, parentId);
+        if (parentComment && parentComment.userId !== user.uid) {
+          await createReplyNotification(
+            parentComment.userId,
+            user.uid,
+            profile.displayName || user.displayName || 'ゲスト',
+            targetId!,
+            itemTitle || '投稿',
+            newComment._id,
+            content,
+            productId ? 'product' : 'post'
+          );
+        }
+      } else {
+        // 通常コメントの場合、投稿者/出品者に通知
+        if (itemOwnerId && itemOwnerId !== user.uid) {
+          if (postId) {
+            await createPostCommentNotification(
+              itemOwnerId,
+              user.uid,
+              profile.displayName || user.displayName || 'ゲスト',
+              postId,
+              itemTitle || '投稿',
+              newComment._id,
+              content
+            );
+          } else if (productId) {
+            await createCommentNotification(
+              itemOwnerId,
+              user.uid,
+              profile.displayName || user.displayName || 'ゲスト',
+              productId,
+              itemTitle || '商品',
+              newComment._id,
+              content
+            );
+          }
+        }
+      }
+
       // コメントをリロード
       await fetchComments();
     } catch (err) {
       console.error('コメント投稿エラー:', err);
-      alert('コメントの投稿に失敗しました');
+      toast.error('コメントの投稿に失敗しました');
     } finally {
       setCommentSubmitting(false);
     }
@@ -137,7 +212,7 @@ export default function Comment({ productId, postId, onCommentCountChange }: Com
       await fetchComments();
     } catch (err) {
       console.error('コメント削除エラー:', err);
-      alert(err instanceof Error ? err.message : 'コメントの削除に失敗しました');
+      toast.error(err instanceof Error ? err.message : 'コメントの削除に失敗しました');
     }
   };
 
@@ -157,6 +232,13 @@ export default function Comment({ productId, postId, onCommentCountChange }: Com
         currentUserId={user?.uid}
         onDeleteComment={handleDeleteComment}
         onReply={handleReplyComment}
+      />
+
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
       />
     </div>
   );

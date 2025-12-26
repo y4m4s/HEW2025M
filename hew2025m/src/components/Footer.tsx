@@ -1,7 +1,17 @@
+'use client';
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Twitter, Facebook, Instagram, Youtube } from 'lucide-react';
+import { useAuth } from '@/lib/useAuth';
+import LoginRequiredModal from '@/components/LoginRequiredModal';
 
 export default function Footer() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
   return (
     <footer className="bg-gradient-to-r from-[#2c3e50] to-[#34495e] text-white py-16 relative">
 
@@ -42,7 +52,19 @@ export default function Footer() {
             </h3>
             <ul className="list-none space-y-3">
               <li>
-                <Link href="/sell" className="text-gray-400 text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1">商品を出品</Link>
+                <button
+                  onClick={() => {
+                    if (!user) {
+                      setLoginRequiredAction('商品を出品');
+                      setShowLoginModal(true);
+                    } else {
+                      router.push('/sell');
+                    }
+                  }}
+                  className="text-gray-400 text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1 bg-transparent border-0 cursor-pointer p-0 text-left"
+                >
+                  商品を出品
+                </button>
               </li>
               <li>
                 <Link href="/productList" className="text-gray-400 text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1">商品を探す</Link>
@@ -109,6 +131,13 @@ export default function Footer() {
           </p>
         </div>
       </div>
+
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
+      />
     </footer>
   );
 }

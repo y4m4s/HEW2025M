@@ -3,31 +3,73 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-// ChevronRight アイコンを追加しました
-import { Bell, Mail, User as UserIcon, ShoppingCart, ChevronRight } from "lucide-react";
+import {
+  Bell,
+  Mail,
+  User as UserIcon,
+  ShoppingCart,
+  MessageSquare,
+  List,
+  Map
+} from "lucide-react";
+import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner  } from "react-icons/gi";
+import { FaTape, FaTshirt, FaBox } from "react-icons/fa";
+import { SiHelix } from "react-icons/si";
+import { Users, Puzzle } from "lucide-react";
+
 import Button from "@/components/Button";
 import { useAuth } from "@/lib/useAuth";
 import { useProfile } from "@/contexts/ProfileContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { useCartStore } from "@/components/useCartStore";
+import DropdownMenu from "@/components/DropdownMenu";
+import HoverCard from "@/components/HoverCard";
+import LoginRequiredModal from "@/components/LoginRequiredModal";
+import { useRouter } from "next/navigation";
 
 // カテゴリーリストを釣り関連のアイテムに修正（DBの保存値と一致させる）
 const categories = [
-  { name: "ロッド/竿", href: "/productList?category=rod" },
-  { name: "リール", href: "/productList?category=reel" },
-  { name: "ルアー", href: "/productList?category=lure" },
-  { name: "ライン/糸", href: "/productList?category=line" },
-  { name: "ウェア", href: "/productList?category=wear" },
-  { name: "アクセサリー", href: "/productList?category=accessories" },
-  { name: "その他", href: "/productList?category=other" },
+  { name: "ロッド/竿", href: "/productList?category=rod", Icon: GiFishingPole },
+  { name: "リール", href: "/productList?category=reel", Icon: FaTape },
+  { name: "ルアー", href: "/productList?category=lure", Icon: GiFishingLure },
+  { name: "ライン/糸", href: "/productList?category=line", Icon: SiHelix },
+  { name: "ハリ/針", href: "/productList?category=hook", Icon: GiFishingHook },
+  { name: "餌", href: "/productList?category=bait", Icon: GiEarthWorm },
+  { name: "ウェア", href: "/productList?category=wear", Icon: FaTshirt },
+  { name: "セット用品", href: "/productList?category=set", Icon: FaBox },
+  { name: "サービス", href: "/productList?category=service", Icon: GiSpanner },
+  { name: "その他", href: "/productList?category=other", Icon: Puzzle },
 ];
 
 export default function Header() {
   const { user } = useAuth();
   const { profile } = useProfile();
+  const router = useRouter();
   const cartItems = useCartStore((state) => state.items);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
+
+  // コミュニティメニューリスト（useStateフック内で定義してuserを参照できるようにする）
+  const communityMenuItems = [
+    { name: "コミュニティ", href: "/community", Icon: Users },
+    {
+      name: "投稿",
+      Icon: MessageSquare,
+      onClick: () => {
+        if (!user) {
+          setLoginRequiredAction('投稿');
+          setShowLoginModal(true);
+        } else {
+          router.push('/post');
+        }
+      }
+    },
+    { name: "投稿一覧", href: "/postList", Icon: List },
+    { name: "地図", href: "/map", Icon: Map },
+  ];
 
   useEffect(() => {
     if (!user) {
@@ -45,24 +87,26 @@ export default function Header() {
     return () => unsubscribe();
   }, [user]);
 
-  const handleLogoutClick = () => {
-    setShowLogoutModal(true);
-  };
-
-  const handleLogoutConfirm = async () => {
-    try {
-      await auth.signOut();
-      setShowLogoutModal(false);
-      router.push("/");
-    } catch (error) {
-      console.error("ログアウトエラー:", error);
-      setShowLogoutModal(false);
+  // 未読メッセージ数を取得
+  useEffect(() => {
+    if (!user) {
+      setUnreadMessageCount(0);
+      return;
     }
-  };
 
-  const handleLogoutCancel = () => {
-    setShowLogoutModal(false);
-  };
+    const conversationsRef = collection(db, 'users', user.uid, 'conversations');
+
+    const unsubscribe = onSnapshot(conversationsRef, (snapshot) => {
+      let totalUnread = 0;
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        totalUnread += data.unreadCount || 0;
+      });
+      setUnreadMessageCount(totalUnread);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   return (
     <header className="bg-white py-4 px-10 border-b border-gray-200 relative z-50">
@@ -71,18 +115,30 @@ export default function Header() {
           className="text-7xl font-bold text-[#2FA3E3]"
           style={{ fontFamily: "せのびゴシック, sans-serif" }}
         >
-          <Link href="/">ツリマチ</Link>
+          <Link
+            href="/"
+            className="inline-block transition-all duration-300 hover:scale-105 hover:opacity-80"
+          >
+            ツリマチ
+          </Link>
         </h1>
 
         <nav className="mx-11 flex justify-around gap-12 items-center">
-          <Link
-            href="/sell"
-            className="relative no-underline text-gray-800 text-base hover:text-[#2FA3E3] transition-colors duration-300 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#2FA3E3] after:transition-all after:duration-300 hover:after:w-full"
+          <button
+            onClick={() => {
+              if (!user) {
+                setLoginRequiredAction('出品する');
+                setShowLoginModal(true);
+              } else {
+                router.push('/sell');
+              }
+            }}
+            className="relative no-underline text-gray-800 text-base hover:text-[#2FA3E3] transition-colors duration-300 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#2FA3E3] after:transition-all after:duration-300 hover:after:w-full bg-transparent border-0 cursor-pointer"
           >
             出品する
-          </Link>
+          </button>
 
-          {/* --- ドロップダウンメニューの開始 --- */}
+          {/* --- 商品を探すドロップダウンメニュー --- */}
           <div className="relative group py-2">
             <Link
               href="/productList"
@@ -90,33 +146,19 @@ export default function Header() {
             >
               商品を探す
             </Link>
-
-            {/* ドロップダウンリスト本体 */}
-            <div className="absolute top-full left-0 pt-2 w-[280px] invisible opacity-0 translate-y-2 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 ease-in-out z-50">
-              <div className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden max-h-[80vh] overflow-y-auto custom-scrollbar">
-                <div className="py-2">
-                  {categories.map((category, index) => (
-                    <Link
-                      key={index}
-                      href={category.href}
-                      className="flex items-center justify-between px-4 py-3 text-sm text-gray-600 hover:bg-blue-50 hover:text-[#2FA3E3] transition-colors duration-150 border-b border-gray-50 last:border-0"
-                    >
-                      <span>{category.name}</span>
-                      <ChevronRight size={14} className="text-gray-300" />
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <DropdownMenu items={categories} columns={2} />
           </div>
-          {/* --- ドロップダウンメニューの終了 --- */}
 
-          <Link
-            href="/community"
-            className="relative no-underline text-gray-800 text-base hover:text-[#2FA3E3] transition-colors duration-300 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#2FA3E3] after:transition-all after:duration-300 hover:after:w-full"
-          >
-            コミュニティ
-          </Link>
+          {/* --- コミュニティドロップダウンメニュー --- */}
+          <div className="relative group py-2">
+            <Link
+              href="/community"
+              className="relative no-underline text-gray-800 text-base hover:text-[#2FA3E3] transition-colors duration-300 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-[#2FA3E3] after:transition-all after:duration-300 hover:after:w-full flex items-center gap-1"
+            >
+              コミュニティ
+            </Link>
+            <DropdownMenu items={communityMenuItems} columns={1} />
+          </div>
         </nav>
 
         <div className="flex items-center gap-4">
@@ -124,7 +166,7 @@ export default function Header() {
             <>
               <Link
                 href="/notification"
-                className="relative flex justify-center items-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 text-lg transition-all duration-300 hover:bg-gray-200 hover:text-[#2FA3E3]"
+                className="relative flex justify-center items-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 text-lg transition-all duration-300 hover:bg-gray-200 hover:text-[#2FA3E3] hover:ring-2 hover:ring-[#2FA3E3] hover:ring-offset-2"
                 aria-label="通知"
               >
                 <Bell size={18} />
@@ -137,13 +179,22 @@ export default function Header() {
 
               <Link
                 href="/message"
-                className="flex justify-center items-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 text-lg transition-all duration-300 hover:bg-gray-200 hover:text-[#2FA3E3]"
+                className="relative flex justify-center items-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 text-lg transition-all duration-300 hover:bg-gray-200 hover:text-[#2FA3E3] hover:ring-2 hover:ring-[#2FA3E3] hover:ring-offset-2"
                 aria-label="メッセージ"
               >
                 <Mail size={18} />
+                {unreadMessageCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+                  </span>
+                )}
               </Link>
 
-              <Link href="/cart" className="relative flex justify-center items-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 text-lg transition-all duration-300 hover:bg-gray-200 hover:text-[#2FA3E3]" aria-label="カート">
+              <Link
+                href="/cart"
+                className="relative flex justify-center items-center w-10 h-10 rounded-full bg-gray-100 text-gray-600 text-lg transition-all duration-300 hover:bg-gray-200 hover:text-[#2FA3E3] hover:ring-2 hover:ring-[#2FA3E3] hover:ring-offset-2"
+                aria-label="カート"
+              >
                 <ShoppingCart size={18} />
                 {cartItems.length > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
@@ -152,27 +203,66 @@ export default function Header() {
                 )}
               </Link>
               
-              <Link
-                href={user?.uid ? `/profile/${user.uid}` : "/profile"}
-                className="flex items-center gap-3 px-4 py-2 rounded-full border border-gray-200 text-gray-800 hover:bg-gray-50 hover:border-[#2FA3E3] hover:text-[#2FA3E3] transition-all duration-300"
+              <HoverCard
+                trigger={
+                  <Link
+                    href={user?.uid ? `/profile/${user.uid}` : "/profile"}
+                    className="block w-10 h-10 rounded-full bg-gray-200 border-1 border-gray-300 hover:ring-2 hover:ring-[#2FA3E3] hover:ring-offset-2 transition-all duration-300"
+                  >
+                    <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                      {profile.photoURL ? (
+                        <Image
+                          src={profile.photoURL}
+                          alt="プロフィール画像"
+                          width={40}
+                          height={40}
+                          quality={90}
+                          className="w-full h-full object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <UserIcon size={20} />
+                      )}
+                    </div>
+                  </Link>
+                }
+                side="bottom"
+                align="end"
               >
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                  {profile.photoURL ? (
-                    <Image
-                      src={profile.photoURL}
-                      alt="プロフィール画像"
-                      width={40}
-                      height={40}
-                      quality={90}
-                      className="w-full h-full object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <UserIcon size={20} />
+                <Link
+                  href={user?.uid ? `/profile/${user.uid}` : "/profile"}
+                  className="block w-[280px] rounded-lg p-1 -m-1 duration-200"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-gray-200 border-1 border-gray-300 flex-shrink-0">
+                      <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                        {profile.photoURL ? (
+                          <Image
+                            src={profile.photoURL}
+                            alt="プロフィール画像"
+                            width={48}
+                            height={48}
+                            quality={90}
+                            className="w-full h-full object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <UserIcon size={24} />
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg text-gray-900 truncate">{profile.displayName || "ユーザー"}</h3>
+                      {profile.username && (
+                        <p className="text-sm text-gray-500 truncate">@{profile.username}</p>
+                      )}
+                    </div>
+                  </div>
+                  {profile.bio && (
+                    <p className="text-sm text-gray-700 leading-relaxed line-clamp-3">{profile.bio}</p>
                   )}
-                </div>
-                <span className="font-medium">{profile.displayName || "ユーザー"}</span>
-              </Link>
+                </Link>
+              </HoverCard>
             </>
           ) : (
             <>
@@ -186,6 +276,13 @@ export default function Header() {
           )}
         </div>
       </div>
+
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
+      />
     </header>
   );
 }

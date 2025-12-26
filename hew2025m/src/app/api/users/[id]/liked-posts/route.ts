@@ -45,7 +45,10 @@ export async function GET(
             });
           }
         } catch (error) {
-          console.error(`Failed to fetch user ${authorId}:`, error);
+          // permission-deniedエラーは静かに処理（ログアウト時など）
+          if ((error as any)?.code !== 'permission-denied') {
+            console.error(`Failed to fetch user ${authorId}:`, error);
+          }
         }
       })
     );
