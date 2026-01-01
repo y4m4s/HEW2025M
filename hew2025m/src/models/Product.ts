@@ -101,9 +101,9 @@ const ProductSchema = new Schema<IProduct>(
 );
 
 // インデックス設定
+ProductSchema.index({ status: 1, category: 1, createdAt: -1 }); // 複合インデックス
 ProductSchema.index({ sellerId: 1 });
-ProductSchema.index({ category: 1 });
-ProductSchema.index({ status: 1 });
+ProductSchema.index({ condition: 1 });
 ProductSchema.index({ createdAt: -1 });
 
 // モデルのエクスポート（既存のモデルがあればそれを使用）

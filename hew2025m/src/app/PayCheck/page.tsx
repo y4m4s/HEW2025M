@@ -56,7 +56,7 @@ const PAYMENT_METHODS = [
   }
 ];
 
-function PayCheckForm() {
+function PayCheckForm({ clientSecret }: { clientSecret: string }) {
   const stripe = useStripe();
   const elements = useElements();
   const { user } = useAuth();
@@ -103,36 +103,55 @@ function PayCheckForm() {
       return;
     }
 
-    if (['card', 'apple_pay', 'google_pay', 'paypay'].includes(selectedMethod)) {
-      if (!stripe || !elements) {
+    if (!stripe) {
         toast.error('システムエラー: Stripeが読み込まれていません。');
         setIsLoading(false);
         return;
-      }
+    }
 
-      try {
-        const { error } = await stripe.confirmPayment({
-          elements,
-          confirmParams: {
-            // orderIdをURLパラメータとして渡す
+    // PayPayの場合
+    if (selectedMethod === 'paypay') {
+        const { error } = await stripe.confirmPaypayPayment(clientSecret, {
             return_url: `${window.location.origin}/order-success?orderId=${orderId}`,
-            payment_method_data: {
-              billing_details: {
-                name: user?.displayName || 'Guest',
-                email: user?.email || undefined,
-              }
-            }
-          },
         });
-
         if (error) {
-          setErrorMessage(error.message || '決済に失敗しました。');
-          toast.error('入力内容を確認してください。');
+            setErrorMessage(error.message || 'PayPayでの決済に失敗しました。');
+            toast.error(error.message || 'PayPayでの決済に失敗しました。');
+            setIsLoading(false); // エラー時はローディング解除
         }
-      } catch (err: any) {
-        console.error(err);
-        setErrorMessage('システムエラーが発生しました。');
+        // 成功時はPayPayにリダイレクトされるので、これ以上は実行されない
+        return;
+    }
+    
+    // その他の決済方法 (カードなど)
+    if (!elements) {
+        toast.error('システムエラー: Stripe Elementsが読み込まれていません。');
+        setIsLoading(false);
+        return;
+    }
+
+    try {
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          // orderIdをURLパラメータとして渡す
+          return_url: `${window.location.origin}/order-success?orderId=${orderId}`,
+          payment_method_data: {
+            billing_details: {
+              name: user?.displayName || 'Guest',
+              email: user?.email || undefined,
+            }
+          }
+        },
+      });
+
+      if (error) {
+        setErrorMessage(error.message || '決済に失敗しました。');
+        toast.error('入力内容を確認してください。');
       }
+    } catch (err: any) {
+      console.error(err);
+      setErrorMessage('システムエラーが発生しました。');
     }
 
     setIsLoading(false);
@@ -182,16 +201,20 @@ function PayCheckForm() {
               {/* stripe forms*/}
               {isSelected && isStripeMethod && (
                 <div className="px-6 pb-6 pt-0 animate-in slide-in-from-top-2 duration-300">
-                  <div className="p-5 bg-white border border-gray-200 rounded-lg shadow-inner mt-2 min-h-[150px]">
-                    <PaymentElement 
-                      id="payment-element"
-                      options={{ 
-                        layout: "tabs",
-                        // PayPay選択時はPayPayのみ、それ以外はカード（+ウォレット）を表示
-                        paymentMethodOrder: method.id === 'paypay' ? ['paypay'] : ['card']
-                      }}
-                    />
-                  </div>
+                  {method.id === 'paypay' ? (
+                    <div className="p-5 text-center text-gray-600 bg-gray-50 rounded-lg">
+                      <p>「支払う」ボタンをクリックすると、PayPayのページに移動して決済を完了します。</p>
+                    </div>
+                  ) : (
+                    <div className="p-5 bg-white border border-gray-200 rounded-lg shadow-inner mt-2 min-h-[150px]">
+                      <PaymentElement 
+                        id="payment-element"
+                        options={{ 
+                          layout: "tabs",
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -278,7 +301,7 @@ export default function PayCheck() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 flex flex-col">
       <Elements stripe={stripePromise} options={{ clientSecret, locale: 'ja' }}>
-        <PayCheckForm />
+        <PayCheckForm clientSecret={clientSecret} />
       </Elements>
     </div>
   );

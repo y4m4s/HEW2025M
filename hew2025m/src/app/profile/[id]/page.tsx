@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 
 import { useRouter, useParams } from "next/navigation";
-import { User, LogOut, Loader2 } from "lucide-react";
+import { User, LogOut, Loader2, Home } from "lucide-react";
 
 import { useAuth } from "@/lib/useAuth";
 import { auth, db } from "@/lib/firebase";
@@ -317,6 +317,13 @@ export default function UserProfilePage() {
                         onClick={() => setEditOpen(true)}
                       >
                         プロフィール編集
+                      </button>
+                      <button
+                        className="w-full bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
+                        onClick={() => router.push(`/profile/${userId}/address`)}
+                      >
+                        <Home size={18} />
+                        お届け先住所を登録する
                       </button>
                       <button
                         className="w-full border border-red-500 text-red-500 py-3 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
