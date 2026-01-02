@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 
 import { useRouter, useParams } from "next/navigation";
-import { User, LogOut, Loader2 } from "lucide-react";
+import { User, LogOut, Loader2, Home } from "lucide-react";
 
 import { useAuth } from "@/lib/useAuth";
 import { auth, db } from "@/lib/firebase";
@@ -346,6 +346,13 @@ export default function UserProfilePage() {
                         プロフィール編集
                       </button>
                       <button
+                        className="w-full bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
+                        onClick={() => router.push(`/profile/${userId}/address`)}
+                      >
+                        <Home size={18} />
+                        お届け先住所を登録する
+                      </button>
+                      <button
                         className="w-full border border-red-500 text-red-500 py-3 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
                         onClick={handleLogoutClick}
                       >
@@ -358,8 +365,8 @@ export default function UserProfilePage() {
                     <>
                       <button
                         className={`w-full py-3 rounded-lg transition-colors ${isFollowing
-                            ? 'border border-gray-300 text-gray-700 hover:bg-red-50 hover:border-red-300 hover:text-red-600'
-                            : 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
+                          ? 'border border-gray-300 text-gray-700 hover:bg-red-50 hover:border-red-300 hover:text-red-600'
+                          : 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
                           }`}
                         onClick={handleFollowToggle}
                       >
@@ -394,8 +401,8 @@ export default function UserProfilePage() {
               <div className="flex border-b text-sm overflow-x-auto">
                 <button
                   className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "selling"
-                      ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
-                      : "text-gray-600 hover:text-[#2FA3E3]"
+                    ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
+                    : "text-gray-600 hover:text-[#2FA3E3]"
                     }`}
                   onClick={() => setActiveTab("selling")}
                 >
@@ -403,8 +410,8 @@ export default function UserProfilePage() {
                 </button>
                 <button
                   className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "history"
-                      ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
-                      : "text-gray-600 hover:text-[#2FA3E3]"
+                    ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
+                    : "text-gray-600 hover:text-[#2FA3E3]"
                     }`}
                   onClick={() => setActiveTab("history")}
                 >
@@ -412,8 +419,8 @@ export default function UserProfilePage() {
                 </button>
                 <button
                   className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "posts"
-                      ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
-                      : "text-gray-600 hover:text-[#2FA3E3]"
+                    ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
+                    : "text-gray-600 hover:text-[#2FA3E3]"
                     }`}
                   onClick={() => setActiveTab("posts")}
                 >
@@ -422,11 +429,10 @@ export default function UserProfilePage() {
 
                 {isOwnProfile && (
                   <button
-                    className={`px-6 py-4 font-medium transition-colors ${
-                      activeTab === "purchases"
+                    className={`px-6 py-4 font-medium transition-colors ${activeTab === "purchases"
                         ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                         : "text-gray-600 hover:text-[#2FA3E3]"
-                    }`}
+                      }`}
                     onClick={() => setActiveTab("purchases")}
                   >
                     購入履歴 ({purchasesCount})
@@ -436,8 +442,8 @@ export default function UserProfilePage() {
                 {isOwnProfile && (
                   <button
                     className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "bookmarks"
-                        ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
-                        : "text-gray-600 hover:text-[#2FA3E3]"
+                      ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
+                      : "text-gray-600 hover:text-[#2FA3E3]"
                       }`}
                     onClick={() => setActiveTab("bookmarks")}
                   >
@@ -448,8 +454,8 @@ export default function UserProfilePage() {
                 {isOwnProfile && (
                   <button
                     className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "likedPosts"
-                        ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
-                        : "text-gray-600 hover:text-[#2FA3E3]"
+                      ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
+                      : "text-gray-600 hover:text-[#2FA3E3]"
                       }`}
                     onClick={() => setActiveTab("likedPosts")}
                   >
