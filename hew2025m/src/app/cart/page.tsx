@@ -139,7 +139,7 @@ export default function CartPage() {
 
   // 決済ページへ進むための関数
   const proceedToPayment = () => {
-    router.push('/pay');
+    router.push('/Pay');
   };
 
   return (

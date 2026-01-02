@@ -1,77 +1,69 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-// Stripeインスタンスの初期化
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-10-28.acacia',
+  apiVersion: '2024-04-10', // 最新のAPIバージョンを使用
 });
 
-/**
- * 決済処理のAPIエンドポイント
- * クレジットカードとPayPayに対応
- */
 export async function POST(request: Request) {
   try {
-    // リクエストボディから商品情報を取得
     const body = await request.json();
-    const { items } = body;
+    const { items, userId, shippingAddress } = body;
 
-    // バリデーション: itemsが存在し、配列であることを確認
     if (!items || !Array.isArray(items) || items.length === 0) {
       return new NextResponse('商品データが無効です', { status: 400 });
     }
 
-    // 商品の合計金額を計算
     const subtotalAmount = items.reduce((accumulator: number, item: any) => {
       return accumulator + item.price * item.quantity;
     }, 0);
 
-    // 送料の計算（商品がある場合のみ500円）
     const shippingFee = subtotalAmount > 0 ? 500 : 0;
-    
-    // 最終的な合計金額
     const totalAmount = subtotalAmount + shippingFee;
 
-    // 金額の妥当性チェック
     if (totalAmount <= 0) {
       return new NextResponse('金額が無効です', { status: 400 });
     }
 
-    // Stripe PaymentIntentの作成
-    // クレジットカード（Visa, Mastercard, JCB, Amex）とPayPayに対応
+    // PaymentIntentの作成
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: totalAmount, // 支払い金額（円）
-      currency: 'jpy', // 通貨は日本円
+      amount: totalAmount,
+      currency: 'jpy',
+      description: `User ${userId} - ${items.length} items purchase`,
       
-      // 対応する決済方法
-      // 'card' = クレジットカード, Apple Pay, Google Pay
-      // 'paypay' = PayPay
-      // 注意: Stripe DashboardでPayPayを有効にする必要があります
-      payment_method_types: ['card', 'paypay'],
-      
-      // メタデータ（オプション：注文情報を保存）
+      // 【重要修正】決済手段の自動管理を有効にする
+      // これにより、ダッシュボードで有効にした PayPay, Apple Pay, Google Pay が自動で表示されます
+      automatic_payment_methods: {
+        enabled: true,
+      },
+
+      shipping: shippingAddress ? {
+        name: shippingAddress.name,
+        address: {
+          line1: shippingAddress.line1,
+          line2: shippingAddress.line2,
+          city: shippingAddress.city,
+          postal_code: shippingAddress.postal_code,
+          country: 'JP',
+        },
+      } : undefined,
+
       metadata: {
-        subtotal: subtotalAmount,
-        shipping: shippingFee,
+        userId: userId,
         itemCount: items.length,
       },
     });
 
-    // フロントエンドにclientSecretを返す
-    // このシークレットを使って決済フォームを表示
     return NextResponse.json({ 
       clientSecret: paymentIntent.client_secret,
       amount: totalAmount,
     });
 
   } catch (error: any) {
-    // エラーログの出力
-    console.error('Stripe API エラー:', error);
-    
-    // エラーレスポンスの返却
+    console.error('Stripe API Error:', error);
     return new NextResponse(
-      `サーバーエラー: ${error.message}`, 
-      { status: 500 }
+      JSON.stringify({ error: error.message }), 
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }
