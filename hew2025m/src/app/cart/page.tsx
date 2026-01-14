@@ -59,7 +59,7 @@ export default function CartPage() {
 
               // 商品が売り切れまたは予約済みの場合はnullを返してカートから削除
               if (product.status === 'sold' || product.status === 'reserved') {
-                console.warn(`商品ID ${item.id} は${product.status === 'sold' ? '売り切れ' : '予約済み'}です`);
+                console.warn(`商品ID ${item.id} は${product.status === 'sold' ? 'SOLD' : 'SOLD'}です`);
                 removeItem(item.id);
                 return null;
               }
@@ -134,12 +134,10 @@ export default function CartPage() {
   // 有効な商品のみで計算
   const validProducts = products.filter((product) => product !== null);
   const subtotal = validProducts.reduce((acc, product) => acc + product.price, 0);
-  const shippingFee = subtotal > 0 ? 500 : 0; // カートが空の場合は送料0
-  const total = subtotal + shippingFee;
 
   // 決済ページへ進むための関数
   const proceedToPayment = () => {
-    router.push('/Pay');
+    router.push('/pay');
   };
 
   return (
@@ -199,15 +197,14 @@ export default function CartPage() {
                     <span>小計</span>
                     <span>¥{subtotal.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>送料</span>
-                    <span>¥{shippingFee.toLocaleString()}</span>
-                  </div>
                   <div className="flex justify-between font-bold text-xl border-t pt-4 mt-4 text-gray-800">
-                    <span>合計</span>
-                    <span className="text-[#2FA3E3]">¥{total.toLocaleString()}</span>
+                    <span>小計 (税抜)</span>
+                    <span className="text-[#2FA3E3]">¥{subtotal.toLocaleString()}</span>
                   </div>
                 </div>
+                <p className="text-xs text-gray-500 mt-3 text-center">
+                  ※送料はお届け先住所によって異なります
+                </p>
                 <Button
                   onClick={proceedToPayment}
                   variant="primary"

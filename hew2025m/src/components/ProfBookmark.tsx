@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Fish, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
-import ProductCard, { Product } from "./ProductCard";
+import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
 
 interface Bookmark {
@@ -17,12 +18,22 @@ interface Bookmark {
   createdAt: string;
 }
 
+interface Product {
+  _id: string;
+  title: string;
+  price: number;
+  images: string[];
+  createdAt: string;
+  status: string;
+}
+
 interface ProfBookmarkProps {
   onCountChange?: (count: number) => void;
 }
 
 export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
   const { user } = useAuth();
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,21 +73,13 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
               const data = await response.json();
               const product = data.product;
 
-              // ProductCard用のフォーマットに変換
               return {
-                id: product._id,
-                name: product.title,
+                _id: product._id,
+                title: product.title,
                 price: product.price,
-                location: product.location || '場所未設定',
-                condition: product.condition || '状態不明',
-                postedDate: new Date(product.createdAt).toLocaleDateString('ja-JP', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                }),
-                imageUrl: product.images?.[0] || bookmark.image,
+                images: product.images || [bookmark.image],
+                createdAt: product.createdAt,
                 status: product.status || 'available',
-                sellerPhotoURL: product.sellerPhotoURL,
               } as Product;
             } catch (error) {
               console.error(`商品 ${bookmark.productId} の取得エラー:`, error);
@@ -106,6 +109,15 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
 
     fetchBookmarks();
   }, [user, onCountChange]);
+
+  // 日付をフォーマットする関数（YYYY/MM/DD形式）
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
+  };
 
   if (loading) {
     return (
@@ -152,9 +164,50 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
   return (
     <div className="p-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {paginatedProducts.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
+        {paginatedProducts.map((product) => {
+          const isSold = product.status === 'sold' || product.status === 'reserved';
+
+          return (
+            <div
+              key={product._id}
+              className={`bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition cursor-pointer ${
+                isSold ? 'opacity-75' : ''
+              }`}
+              onClick={() => router.push(`/product-detail/${product._id}`)}
+            >
+              <div className="h-36 bg-gray-200 flex items-center justify-center overflow-hidden relative">
+                {product.images && product.images.length > 0 ? (
+                  <Image
+                    src={product.images[0]}
+                    alt={product.title}
+                    width={400}
+                    height={300}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Fish className="text-gray-400" />
+                )}
+                {/* SOLDバッジ（売却済み・予約済みの場合のみ表示） */}
+                {isSold && (
+                  <div className="absolute top-0 left-0 w-24 h-24 overflow-hidden">
+                    <div className="absolute top-4 -left-8 w-32 bg-red-600 text-white text-center text-xs font-bold py-1 transform -rotate-45 shadow-lg">
+                      SOLD
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="p-3 text-sm">
+                <p className="font-medium truncate">{product.title}</p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className={`text-lg font-bold ${isSold ? 'text-gray-500' : 'text-[#2FA3E3]'}`}>
+                    ¥{product.price.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-500">{formatDate(product.createdAt)}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* ページネーション */}

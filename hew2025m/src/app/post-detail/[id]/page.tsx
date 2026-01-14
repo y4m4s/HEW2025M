@@ -243,10 +243,8 @@ export default function PostDetailPage() {
     const date = new Date(dateString);
     return date.toLocaleDateString('ja-JP', {
       year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      month: '2-digit',
+      day: '2-digit'
     });
   };
 
@@ -273,8 +271,15 @@ export default function PostDetailPage() {
 
     try {
       setDeleting(true);
+
+      // Firebaseトークンを取得
+      const token = await user.getIdToken();
+
       const response = await fetch(`/api/posts/${params.id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {

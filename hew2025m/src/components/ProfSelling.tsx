@@ -68,18 +68,13 @@ export default function ProfSelling({ onCountChange, userId }: ProfSellingProps)
     fetchProducts();
   }, [user, userId, onCountChange]);
 
-  // 相対時間を計算する関数
-  const getRelativeTime = (dateString: string) => {
-    const now = new Date();
+  // 日付をフォーマットする関数（YYYY/MM/DD形式）
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return "今日";
-    if (diffDays === 1) return "1日前";
-    if (diffDays < 7) return `${diffDays}日前`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}週間前`;
-    return `${Math.floor(diffDays / 30)}ヶ月前`;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
   };
 
   if (loading) {
@@ -148,8 +143,10 @@ export default function ProfSelling({ onCountChange, userId }: ProfSellingProps)
             </div>
             <div className="p-3 text-sm">
               <p className="font-medium truncate">{product.title}</p>
-              <p className="text-lg font-bold text-[#2FA3E3]">¥{product.price.toLocaleString()}</p>
-              <p className="text-xs text-gray-500">出品中・{getRelativeTime(product.createdAt)}</p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-lg font-bold text-[#2FA3E3]">¥{product.price.toLocaleString()}</p>
+                <p className="text-xs text-gray-500">{formatDate(product.createdAt)}</p>
+              </div>
             </div>
           </div>
         ))}

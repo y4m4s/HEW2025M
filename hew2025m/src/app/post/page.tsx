@@ -237,10 +237,18 @@ export default function Post() {
 
       // 投稿を作成
       setUploadProgress('投稿を作成中...');
+
+      // Firebaseトークンを取得
+      const token = await user?.getIdToken();
+      if (!token) {
+        throw new Error('認証トークンの取得に失敗しました');
+      }
+
       const postResponse = await fetch('/api/posts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           title,
@@ -268,7 +276,7 @@ export default function Post() {
 
       // 少し待ってから遷移（トーストが表示されるように）
       setTimeout(() => {
-        router.push('/postList');
+        router.push('/post-list');
       }, 500);
     } catch (error) {
       console.error('投稿エラー:', error);

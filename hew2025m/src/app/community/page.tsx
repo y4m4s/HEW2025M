@@ -63,8 +63,8 @@ export default function CommunityPage() {
     } else {
       return date.toLocaleDateString('ja-JP', {
         year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+        month: '2-digit',
+        day: '2-digit'
       });
     }
   }, []);

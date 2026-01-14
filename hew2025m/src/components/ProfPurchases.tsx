@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Package, Loader2, MapPin, CreditCard, Fish, Calendar } from "lucide-react";
+import { Loader2, Fish, Calendar } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
@@ -69,17 +69,6 @@ export default function ProfPurchases({ onCountChange, userId }: ProfPurchasesPr
     return statusMap[status] || status;
   };
 
-  const getPaymentMethodLabel = (method: string): string => {
-    const methodMap: Record<string, string> = {
-      'card': 'クレジットカード',
-      'paypay': 'PayPay',
-      'applepay': 'Apple Pay',
-      'rakuten': '楽天ペイ',
-      'au': 'AU Pay',
-    };
-    return methodMap[method] || method;
-  };
-
   const getStatusColor = (status: string): string => {
     switch (status) {
       case 'delivered':
@@ -112,8 +101,8 @@ export default function ProfPurchases({ onCountChange, userId }: ProfPurchasesPr
     } else {
       return date.toLocaleDateString('ja-JP', {
         year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+        month: '2-digit',
+        day: '2-digit'
       });
     }
   };
@@ -132,7 +121,7 @@ export default function ProfPurchases({ onCountChange, userId }: ProfPurchasesPr
   if (purchases.length === 0) {
     return (
       <div className="p-6 text-center">
-        <Package size={64} className="mx-auto text-gray-300 mb-4" />
+        <Fish size={64} className="mx-auto text-gray-300 mb-4" />
         <p className="text-gray-500">購入履歴がありません</p>
       </div>
     );
@@ -143,115 +132,77 @@ export default function ProfPurchases({ onCountChange, userId }: ProfPurchasesPr
       {purchases.map((order) => (
         <div
           key={order.id}
-          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg hover:transform hover:-translate-y-1 transition-all duration-300"
+          className="bg-white rounded-lg shadow-md overflow-hidden"
         >
-          {/* ヘッダー部分 */}
+          {/* ヘッダー部分 - 購入日と合計金額 */}
           <div className="bg-gray-50 px-6 py-4 border-b">
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <Calendar size={16} className="text-gray-400" />
                 <p className="text-sm text-gray-600">
                   {formatDate(order.createdAt)}
                 </p>
               </div>
-              <div className="flex flex-col items-end gap-2">
-                <span className={`text-xs px-3 py-1 rounded-full font-semibold ${getStatusColor(order.orderStatus)}`}>
-                  {getOrderStatusLabel(order.orderStatus)}
-                </span>
-                <p className="text-xs text-gray-500">注文ID: {order.id.slice(0, 12)}...</p>
+              <div className="text-right">
+                <p className="text-xs text-gray-500 mb-1">合計金額</p>
+                <p className="text-xl font-bold text-[#2FA3E3]">
+                  ¥{order.totalAmount.toLocaleString()}
+                </p>
               </div>
             </div>
           </div>
 
           {/* 商品リスト */}
-          <div className="p-6">
-            <div className="space-y-4 mb-4">
-              {order.items.map((item, index) => (
-                <Link
-                  key={index}
-                  href={`/product-detail/${item.productId}`}
-                  className="flex gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                >
+          <div className="divide-y">
+            {order.items.map((item, index) => (
+              <Link
+                key={index}
+                href={`/product-detail/${item.productId}`}
+                className="block p-6 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex gap-4">
                   {/* 商品画像 */}
-                  <div className="w-24 h-24 flex-shrink-0 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+                  <div className="w-32 h-32 flex-shrink-0 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                     {item.productImage ? (
                       <Image
                         src={item.productImage}
                         alt={item.productName}
-                        width={96}
-                        height={96}
+                        width={128}
+                        height={128}
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <Fish size={32} className="text-gray-400" />
+                      <Fish size={40} className="text-gray-400" />
                     )}
                   </div>
 
                   {/* 商品情報 */}
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
-                      <h3 className="font-semibold text-gray-800 mb-1 line-clamp-2">
+                      <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-1">
                         {item.productName}
                       </h3>
-                      <p className="text-sm text-gray-600">数量: {item.quantity}</p>
+                      <div className="flex items-center gap-3 text-sm text-gray-500 mb-2">
+                        <span>カテゴリ: {item.category}</span>
+                        <span>•</span>
+                        <span>状態: {item.condition}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-gray-500">
+                        <span>数量: {item.quantity}</span>
+                      </div>
                     </div>
-                    <p className="text-lg font-bold text-[#2FA3E3]">
-                      ¥{item.price.toLocaleString()}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            {/* 区切り線 */}
-            <div className="border-t my-4"></div>
-
-            {/* 支払い情報と配送情報 */}
-            <div className="space-y-3">
-              {/* 支払い方法 */}
-              <div className="flex items-center gap-2 text-sm">
-                <CreditCard size={16} className="text-gray-400 flex-shrink-0" />
-                <span className="text-gray-600">
-                  {getPaymentMethodLabel(order.paymentMethod)}
-                </span>
-              </div>
-
-              {/* 追跡番号 */}
-              {order.trackingNumber && (
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin size={16} className="text-gray-400 flex-shrink-0" />
-                  <span className="text-gray-600">
-                    追跡番号: {order.trackingNumber}
-                  </span>
-                </div>
-              )}
-
-              {/* 配送先住所 */}
-              {order.shippingAddress && (
-                <div className="flex items-start gap-2 text-sm">
-                  <MapPin size={16} className="text-gray-400 flex-shrink-0 mt-0.5" />
-                  <div className="text-gray-600">
-                    <p>〒{order.shippingAddress.zipCode}</p>
-                    <p>
-                      {order.shippingAddress.prefecture}
-                      {order.shippingAddress.city}
-                      {order.shippingAddress.street}
-                    </p>
+                    <div className="flex justify-between items-end mt-3">
+                      <span className="text-2xl font-bold text-gray-800">
+                        ¥{item.price.toLocaleString()}
+                      </span>
+                      <span className={`text-xs px-3 py-1 rounded-full font-semibold ${getStatusColor(order.orderStatus)}`}>
+                        {getOrderStatusLabel(order.orderStatus)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
-
-            {/* 区切り線 */}
-            <div className="border-t my-4"></div>
-
-            {/* 合計金額 */}
-            <div className="flex justify-between items-center">
-              <span className="text-lg font-semibold text-gray-800">合計金額</span>
-              <span className="text-2xl font-bold text-[#2FA3E3]">
-                ¥{order.totalAmount.toLocaleString()}
-              </span>
-            </div>
+              </Link>
+            ))}
           </div>
         </div>
       ))}

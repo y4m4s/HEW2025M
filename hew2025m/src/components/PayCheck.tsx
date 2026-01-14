@@ -138,9 +138,18 @@ export default function PayCheck() {
         }
 
         // Create order
+        // Firebaseトークンを取得
+        const token = await user?.getIdToken();
+        if (!token) {
+          throw new Error('認証トークンの取得に失敗しました');
+        }
+
         const orderResponse = await fetch('/api/orders', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
           body: JSON.stringify({
             buyerId: user.uid,
             buyerName,

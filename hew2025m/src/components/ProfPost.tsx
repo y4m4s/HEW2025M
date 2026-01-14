@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Fish, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
-import ProfilePostCard, { ProfilePost } from "@/components/ProfilePostCard";
+import PostCard, { Post } from "@/components/PostCard";
 import Button from "@/components/Button";
 
 interface ProfPostProps {
@@ -13,7 +13,7 @@ interface ProfPostProps {
 
 export default function ProfPost({ onCountChange, userId }: ProfPostProps) {
   const { user } = useAuth();
-  const [posts, setPosts] = useState<ProfilePost[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 9;
@@ -21,23 +21,11 @@ export default function ProfPost({ onCountChange, userId }: ProfPostProps) {
   // 日付のフォーマット
   const formatDate = useCallback((dateString: string): string => {
     const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      return '今日';
-    } else if (diffDays === 1) {
-      return '昨日';
-    } else if (diffDays < 7) {
-      return `${diffDays}日前`;
-    } else {
-      return date.toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    }
+    return date.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
   }, []);
 
   useEffect(() => {
@@ -57,8 +45,8 @@ export default function ProfPost({ onCountChange, userId }: ProfPostProps) {
 
         const data = await response.json();
 
-        // データベースのデータをProfilePost型に変換
-        const formattedPosts: ProfilePost[] = data.posts.map((post: {
+        // データベースのデータをPost型に変換
+        const formattedPosts: Post[] = data.posts.map((post: {
           _id: string;
           title: string;
           content: string;
@@ -68,15 +56,20 @@ export default function ProfPost({ onCountChange, userId }: ProfPostProps) {
           likes?: number;
           comments?: unknown[];
           media?: Array<{ url: string; order: number }>;
+          author?: { displayName?: string; uid?: string; photoURL?: string };
         }) => {
           return {
             id: post._id,
             title: post.title,
             excerpt: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
             location: post.address || '場所未設定',
+            author: post.author?.displayName || '不明なユーザー',
+            authorId: post.author?.uid || userId,
+            authorPhotoURL: post.author?.photoURL,
             date: formatDate(post.createdAt),
             likes: post.likes || 0,
             comments: post.comments?.length || 0,
+            category: 'sea' as const,
             isLiked: false,
             imageUrl: post.media && post.media.length > 0
               ? post.media.sort((a, b) => a.order - b.order)[0].url
@@ -149,9 +142,9 @@ export default function ProfPost({ onCountChange, userId }: ProfPostProps) {
 
   return (
     <div className="p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {paginatedPosts.map((post) => (
-          <ProfilePostCard key={post.id} post={post} />
+          <PostCard key={post.id} post={post} variant="default" />
         ))}
       </div>
 

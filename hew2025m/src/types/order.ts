@@ -19,7 +19,7 @@ export interface Order {
   totalAmount: number;
   shippingFee: number;
   subtotal: number;
-  paymentMethod: 'card' | 'paypay' | 'applepay' | 'rakuten' | 'au';
+  paymentMethod: 'card' | 'paypay' | 'apple_pay' | 'google_pay';
   paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded';
   paymentIntentId?: string;
   orderStatus: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';

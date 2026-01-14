@@ -114,7 +114,7 @@ export default function SearchPage() {
       const params = new URLSearchParams();
       if (category) params.append('category', category);
       if (condition) params.append('condition', condition);
-      params.append('status', 'available');
+      // statusフィルターを削除 - 全ての商品（販売中とSOLD）を表示
       params.append('page', pageNum.toString());
       params.append('limit', '12');
 
@@ -135,6 +135,7 @@ export default function SearchPage() {
         title: string;
         price: number;
         condition: string;
+        status?: 'available' | 'sold' | 'reserved';
         images?: string[];
         sellerId?: string;
         sellerName?: string;
@@ -152,6 +153,7 @@ export default function SearchPage() {
           condition: formatCondition(product.condition),
           postedDate: formatDate(product.createdAt),
           imageUrl: product.images?.[0],
+          status: product.status,
           sellerPhotoURL,
         };
       });
@@ -171,7 +173,12 @@ export default function SearchPage() {
       if (resetProducts) {
         setProducts(filtered);
       } else {
-        setProducts((prev) => [...prev, ...filtered]);
+        // 重複を防ぐため、既存のIDセットを作成
+        setProducts((prev) => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const newProducts = filtered.filter(p => !existingIds.has(p.id));
+          return [...prev, ...newProducts];
+        });
       }
 
       setHasMore(data.pagination.hasMore);
@@ -245,8 +252,8 @@ export default function SearchPage() {
     } else {
       return date.toLocaleDateString('ja-JP', {
         year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+        month: '2-digit',
+        day: '2-digit'
       });
     }
   };

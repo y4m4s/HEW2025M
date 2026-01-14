@@ -123,8 +123,8 @@ export default function RatingListModal({
                         <span className="text-xs text-gray-500 flex-shrink-0">
                           {rating.createdAt.toLocaleDateString("ja-JP", {
                             year: "numeric",
-                            month: "long",
-                            day: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
                           })}
                         </span>
                       </div>

@@ -32,6 +32,8 @@ export async function createFollowNotification(
       tag: 'フォロー',
       isUnread: true,
       link: `/profile/${followingUserId}`, // フォローしたユーザーのプロフィールへのリンク
+      actorUserId: followingUserId,
+      actorDisplayName: displayName,
     };
 
     // 通知をFirestoreに保存
@@ -81,6 +83,8 @@ export async function createRatingNotification(
       tag: '評価',
       isUnread: true,
       link: `/profile/${ratedUserId}`, // 評価されたユーザー（自分）のプロフィールへのリンク
+      actorUserId: raterUserId,
+      actorDisplayName: displayName,
     };
 
     // 通知をFirestoreに保存
@@ -124,6 +128,8 @@ export async function createCommentNotification(
       tag: 'コメント',
       isUnread: true,
       link: `/product-detail/${productId}#comment-${commentId}`, // コメント位置へのリンク
+      actorUserId: commenterUserId,
+      actorDisplayName: commenterName,
     };
 
     // 通知をFirestoreに保存
@@ -167,6 +173,8 @@ export async function createPostCommentNotification(
       tag: 'コメント',
       isUnread: true,
       link: `/post-detail/${postId}#comment-${commentId}`, // コメント位置へのリンク
+      actorUserId: commenterUserId,
+      actorDisplayName: commenterName,
     };
 
     // 通知をFirestoreに保存
@@ -214,6 +222,8 @@ export async function createReplyNotification(
       tag: '返信',
       isUnread: true,
       link: `/${linkPath}/${itemId}#comment-${commentId}`, // コメント位置へのリンク
+      actorUserId: replierUserId,
+      actorDisplayName: replierName,
     };
 
     // 通知をFirestoreに保存
@@ -264,6 +274,8 @@ export async function createPostLikeNotification(
       tag: 'いいね',
       isUnread: true,
       link: `/post-detail/${postId}`,
+      actorUserId: likerUserId,
+      actorDisplayName: displayName,
       // 識別用メタデータ（削除時に使用）
       metadata: {
         type: 'post_like',

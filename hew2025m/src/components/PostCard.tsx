@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Fish, MapPin, Heart, MessageCircle, User } from 'lucide-react';
+import { Fish, Heart, MessageCircle, User } from 'lucide-react';
 
 export interface Post {
   id: string;
@@ -42,40 +42,7 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
             {/* コンテンツ */}
             <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
               <div className="flex-1 min-h-0">
-                <h3 className="font-semibold text-lg mb-2 line-clamp-1 h-7">{post.title}</h3>
-                <p className="text-gray-600 text-sm m-1 line-clamp-2 break-all">{post.excerpt}</p>
-
-                {/* タグ */}
-                {post.tags && post.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {post.tags.slice(0, 2).map((tag, index) => (
-                      <span
-                        key={index}
-                        className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-medium"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    {post.tags.length > 2 && (
-                      <span className="text-xs text-gray-500">+{post.tags.length - 2}</span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* 位置情報 - 常に表示（スペースを確保） */}
-              <div className="flex items-center text-xs text-gray-500 mx-1 mb-2 h-4">
-                {post.location && post.location !== '場所未設定' ? (
-                  <>
-                    <MapPin size={12} className="mr-1 flex-shrink-0" />
-                    <span className="truncate">{post.location}</span>
-                  </>
-                ) : (
-                  <>
-                    <MapPin size={14} className="mr-1 flex-shrink-0 text-gray-400" />
-                    <span className="text-gray-400">位置情報なし</span>
-                  </>
-                )}
+                <h3 className="font-semibold text-lg mb-2 line-clamp-2">{post.title}</h3>
               </div>
 
               <div className="flex justify-between items-center text-sm text-gray-500 mt-auto">
@@ -116,36 +83,6 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
 
           <div className="p-8 flex flex-col flex-1">
             <h3 className="font-semibold text-xl mb-3 line-clamp-2">{post.title}</h3>
-            <p className="text-gray-600 ml-2 mb-4 line-clamp-3">{post.excerpt}</p>
-
-            {/* タグ */}
-            {post.tags && post.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 ml-2 mb-4">
-                {post.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* 位置情報 - 常に表示（スペースを確保） */}
-            <div className="flex items-center text-sm text-gray-600 ml-2 mb-4 h-5">
-              {post.location && post.location !== '場所未設定' ? (
-                <>
-                  <MapPin size={14} className="mr-1 flex-shrink-0" />
-                  <span className="truncate">{post.location}</span>
-                </>
-              ) : (
-                <>
-                  <MapPin size={14} className="mr-1 flex-shrink-0 text-gray-400" />
-                  <span className="text-gray-400">位置情報なし</span>
-                </>
-              )}
-            </div>
 
             <div className="flex justify-between items-center mt-auto">
               <div className="flex items-center gap-2 min-w-0 mr-4">
@@ -168,7 +105,7 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
 
   return (
     <Link href={`/post-detail/${post.id}`}>
-      <article className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-lg hover:transform hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col h-[420px]">
+      <article className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-lg hover:transform hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col h-full">
         <div className="relative flex-shrink-0">
           <div className="h-48 bg-gray-200 rounded-t-lg flex items-center justify-center overflow-hidden">
             {post.imageUrl ? (
@@ -180,71 +117,24 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
               </div>
             )}
           </div>
-          {post.tags && post.tags.length > 0 && (
-            <div className="absolute top-3 left-3 flex flex-wrap gap-2 max-w-[calc(100%-24px)]">
-              {post.tags.slice(0, 2).map((tag, index) => (
-                <span
-                  key={index}
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm hover:shadow-xl transition-shadow duration-200"
-                  style={{ backdropFilter: 'blur(8px)' }}
-                >
-                  {tag}
-                </span>
-              ))}
-              {post.tags.length > 2 && (
-                <span className="bg-gray-800/90 text-white px-2.5 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm">
-                  +{post.tags.length - 2}
-                </span>
-              )}
-            </div>
-          )}
         </div>
 
-        <div className="p-4 flex flex-col h-full">
-          <div className="mb-2 flex-shrink-0">
+        <div className="p-4 flex flex-col flex-1">
+          <div className="mb-3 flex-shrink-0">
             <h3 className="font-semibold text-lg line-clamp-2">{post.title}</h3>
           </div>
-          <div className="mb-3 flex-shrink-0">
-            <p className="text-gray-600 text-sm line-clamp-3">{post.excerpt}</p>
-          </div>
 
-          <div className="flex items-center text-sm text-gray-600 mb-3 flex-shrink-0 mt-auto">
-            {post.location && post.location !== '場所未設定' ? (
-              <>
-                <MapPin size={14} className="mr-1 flex-shrink-0" />
-                <span className="truncate">{post.location}</span>
-              </>
-            ) : (
-              <>
-                <MapPin size={14} className="mr-1 flex-shrink-0 text-gray-400" />
-                <span className="text-gray-400">位置情報なし</span>
-              </>
-            )}
-          </div>
-
-          <div className="flex justify-between items-center pt-3 border-t flex-shrink-0">
-            <div className="flex items-center gap-2 min-w-0 mr-2">
-              <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-                {post.authorPhotoURL ? (
-                  <Image src={post.authorPhotoURL} alt={post.author} width={24} height={24} quality={90} className="w-full h-full object-cover" />
-                ) : (
-                  <User size={12} className="text-gray-600" />
-                )}
-              </div>
-              <span className="text-sm font-medium truncate">{post.author}</span>
-            </div>
+          <div className="flex justify-between items-center pt-3 border-t flex-shrink-0 mt-auto">
+            <span className="text-sm text-gray-500">{post.date}</span>
 
             <div className="flex items-center gap-3 text-sm text-gray-600 flex-shrink-0">
-              <span className="hidden sm:block">{post.date}</span>
-              <div className="flex items-center gap-2">
-                <div className={`flex items-center gap-1 ${post.isLiked ? 'text-red-500' : ''}`}>
-                  <Heart size={14} className={post.isLiked ? 'fill-current' : ''} />
-                  <span>{post.likes}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <MessageCircle size={14} />
-                  <span>{post.comments}</span>
-                </div>
+              <div className={`flex items-center gap-1 ${post.isLiked ? 'text-red-500' : ''}`}>
+                <Heart size={14} className={post.isLiked ? 'fill-current' : ''} />
+                <span>{post.likes}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <MessageCircle size={14} />
+                <span>{post.comments}</span>
               </div>
             </div>
           </div>

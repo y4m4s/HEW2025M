@@ -7,6 +7,7 @@ import { Megaphone, MessageSquare, Trash2, Heart, Star, ShoppingCart, UserPlus, 
 import { db } from '@/lib/firebase';
 import CustomSelect from '@/components/CustomSelect';
 import Button from '@/components/Button';
+import UserHoverCard from '@/components/UserHoverCard';
 import {
   collection,
   query,
@@ -30,6 +31,8 @@ interface NotificationItem {
   isUnread: boolean;
   link?: string; // 遷移先URL（オプション）
   linkUserId?: string; // メッセージ通知用のユーザーID（オプション）
+  actorUserId?: string; // 通知の発信者のユーザーID（○○さんの部分）
+  actorDisplayName?: string; // 通知の発信者の表示名
 }
 
 // 通知タイプごとに適切なアイコンを表示
@@ -64,7 +67,7 @@ export default function NotificationPage() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [filterValue, setFilterValue] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 8;
 
   // 認証チェック：未ログインならログインページへリダイレクト
   useEffect(() => {
@@ -169,16 +172,6 @@ export default function NotificationPage() {
     }
   };
 
-  // すべてを既読にする処理
-  const handleMarkAllAsRead = () => {
-    // 未読の通知それぞれに対して、handleMarkAsReadを呼び出します
-    notifications.forEach(notif => {
-      if (notif.isUnread) {
-        handleMarkAsRead(notif.id);
-      }
-    });
-  };
-
   // すべて削除する処理
   const handleDeleteAll = () => {
     // すべての通知を削除します
@@ -255,7 +248,6 @@ export default function NotificationPage() {
             通知
           </h1>
           <div className="flex items-center gap-4">
-            {/* <Button onClick={handleMarkAllAsRead} ... removed> */}
             <Button
               onClick={handleDeleteAll}
               variant="secondary"
@@ -288,13 +280,14 @@ export default function NotificationPage() {
             </div>
           )}
 
-          {paginatedNotifications.map((notification) => (
+          {paginatedNotifications.map((notification, index) => (
             <div
               key={notification.id}
               className={`bg-white rounded-xl p-5 flex items-start gap-4 transition-all duration-300 relative ${notification.isUnread
                 ? 'border-l-4 border-[#2FA3E3] shadow-lg'
                 : 'border-l-4 border-transparent shadow-md'
                 } ${notification.link || notification.linkUserId ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-l-[#2FA3E3]' : ''}`}
+              style={{ zIndex: paginatedNotifications.length - index }}
               onClick={() => handleNotificationClick(notification)}
             >
               {/* 削除ボタン（右上） */}
@@ -320,6 +313,23 @@ export default function NotificationPage() {
               <div className="flex-1 min-w-0 pr-8">
                 <h3 className="text-gray-900 break-words text-base">
                   {(() => {
+                    // actorUserIdとactorDisplayNameがある場合はUserHoverCardを使用
+                    if (notification.actorUserId && notification.actorDisplayName) {
+                      const match = notification.title.match(/^(.+?さん)(.+)$/);
+                      if (match) {
+                        return (
+                          <>
+                            <UserHoverCard
+                              userId={notification.actorUserId}
+                              displayName={notification.actorDisplayName}
+                            />
+                            <span className="font-normal">{match[2]}</span>
+                          </>
+                        );
+                      }
+                    }
+
+                    // それ以外は通常の表示
                     const match = notification.title.match(/^(.+?さん)(.+)$/);
                     if (match) {
                       return (

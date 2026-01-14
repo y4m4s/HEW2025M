@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
+import { requireAuth } from '@/lib/simpleAuth';
 
 // 投稿一覧を取得 (GET handler)
 export async function GET(request: NextRequest) {
@@ -69,9 +70,25 @@ export async function GET(request: NextRequest) {
 // 新規投稿を作成 (POST handler)
 export async function POST(request: NextRequest) {
   try {
+    // 認証チェック
+    const userIdOrError = await requireAuth(request);
+    if (userIdOrError instanceof Response) {
+      return userIdOrError; // 401エラーを返す
+    }
+    const userId = userIdOrError as string;
+
     await dbConnect();
     const body = await request.json();
     const { title, content, category, media, authorId, authorName, tags, address, location } = body;
+
+    // 認証されたユーザーIDとauthorIdが一致するか確認
+    const actualUserId = userId.startsWith('user-') ? userId : `user-${userId}`;
+    if (authorId !== actualUserId && authorId !== userId) {
+      return NextResponse.json(
+        { error: '不正なリクエストです' },
+        { status: 403 }
+      );
+    }
 
     // バリデーション
     if (!title || !content || !authorId || !authorName) {

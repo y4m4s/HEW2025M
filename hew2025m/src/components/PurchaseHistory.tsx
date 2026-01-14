@@ -1,28 +1,47 @@
-/// <reference types="react" />
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
 import { useAuth } from '@/lib/useAuth';
-import { Package, Calendar, CreditCard, ShoppingBag } from 'lucide-react';
+import { Package, Calendar, CreditCard, ShoppingBag, Fish } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 interface OrderItem {
-  id: string;
-  name: string;
+  productId: string;
+  productName: string;
+  productImage: string;
   price: number;
   quantity: number;
-  image?: string;
+  sellerId: string;
+  sellerName: string;
+  sellerPhotoURL?: string;
+  category: string;
+  condition: string;
 }
 
 interface Order {
   id: string;
+  buyerId: string;
+  buyerName: string;
   items: OrderItem[];
   totalAmount: number;
+  subtotal: number;
+  shippingFee: number;
   paymentMethod: string;
-  status: string;
+  paymentStatus: string;
+  orderStatus: string;
+  shippingAddress?: {
+    zipCode: string;
+    prefecture: string;
+    city: string;
+    street: string;
+  };
+  trackingNumber?: string;
   createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
 interface PurchaseHistoryProps {
@@ -31,6 +50,7 @@ interface PurchaseHistoryProps {
 
 export default function PurchaseHistory({ onCountChange }: PurchaseHistoryProps) {
   const { user } = useAuth();
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -89,12 +109,7 @@ export default function PurchaseHistory({ onCountChange }: PurchaseHistoryProps)
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-        <Package className="text-blue-500" />
-        購入履歴
-      </h2>
-      
+    <div className="space-y-6 p-8">
       <div className="grid gap-4">
         {orders.map((order) => (
           <div key={order.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -111,42 +126,60 @@ export default function PurchaseHistory({ onCountChange }: PurchaseHistoryProps)
                   合計: <span className="text-gray-900 text-base">¥{order.totalAmount.toLocaleString()}</span>
                 </span>
                 <span className={`text-xs px-2 py-1 rounded-full ${
-                  order.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                  order.orderStatus === 'confirmed' || order.orderStatus === 'delivered' ? 'bg-green-100 text-green-700' :
+                  order.orderStatus === 'shipped' ? 'bg-blue-100 text-blue-700' :
+                  'bg-yellow-100 text-yellow-700'
                 }`}>
-                  {order.status === 'completed' ? '完了' : order.status}
+                  {order.orderStatus === 'confirmed' ? '確認済み' :
+                   order.orderStatus === 'shipped' ? '発送済み' :
+                   order.orderStatus === 'delivered' ? '配達完了' :
+                   order.orderStatus === 'cancelled' ? 'キャンセル' :
+                   order.orderStatus}
                 </span>
               </div>
             </div>
 
             {/* 商品リスト */}
             <div className="p-4">
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
                 {order.items.map((item, index) => (
-                  <div key={index} className="flex items-center gap-4">
-                    {item.image ? (
-                      <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded bg-gray-100" />
-                    ) : (
-                      <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-400">
-                        <ShoppingBag size={20} />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
-                      <p className="text-xs text-gray-500">数量: {item.quantity}</p>
+                  <div
+                    key={index}
+                    onClick={() => router.push(`/product-detail/${item.productId}`)}
+                    className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-1"
+                  >
+                    <div className="h-40 bg-gray-100 flex items-center justify-center overflow-hidden">
+                      {item.productImage ? (
+                        <Image
+                          src={item.productImage}
+                          alt={item.productName}
+                          width={300}
+                          height={160}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center">
+                          <Fish size={48} className="text-gray-400 mb-2" />
+                          <p className="text-gray-500 text-sm">画像なし</p>
+                        </div>
+                      )}
                     </div>
-                    <div className="text-sm font-medium text-gray-900">
-                      ¥{item.price.toLocaleString()}
+                    <div className="p-3">
+                      <p className="text-sm font-medium text-gray-900 line-clamp-2 mb-2 h-10">
+                        {item.productName}
+                      </p>
+                      <p className="text-lg font-bold text-[#2FA3E3]">
+                        ¥{item.price.toLocaleString()}
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* フッター: 支払い方法など */}
-              <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <CreditCard size={14} />
-                  <span>支払い: {getPaymentMethodName(order.paymentMethod)}</span>
-                </div>
+              {/* フッター: 支払い方法 */}
+              <div className="pt-3 border-t border-gray-100 flex items-center gap-2 text-sm text-gray-600">
+                <CreditCard size={16} />
+                <span>支払い方法: {getPaymentMethodName(order.paymentMethod)}</span>
               </div>
             </div>
           </div>

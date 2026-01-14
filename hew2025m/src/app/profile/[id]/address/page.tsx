@@ -126,98 +126,106 @@ const AddressPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-5 py-8 max-w-2xl">
-      <h1 className="text-2xl font-bold mb-6" style={{ fontFamily: "せのびゴシック" }}>お届け先住所の登録・変更</h1>
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-8">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6">お届け先住所の登録・変更</h1>
 
-      <form onSubmit={handleSave} className="bg-white rounded-xl shadow-lg p-8 space-y-6">
+        <form onSubmit={handleSave} className="bg-white rounded-lg shadow-md p-8 space-y-6">
 
-        <div className="space-y-2">
-          <label htmlFor="postalCode" className="block font-medium">郵便番号 (ハイフンなし)</label>
-          <div className="flex items-center gap-2">
+          <div className="space-y-2">
+            <label htmlFor="postalCode" className="block font-medium text-sm">郵便番号 (ハイフンなし)</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                name="postalCode"
+                id="postalCode"
+                value={address.postalCode}
+                onChange={handleChange}
+                className="flex-1 border border-gray-300 rounded-lg shadow-sm px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2FA3E3] focus:border-transparent"
+                placeholder="例: 1000001"
+              />
+              <button
+                type="button"
+                onClick={handleFindAddress}
+                className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap font-medium"
+              >
+                住所検索
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="prefecture" className="block font-medium text-sm">都道府県</label>
             <input
               type="text"
-              name="postalCode"
-              id="postalCode"
-              value={address.postalCode}
+              name="prefecture"
+              id="prefecture"
+              value={address.prefecture}
               onChange={handleChange}
-              className="w-full border-gray-300 rounded-lg shadow-sm focus:border-[#2FA3E3] focus:ring-[#2FA3E3]"
-              placeholder="例: 1000001"
+              className="w-full border border-gray-300 rounded-lg shadow-sm px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2FA3E3] focus:border-transparent"
+              placeholder="例: 東京都"
             />
-            <button type="button" onClick={handleFindAddress} className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300">住所検索</button>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <label htmlFor="prefecture" className="block font-medium">都道府県</label>
-          <input
-            type="text"
-            name="prefecture"
-            id="prefecture"
-            value={address.prefecture}
-            onChange={handleChange}
-            className="w-full border-gray-300 rounded-lg shadow-sm focus:border-[#2FA3E3] focus:ring-[#2FA3E3]"
-            placeholder="例: 東京都"
-          />
-        </div>
+          <div className="space-y-2">
+            <label htmlFor="city" className="block font-medium text-sm">市区町村</label>
+            <input
+              type="text"
+              name="city"
+              id="city"
+              value={address.city}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg shadow-sm px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2FA3E3] focus:border-transparent"
+              placeholder="例: 千代田区"
+            />
+          </div>
 
-        <div className="space-y-2">
-          <label htmlFor="city" className="block font-medium">市区町村</label>
-          <input
-            type="text"
-            name="city"
-            id="city"
-            value={address.city}
-            onChange={handleChange}
-            className="w-full border-gray-300 rounded-lg shadow-sm focus:border-[#2FA3E3] focus:ring-[#2FA3E3]"
-            placeholder="例: 千代田区"
-          />
-        </div>
+          <div className="space-y-2">
+            <label htmlFor="address1" className="block font-medium text-sm">番地</label>
+            <input
+              type="text"
+              name="address1"
+              id="address1"
+              value={address.address1}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg shadow-sm px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2FA3E3] focus:border-transparent"
+              placeholder="例: 千代田1-1"
+            />
+          </div>
 
-        <div className="space-y-2">
-          <label htmlFor="address1" className="block font-medium">番地</label>
-          <input
-            type="text"
-            name="address1"
-            id="address1"
-            value={address.address1}
-            onChange={handleChange}
-            className="w-full border-gray-300 rounded-lg shadow-sm focus:border-[#2FA3E3] focus:ring-[#2FA3E3]"
-            placeholder="例: 千代田1-1"
-          />
-        </div>
+          <div className="space-y-2">
+            <label htmlFor="address2" className="block font-medium text-sm">建物名・部屋番号 (任意)</label>
+            <input
+              type="text"
+              name="address2"
+              id="address2"
+              value={address.address2}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg shadow-sm px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2FA3E3] focus:border-transparent"
+              placeholder="例: まるまるビル 101号室"
+            />
+          </div>
 
-        <div className="space-y-2">
-          <label htmlFor="address2" className="block font-medium">建物名・部屋番号 (任意)</label>
-          <input
-            type="text"
-            name="address2"
-            id="address2"
-            value={address.address2}
-            onChange={handleChange}
-            className="w-full border-gray-300 rounded-lg shadow-sm focus:border-[#2FA3E3] focus:ring-[#2FA3E3]"
-            placeholder="例: まるまるビル 101号室"
-          />
-        </div>
-
-        <div className="flex justify-end gap-4 pt-4">
+          <div className="flex justify-end gap-4 pt-4">
             <button
-                type="button"
-                onClick={() => router.back()}
-                className="py-2 px-4 rounded-lg border border-gray-300 hover:bg-gray-100 transition-colors"
+              type="button"
+              onClick={() => router.back()}
+              className="py-2 px-6 rounded-lg border border-gray-300 hover:bg-gray-100 transition-colors font-medium"
             >
-                キャンセル
+              キャンセル
             </button>
             <button
-                type="submit"
-                disabled={saving}
-                className="bg-[#2FA3E3] text-white py-2 px-6 rounded-lg hover:bg-[#1d7bb8] transition-colors disabled:bg-gray-400 flex items-center"
+              type="submit"
+              disabled={saving}
+              className="bg-[#2FA3E3] text-white py-2 px-6 rounded-lg hover:bg-[#1d7bb8] transition-colors disabled:bg-gray-400 flex items-center font-semibold"
             >
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                保存する
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              保存する
             </button>
-        </div>
+          </div>
 
-      </form>
+        </form>
+      </div>
     </div>
   );
 };

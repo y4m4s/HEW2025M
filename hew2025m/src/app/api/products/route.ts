@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
+import { requireAuth } from '@/lib/simpleAuth';
 
 // 商品一覧を取得
 export async function GET(request: NextRequest) {
@@ -61,6 +62,13 @@ export async function GET(request: NextRequest) {
 // 新規商品を作成
 export async function POST(request: NextRequest) {
   try {
+    // 認証チェック
+    const userIdOrError = await requireAuth(request);
+    if (userIdOrError instanceof Response) {
+      return userIdOrError; // 401エラーを返す
+    }
+    const userId = userIdOrError as string;
+
     await dbConnect();
 
     const body = await request.json();
@@ -76,6 +84,15 @@ export async function POST(request: NextRequest) {
       shippingPayer,
       shippingDays,
     } = body;
+
+    // 認証されたユーザーIDとsellerIdが一致するか確認
+    const actualUserId = userId.startsWith('user-') ? userId : `user-${userId}`;
+    if (sellerId !== actualUserId && sellerId !== userId) {
+      return NextResponse.json(
+        { error: '不正なリクエストです' },
+        { status: 403 }
+      );
+    }
 
     // バリデーション
     if (!title || !description || !price || !category || !condition || !sellerId || !sellerName || !shippingPayer || !shippingDays) {

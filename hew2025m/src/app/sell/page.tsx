@@ -231,10 +231,18 @@ export default function SellPage() {
       }
 
       setUploadProgress('商品を出品中...');
+
+      // Firebaseトークンを取得
+      const token = await user?.getIdToken();
+      if (!token) {
+        throw new Error('認証トークンの取得に失敗しました');
+      }
+
       const productResponse = await fetch('/api/products', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           title,

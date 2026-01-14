@@ -216,7 +216,7 @@ export default function SellDetailPage() {
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+    return date.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
   };
 
   const getConditionLabel = (condition: string): string => {
@@ -228,7 +228,7 @@ export default function SellDetailPage() {
 
   const getStatusLabel = (status: string): string => {
     const map: Record<string, string> = {
-      'available': '販売中', 'sold': '売り切れ', 'reserved': '売り切れ'
+      'available': '販売中', 'sold': 'SOLD', 'reserved': 'SOLD'
     };
     return map[status] || status;
   };
@@ -349,8 +349,15 @@ export default function SellDetailPage() {
 
     try {
       setDeleting(true);
+
+      // Firebaseトークンを取得
+      const token = await user.getIdToken();
+
       const response = await fetch(`/api/products/${params.id}?userId=${user.uid}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -411,9 +418,12 @@ export default function SellDetailPage() {
                 <div className="flex items-center gap-1">
                   <Calendar size={14} /><span>{formatDate(product.createdAt)}</span>
                 </div>
-                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${product.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                  {getStatusLabel(product.status)}
-                </span>
+                {/* SOLDの場合のみ表示 */}
+                {(product.status === 'sold' || product.status === 'reserved') && (
+                  <span className="inline-block px-3 py-1 rounded-full text-sm font-bold bg-red-600 text-white shadow-lg">
+                    {getStatusLabel(product.status)}
+                  </span>
+                )}
               </div>
               <div className="mt-2">
               </div>
@@ -522,43 +532,48 @@ export default function SellDetailPage() {
             </div>
 
             {/* 自分の商品の場合は削除ボタン、他人の商品の場合はブックマーク・カートボタン */}
-            {user && (product.sellerId === user.uid || product.sellerId === `user-${user.uid}`) ? (
-              <div className="pt-4">
-                <Button
-                  variant="ghost"
-                  size="md"
-                  className="w-full bg-red-50 text-red-600 hover:bg-red-100"
-                  onClick={handleDeleteProduct}
-                  disabled={deleting}
-                >
-                  {deleting ? '削除中...' : '出品を取り消す'}
-                </Button>
-              </div>
-            ) : (
-              <div className="flex gap-4 pt-4">
-                <Button
-                  variant="ghost"
-                  size="md"
-                  className={`flex-1 ${isBookmarked
-                    ? 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
-                    : 'bg-white text-[#2FA3E3] hover:bg-blue-50'
-                    }`}
-                  onClick={handleBookmark}
-                  disabled={bookmarkLoading}
-                  icon={<Bookmark size={18} fill={isBookmarked ? 'white' : 'none'} />}
-                >
-                  {bookmarkLoading ? '処理中...' : isBookmarked ? 'ブックマーク済み' : 'ブックマーク'}
-                </Button>
-                <Button
-                  onClick={handleCartToggle}
-                  variant={isInCart ? "ghost" : "primary"}
-                  size="md"
-                  className={`flex-1 ${isInCart ? 'bg-red-50 text-red-600 hover:bg-red-100' : ''}`}
-                  disabled={!isInCart && product.status !== 'available'}
-                >
-                  {isInCart ? 'カートから削除する' : product.status === 'available' ? 'カートに追加' : '購入できません'}
-                </Button>
-              </div>
+            {/* SOLD状態の場合はボタンを表示しない */}
+            {product.status === 'available' && (
+              <>
+                {user && (product.sellerId === user.uid || product.sellerId === `user-${user.uid}`) ? (
+                  <div className="pt-4">
+                    <Button
+                      variant="ghost"
+                      size="md"
+                      className="w-full bg-red-50 text-red-600 hover:bg-red-100"
+                      onClick={handleDeleteProduct}
+                      disabled={deleting}
+                    >
+                      {deleting ? '削除中...' : '出品を取り消す'}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-4 pt-4">
+                    <Button
+                      variant="ghost"
+                      size="md"
+                      className={`flex-1 ${isBookmarked
+                        ? 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
+                        : 'bg-white text-[#2FA3E3] hover:bg-blue-50'
+                        }`}
+                      onClick={handleBookmark}
+                      disabled={bookmarkLoading}
+                      icon={<Bookmark size={18} fill={isBookmarked ? 'white' : 'none'} />}
+                    >
+                      {bookmarkLoading ? '処理中...' : isBookmarked ? 'ブックマーク済み' : 'ブックマーク'}
+                    </Button>
+                    <Button
+                      onClick={handleCartToggle}
+                      variant={isInCart ? "ghost" : "primary"}
+                      size="md"
+                      className={`flex-1 ${isInCart ? 'bg-red-50 text-red-600 hover:bg-red-100' : ''}`}
+                      disabled={!isInCart && product.status !== 'available'}
+                    >
+                      {isInCart ? 'カートから削除する' : product.status === 'available' ? 'カートに追加' : '購入できません'}
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </section>
         </div>

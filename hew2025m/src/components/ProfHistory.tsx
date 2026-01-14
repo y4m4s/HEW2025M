@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Fish, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
+import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
 
 
@@ -23,6 +24,7 @@ interface ProfHistoryProps {
 
 export default function ProfHistory({ onCountChange, userId }: ProfHistoryProps) {
   const { user } = useAuth();
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,27 +74,13 @@ export default function ProfHistory({ onCountChange, userId }: ProfHistoryProps)
     fetchProducts();
   }, [user, userId, onCountChange]);
 
-  // 相対時間を計算する関数
-  const getRelativeTime = (dateString: string) => {
-    const now = new Date();
+  // 日付をフォーマットする関数（YYYY/MM/DD形式）
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return "今日";
-    if (diffDays === 1) return "1日前";
-    if (diffDays < 7) return `${diffDays}日前`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}週間前`;
-    return `${Math.floor(diffDays / 30)}ヶ月前`;
-  };
-
-  // ステータスのラベルを取得
-  const getStatusLabel = (status: string) => {
-    const statusMap: Record<string, string> = {
-      'sold': '販売済み',
-      'reserved': '予約済み',
-    };
-    return statusMap[status] || status;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
   };
 
   if (loading) {
@@ -141,8 +129,12 @@ export default function ProfHistory({ onCountChange, userId }: ProfHistoryProps)
     <div className="p-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {paginatedProducts.map((product) => (
-          <div key={product._id} className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition opacity-75 cursor-pointer">
-            <div className="h-36 bg-gray-200 flex items-center justify-center overflow-hidden">
+          <div
+            key={product._id}
+            className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition opacity-75 cursor-pointer"
+            onClick={() => router.push(`/product-detail/${product._id}`)}
+          >
+            <div className="h-36 bg-gray-200 flex items-center justify-center overflow-hidden relative">
               {product.images && product.images.length > 0 ? (
                 <Image
                   src={product.images[0]}
@@ -154,13 +146,19 @@ export default function ProfHistory({ onCountChange, userId }: ProfHistoryProps)
               ) : (
                 <Fish className="text-gray-400" />
               )}
+              {/* SOLDバッジ（メルカリ風デザイン） */}
+              <div className="absolute top-0 left-0 w-24 h-24 overflow-hidden">
+                <div className="absolute top-4 -left-8 w-32 bg-red-600 text-white text-center text-xs font-bold py-1 transform -rotate-45 shadow-lg">
+                  SOLD
+                </div>
+              </div>
             </div>
             <div className="p-3 text-sm">
               <p className="font-medium truncate">{product.title}</p>
-              <p className="text-lg font-bold text-gray-500">¥{product.price.toLocaleString()}</p>
-              <p className="text-xs text-gray-500">
-                {getStatusLabel(product.status)}・{getRelativeTime(product.createdAt)}
-              </p>
+              <div className="flex items-center justify-between gap-2 mt-1">
+                <p className="text-lg font-bold text-gray-500">¥{product.price.toLocaleString()}</p>
+                <span className="text-xs text-gray-500">{formatDate(product.createdAt)}</span>
+              </div>
             </div>
           </div>
         ))}
