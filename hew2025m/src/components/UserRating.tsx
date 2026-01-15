@@ -7,8 +7,6 @@ import {
   collection,
   addDoc,
   query,
-  where,
-  getDocs,
   Timestamp,
   doc,
   getDoc,
@@ -60,52 +58,28 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
 
   // 評価データの取得
   const fetchRatings = async () => {
+    setLoading(true);
     try {
-      // インデックス不要なシンプルなクエリ
-      const ratingsQuery = query(
-        collection(db, "ratings"),
-        where("ratedUserId", "==", targetUserId)
-      );
-
-      const snapshot = await getDocs(ratingsQuery);
-      const ratingsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-      })) as Rating[];
-
-      // クライアント側でソート
-      ratingsData.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-      // 評価者のユーザー情報を取得
-      const ratingsWithUser = await Promise.all(
-        ratingsData.map(async (rating) => {
-          try {
-            const userDoc = await getDoc(doc(db, "users", rating.raterUserId));
-            const userData = userDoc.data();
-            return {
-              ...rating,
-              raterName: userData?.displayName || "名無しユーザー",
-              raterPhotoURL: userData?.photoURL || "",
-            } as RatingWithUser;
-          } catch (error) {
-            console.error("ユーザー情報の取得エラー:", error);
-            return {
-              ...rating,
-              raterName: "名無しユーザー",
-              raterPhotoURL: "",
-            } as RatingWithUser;
-          }
-        })
-      );
-
-      setRatings(ratingsWithUser);
+      const response = await fetch(`/api/users/${targetUserId}/ratings`);
+      if (!response.ok) {
+        let errorDetails = '評価の取得に失敗しました';
+        try {
+            const errorData = await response.json();
+            errorDetails = `評価の取得に失敗しました: ${errorData.error || response.statusText}`;
+        } catch (e) {
+            // レスポンスがJSONでない場合は何もしない
+        }
+        throw new Error(errorDetails);
+      }
+      const data = await response.json();
+      const fetchedRatings = data.ratings.map((r: any) => ({...r, createdAt: new Date(r.createdAt)}));
+      setRatings(fetchedRatings);
 
       // 平均評価の計算
-      if (ratingsWithUser.length > 0) {
-        const avg = ratingsWithUser.reduce((sum, r) => sum + r.rating, 0) / ratingsWithUser.length;
+      if (fetchedRatings.length > 0) {
+        const avg = fetchedRatings.reduce((sum: number, r: Rating) => sum + r.rating, 0) / fetchedRatings.length;
         setAverageRating(Math.round(avg * 10) / 10);
-        setTotalRatings(ratingsWithUser.length);
+        setTotalRatings(fetchedRatings.length);
       } else {
         setAverageRating(0);
         setTotalRatings(0);
@@ -113,7 +87,7 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
 
       // 自分が既に評価しているかチェック
       if (user && !isOwnProfile) {
-        const userRating = ratingsWithUser.find((r) => r.raterUserId === user.uid);
+        const userRating = fetchedRatings.find((r: Rating) => r.raterUserId === user.uid);
         setHasRated(!!userRating);
         if (userRating) {
           setExistingRatingId(userRating.id);
@@ -122,7 +96,7 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
         }
       }
     } catch (error) {
-      console.error("評価の取得エラー:", error);
+      console.error(error);
     }
   };
 

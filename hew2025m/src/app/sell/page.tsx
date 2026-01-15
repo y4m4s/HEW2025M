@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import Image from 'next/image';
 import { Camera, Fish, X, WandSparkles, Puzzle } from 'lucide-react';
 import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from 'react-icons/gi';
@@ -12,7 +13,9 @@ import { useAuth } from '@/lib/useAuth';
 import { useProfile } from '@/contexts/ProfileContext';
 import toast from 'react-hot-toast';
 import PriceAdvisorModal from '@/components/PriceAdvisorModal';
+import { zodResolver } from '@hookform/resolvers/zod';
 import CustomSelect from '@/components/CustomSelect';
+import { ProductFormSchema } from '@/lib/schemas';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 // カテゴリの定義（表示名とDB保存用の値のマッピング）
@@ -31,6 +34,7 @@ const CATEGORIES = [
 
 const CONDITIONS = [
   { label: '新品・未使用', value: 'new' },
+  { label: '未使用に近い', value: 'like-new' },
   { label: '目立った傷や汚れなし', value: 'good' },
   { label: 'やや傷や汚れあり', value: 'fair' },
   { label: '傷や汚れあり', value: 'poor' },
@@ -47,24 +51,18 @@ const SHIPPING_DAYS = [
   { label: '4〜7日で発送', value: '4-7' },
 ];
 
+// ZodスキーマからTypeScriptの型を推論
+type ProductFormData = z.infer<typeof ProductFormSchema>;
+
 export default function SellPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
 
-  const [title, setTitle] = useState('');
-  const [price, setPrice] = useState('');
-  const [category, setCategory] = useState('');
-  const [condition, setCondition] = useState('');
-  const [description, setDescription] = useState('');
-  const [shippingPayer, setShippingPayer] = useState('');
-  const [shippingDays, setShippingDays] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
-  const [submitted, setSubmitted] = useState(false);
   const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
 
   // 認証チェック：未ログインならログインページへリダイレクト
@@ -74,13 +72,27 @@ export default function SellPage() {
     }
   }, [user, authLoading, router]);
 
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<ProductFormData>({
+    resolver: zodResolver(ProductFormSchema),
+    defaultValues: { title: '', price: undefined, category: '', condition: '', description: '', shippingPayer: '', shippingDays: '' },
+  });
+
+  const titleValue = watch('title');
+
   const handlePriceSelect = (suggestedPrice: number) => {
-    setPrice(String(suggestedPrice));
+    setValue('price', suggestedPrice, { shouldValidate: true });
     toast.success(`価格が ¥${suggestedPrice.toLocaleString()} に設定されました`);
   };
 
   const handlePriceSuggest = () => {
-    if (!title) {
+    if (!titleValue) {
         toast.error('価格を提案するには、まず商品名を入力してください。');
         return;
     }
@@ -130,75 +142,13 @@ export default function SellPage() {
   };
 
   // 送信フォーム
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    setSubmitted(true);
-
-    // バリデーションチェック - エラーメッセージを収集
-    const errors: string[] = [];
-
-    if (!title) {
-      errors.push('商品名を入力してください');
-    } else if (title.length > 30) {
-      errors.push('商品名は30文字以内で入力してください');
-    }
-
-    if (!price) {
-      errors.push('価格を入力してください');
-    } else if (Number(price) <= 0) {
-      errors.push('価格は1円以上で入力してください');
-    } else if (Number(price) > 99999999) {
-      errors.push('価格は99,999,999円以下で入力してください');
-    }
-
-    if (!category) {
-      errors.push('カテゴリーを選択してください');
-    }
-
-    if (!condition) {
-      errors.push('商品の状態を選択してください');
-    }
-
-    if (!description) {
-      errors.push('商品の説明を入力してください');
-    } else if (description.length > 300) {
-      errors.push('商品の説明は300文字以内で入力してください');
-    }
-
-    if (!shippingPayer) {
-      errors.push('配送料の負担を選択してください');
-    }
-
-    if (!shippingDays) {
-      errors.push('発送までの日数を選択してください');
-    }
-
-    // エラーがある場合はtoastで表示
-    if (errors.length > 0) {
-      toast.error(
-        <div className="flex flex-col">
-          <div className="font-bold mb-2">入力内容に不備があります</div>
-          <ul className="list-disc list-inside space-y-1 ml-1">
-            {errors.map((error, index) => (
-              <li key={index} className="text-sm">{error}</li>
-            ))}
-          </ul>
-        </div>,
-        { duration: 5000 }
-      );
-      return;
-    }
-
+  const onSubmit = async (data: ProductFormData) => {
     if (isSubmitting) return;
 
-    // 認証チェック
     if (!user) {
       router.push('/login');
       return;
     }
-
-    setIsSubmitting(true);
     setUploadProgress('出品を準備中...');
 
     try {
@@ -245,26 +195,28 @@ export default function SellPage() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          title,
-          description,
-          price: Number(price),
-          category,
-          condition,
+          ...data,
           images: uploadedImages,
-          sellerId,
+          sellerId, // sellerIdとsellerNameは別途追加
           sellerName,
-          shippingPayer,
-          shippingDays,
         }),
       });
 
       if (!productResponse.ok) {
+        let errorMessage = '商品の出品に失敗しました';
         try {
           const errorData = await productResponse.json();
-          throw new Error(errorData.error || '商品の出品に失敗しました');
-        } catch (jsonError) {
-          throw new Error('商品の出品に失敗しました');
+          errorMessage = errorData.error || errorMessage;
+          // サーバーからの詳細なバリデーションエラーをコンソールに出力してデバッグしやすくする
+          if (errorData.details) {
+            console.error("Server validation failed:", errorData.details);
+          }
+        } catch (e) {
+          // レスポンスがJSONでない場合、より具体的なエラーを提供
+          console.error("Could not parse error response as JSON:", productResponse.statusText);
+          errorMessage = `サーバーで問題が発生しました (Status: ${productResponse.status})。設定を確認してください。`;
         }
+        throw new Error(errorMessage);
       }
 
       // 成功時のレスポンスを取得（エラーが発生しても無視）
@@ -287,7 +239,6 @@ export default function SellPage() {
     } catch (error) {
       console.error('出品エラー:', error);
       toast.error(error instanceof Error ? error.message : '商品の出品に失敗しました');
-      setIsSubmitting(false);
       setUploadProgress('');
     }
   };
@@ -314,7 +265,7 @@ export default function SellPage() {
           </p>
 
           <div className="bg-white rounded-xl shadow-lg p-8">
-            <form onSubmit={handleSubmit} noValidate className="space-y-8">
+            <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-8">
               {/* 商品の画像 */}
               <div>
                 <label className="block text-lg font-semibold text-gray-700 mb-3">
@@ -375,27 +326,20 @@ export default function SellPage() {
                   商品名 <span className="text-red-500">*</span>
                 </label>
                 <input
+                  {...register('title')}
                   type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
                   className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
-                    submitted && title === "" ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
+                    errors.title ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
                   }`}
                   placeholder="商品名を入力してください"
-                  required
-                  aria-required="true"
-                  aria-invalid={submitted && title === "" ? "true" : "false"}
+                  aria-invalid={errors.title ? "true" : "false"}
                   disabled={isSubmitting}
                 />
-                {submitted && title === "" && (
-                  <p className="text-red-600 text-sm mt-2" role="alert">
-                    商品名は必須です。
-                  </p>
-                )}
-                <div className={`text-right text-sm mt-1 ${title.length > 30 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                  {title.length}/30文字
-                  {title.length > 30 && (
-                    <span className="ml-2">({title.length - 30}文字超過)</span>
+                {errors.title && <p className="text-red-600 text-sm mt-2" role="alert">{errors.title.message}</p>}
+                <div className={`text-right text-sm mt-1 ${titleValue.length > 30 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                  {titleValue.length}/30文字
+                  {titleValue.length > 30 && (
+                    <span className="ml-2">({titleValue.length - 30}文字超過)</span>
                   )}
                 </div>
               </div>
@@ -409,46 +353,29 @@ export default function SellPage() {
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">¥</span>
                     <input
+                      {...register('price')}
                       type="text"
                       inputMode="numeric"
-                      value={price}
                       onChange={(e) => {
                         // 数字のみを許可（e, +, -, . などを除外）
                         const value = e.target.value.replace(/[^0-9]/g, '');
-                        setPrice(value);
+                        setValue('price', value === '' ? undefined : Number(value), { shouldValidate: true });
                       }}
                       className={`w-full p-4 pl-8 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
-                        submitted && (price === "" || Number(price) <= 0 || Number(price) > 99999999)
-                          ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
+                        errors.price ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
                           : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
                       }`}
                       placeholder="0"
-                      required
-                      aria-required="true"
-                      aria-invalid={submitted && (price === "" || Number(price) <= 0 || Number(price) > 99999999) ? "true" : "false"}
+                      aria-invalid={errors.price ? "true" : "false"}
                       disabled={isSubmitting}
                     />
                   </div>
-                  {submitted && price === "" && (
-                    <p className="text-red-600 text-sm mt-2" role="alert">
-                      価格は必須です。
-                    </p>
-                  )}
-                  {submitted && price !== "" && Number(price) <= 0 && (
-                    <p className="text-red-600 text-sm mt-2" role="alert">
-                      価格は1円以上で入力してください。
-                    </p>
-                  )}
-                  {submitted && price !== "" && Number(price) > 99999999 && (
-                    <p className="text-red-600 text-sm mt-2" role="alert">
-                      価格は99,999,999円以下で入力してください。
-                    </p>
-                  )}
+                  {errors.price && <p className="text-red-600 text-sm mt-2" role="alert">{errors.price.message}</p>}
                   <div className="mt-3 text-right">
                     <button
                         type="button"
                         onClick={handlePriceSuggest}
-                        disabled={!title || isSubmitting}
+                        disabled={!titleValue || isSubmitting}
                         className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
                     >
                         <WandSparkles size={16} />
@@ -460,35 +387,37 @@ export default function SellPage() {
                   <label className="block text-lg font-semibold text-gray-700 mb-3">
                     カテゴリー <span className="text-red-500">*</span>
                   </label>
-                  <CustomSelect
-                    value={category}
-                    onChange={setCategory}
-                    options={CATEGORIES}
-                    placeholder="選択してください"
-                    disabled={isSubmitting}
+                  <Controller
+                    name="category"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        {...field}
+                        options={CATEGORIES}
+                        placeholder="選択してください"
+                        disabled={isSubmitting}
+                      />
+                    )}
                   />
-                  {submitted && category === "" && (
-                    <p className="text-red-600 text-sm mt-2" role="alert">
-                      カテゴリーは必須です。
-                    </p>
-                  )}
+                  {errors.category && <p className="text-red-600 text-sm mt-2" role="alert">{errors.category.message}</p>}
                 </div>
                 <div>
                   <label className="block text-lg font-semibold text-gray-700 mb-3">
                     商品の状態 <span className="text-red-500">*</span>
                   </label>
-                  <CustomSelect
-                    value={condition}
-                    onChange={setCondition}
-                    options={CONDITIONS}
-                    placeholder="選択してください"
-                    disabled={isSubmitting}
+                  <Controller
+                    name="condition"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        {...field}
+                        options={CONDITIONS}
+                        placeholder="選択してください"
+                        disabled={isSubmitting}
+                      />
+                    )}
                   />
-                  {submitted && condition === "" && (
-                    <p className="text-red-600 text-sm mt-2" role="alert">
-                      商品の状態は必須です。
-                    </p>
-                  )}
+                  {errors.condition && <p className="text-red-600 text-sm mt-2" role="alert">{errors.condition.message}</p>}
                 </div>
               </div>
 
@@ -498,29 +427,22 @@ export default function SellPage() {
                   商品の説明 <span className="text-red-500">*</span>
                 </label>
                 <textarea
+                  {...register('description')}
                   rows={6}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
                   className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none ${
-                    description.length > 300
+                    errors.description || (watch('description')?.length || 0) > 300
                       ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
                   }`}
                   placeholder="商品の詳細、使用感、注意事項などを記載してください"
-                  required
-                  aria-required="true"
-                  aria-invalid={submitted && description === "" ? "true" : "false"}
+                  aria-invalid={errors.description ? "true" : "false"}
                   disabled={isSubmitting}
                 ></textarea>
-                {submitted && description === "" && (
-                  <p className="text-red-600 text-sm mt-2" role="alert">
-                    商品の説明は必須です。
-                  </p>
-                )}
-                <div className={`text-right text-sm mt-1 ${description.length > 300 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                  {description.length}/300文字
-                  {description.length > 300 && (
-                    <span className="ml-2">({description.length - 300}文字超過)</span>
+                {errors.description && <p className="text-red-600 text-sm mt-2" role="alert">{errors.description.message}</p>}
+                <div className={`text-right text-sm mt-1 ${(watch('description')?.length || 0) > 300 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                  {watch('description')?.length || 0}/300文字
+                  {(watch('description')?.length || 0) > 300 && (
+                    <span className="ml-2">({(watch('description')?.length || 0) - 300}文字超過)</span>
                   )}
                 </div>
               </div>
@@ -531,35 +453,37 @@ export default function SellPage() {
                   <label className="block text-lg font-semibold text-gray-700 mb-3">
                     配送料の負担 <span className="text-red-500">*</span>
                   </label>
-                  <CustomSelect
-                    value={shippingPayer}
-                    onChange={setShippingPayer}
-                    options={SHIPPING_PAYERS}
-                    placeholder="選択してください"
-                    disabled={isSubmitting}
+                  <Controller
+                    name="shippingPayer"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        {...field}
+                        options={SHIPPING_PAYERS}
+                        placeholder="選択してください"
+                        disabled={isSubmitting}
+                      />
+                    )}
                   />
-                  {submitted && shippingPayer === "" && (
-                    <p className="text-red-600 text-sm mt-2" role="alert">
-                      配送料の負担は必須です。
-                    </p>
-                  )}
+                  {errors.shippingPayer && <p className="text-red-600 text-sm mt-2" role="alert">{errors.shippingPayer.message}</p>}
                 </div>
                 <div>
                   <label className="block text-lg font-semibold text-gray-700 mb-3">
                     発送までの日数 <span className="text-red-500">*</span>
                   </label>
-                  <CustomSelect
-                    value={shippingDays}
-                    onChange={setShippingDays}
-                    options={SHIPPING_DAYS}
-                    placeholder="選択してください"
-                    disabled={isSubmitting}
+                  <Controller
+                    name="shippingDays"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        {...field}
+                        options={SHIPPING_DAYS}
+                        placeholder="選択してください"
+                        disabled={isSubmitting}
+                      />
+                    )}
                   />
-                  {submitted && shippingDays === "" && (
-                    <p className="text-red-600 text-sm mt-2" role="alert">
-                      発送までの日数は必須です。
-                    </p>
-                  )}
+                  {errors.shippingDays && <p className="text-red-600 text-sm mt-2" role="alert">{errors.shippingDays.message}</p>}
                 </div>
               </div>
 
@@ -591,7 +515,7 @@ export default function SellPage() {
       <PriceAdvisorModal
         isOpen={isAdvisorOpen}
         onClose={() => setIsAdvisorOpen(false)}
-        productName={title}
+        productName={titleValue}
         onPriceSelect={handlePriceSelect}
       />
     </div>

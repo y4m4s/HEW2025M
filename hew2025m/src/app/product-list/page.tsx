@@ -1,15 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import ProductCard, { Product } from '@/components/ProductCard';
 import Button from '@/components/Button';
 import { Fish, Search, Puzzle } from 'lucide-react';
 import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from 'react-icons/gi';
 import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
 import { SiHelix } from 'react-icons/si';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 import CustomSelect from '@/components/CustomSelect';
 
 const CATEGORY_OPTIONS = [
@@ -50,8 +48,44 @@ const SORT_OPTIONS = [
   { label: '人気順', value: 'popular' },
 ];
 
+// Helper functions can be defined outside the component scope
+// as they don't depend on component state or props.
+// This prevents them from being recreated on every render.
+
+// 状態を日本語に変換
+const formatCondition = (cond: string): string => {
+  const conditionMap: Record<string, string> = {
+    'new': '新品・未使用',
+    'like-new': '未使用に近い',
+    'good': '目立った傷汚れなし',
+    'fair': 'やや傷や汚れあり',
+    'poor': '傷や汚れあり'
+  };
+  return conditionMap[cond] || cond;
+};
+
+// 日付をフォーマット
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - date.getTime());
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return '今日';
+  } else if (diffDays === 1) {
+    return '昨日';
+  } else if (diffDays < 7) {
+    return `${diffDays}日前`;
+  } else {
+    return date.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  }
+};
+
 export default function SearchPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,62 +93,39 @@ export default function SearchPage() {
   const [totalCount, setTotalCount] = useState(0);
 
   // フィルター状態（URLパラメータから初期値を取得）
-  const [category, setCategory] = useState(() => searchParams.get('category') || '');
-  const [priceRange, setPriceRange] = useState('');
-  const [condition, setCondition] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
-  const [keyword, setKeyword] = useState('');
+  const category = searchParams.get('category') || '';
+  const priceRange = searchParams.get('priceRange') || '';
+  const condition = searchParams.get('condition') || '';
+  const sortBy = searchParams.get('sortBy') || 'newest';
+  const keyword = searchParams.get('keyword') || '';
 
   // Intersection Observer用のref
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // URLパラメータが変更された時にカテゴリを更新
-  useEffect(() => {
-    const categoryParam = searchParams.get('category') || '';
-    setCategory(categoryParam);
-  }, [searchParams]);
+  // フィルターが変更されたときにURLを更新する関数
+  const handleFilterChange = useCallback((filterName: string, value: string) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
 
-  // Firestoreからユーザー情報を取得（バッチ処理）
-  const fetchUserProfiles = async (sellerIds: string[]) => {
-    const uniqueIds = [...new Set(sellerIds)];
-    const profiles: Record<string, { displayName?: string; photoURL?: string }> = {};
+    if (!value) {
+      current.delete(filterName);
+    } else {
+      current.set(filterName, value);
+    }
 
-    await Promise.all(
-      uniqueIds.map(async (sellerId) => {
-        try {
-          const uid = sellerId.startsWith('user-') ? sellerId.replace('user-', '') : sellerId;
-          const userDocRef = doc(db, 'users', uid);
-          const userDocSnap = await getDoc(userDocRef);
+    const search = current.toString();
+    const query = search ? `?${search}` : "";
 
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            profiles[sellerId] = {
-              displayName: userData.displayName || undefined,
-              photoURL: userData.photoURL || undefined,
-            };
-          }
-        } catch (error) {
-          if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
-            return;
-          }
-          console.error('ユーザー情報取得エラー:', error);
-        }
-      })
-    );
-
-    return profiles;
-  };
+    // `replace`を使い、ブラウザの履歴スタックに新しいエントリを追加しない
+    router.replace(`${pathname}${query}`);
+  }, [searchParams, pathname, router]);
 
   const fetchProducts = useCallback(async (pageNum: number, resetProducts = false) => {
     try {
       setLoading(true);
       setError(null);
 
-      const params = new URLSearchParams();
-      if (category) params.append('category', category);
-      if (condition) params.append('condition', condition);
-      // statusフィルターを削除 - 全ての商品（販売中とSOLD）を表示
+      const params = new URLSearchParams(searchParams.toString());
       params.append('page', pageNum.toString());
       params.append('limit', '12');
 
@@ -125,12 +136,7 @@ export default function SearchPage() {
 
       const data = await response.json();
 
-      // ユーザー情報をバッチで取得
-      const sellerIds = data.products.map((p: { sellerId?: string }) => p.sellerId).filter(Boolean);
-      const userProfiles = await fetchUserProfiles(sellerIds);
-
-      // データベースのデータをProduct型に変換
-      const formattedProducts: Product[] = data.products.map((product: {
+      const newProducts: Product[] = data.products.map((product: {
         _id: string;
         title: string;
         price: number;
@@ -139,12 +145,10 @@ export default function SearchPage() {
         images?: string[];
         sellerId?: string;
         sellerName?: string;
+        sellerPhotoURL?: string;
         createdAt: string;
       }) => {
-        const userProfile = product.sellerId ? userProfiles[product.sellerId] : null;
-        const sellerDisplayName = userProfile?.displayName || product.sellerName || '出品者未設定';
-        const sellerPhotoURL = userProfile?.photoURL;
-
+        const sellerDisplayName = product.sellerName || '出品者未設定';
         return {
           id: product._id,
           name: product.title,
@@ -154,30 +158,18 @@ export default function SearchPage() {
           postedDate: formatDate(product.createdAt),
           imageUrl: product.images?.[0],
           status: product.status,
-          sellerPhotoURL,
+          sellerPhotoURL: product.sellerPhotoURL,
         };
       });
 
-      // フィルタリング（価格帯とキーワード）
-      let filtered = formattedProducts;
-      if (priceRange) {
-        filtered = filterByPrice(filtered, priceRange);
-      }
-      if (keyword) {
-        filtered = filterByKeyword(filtered, keyword);
-      }
-
-      // ソート
-      filtered = sortProducts(filtered, sortBy);
-
       if (resetProducts) {
-        setProducts(filtered);
+        setProducts(newProducts);
       } else {
         // 重複を防ぐため、既存のIDセットを作成
         setProducts((prev) => {
           const existingIds = new Set(prev.map(p => p.id));
-          const newProducts = filtered.filter(p => !existingIds.has(p.id));
-          return [...prev, ...newProducts];
+          const uniqueNewProducts = newProducts.filter(p => !existingIds.has(p.id));
+          return [...prev, ...uniqueNewProducts];
         });
       }
 
@@ -189,14 +181,14 @@ export default function SearchPage() {
     } finally {
       setLoading(false);
     }
-  }, [category, condition, priceRange, sortBy, keyword]);
+  }, [searchParams]);
 
   // フィルター変更時にリセット
   useEffect(() => {
     setProducts([]);
     setHasMore(true);
     fetchProducts(1, true);
-  }, [category, condition, priceRange, sortBy, keyword, fetchProducts]);
+  }, [searchParams, fetchProducts]); // fetchProductsも依存配列に追加
 
   // Intersection Observerの設定
   useEffect(() => {
@@ -224,80 +216,6 @@ export default function SearchPage() {
     };
   }, [loading, hasMore, fetchProducts, products.length]);
 
-  // 状態を日本語に変換
-  const formatCondition = (cond: string): string => {
-    const conditionMap: Record<string, string> = {
-      'new': '新品・未使用',
-      'like-new': '未使用に近い',
-      'good': '目立った傷汚れなし',
-      'fair': 'やや傷や汚れあり',
-      'poor': '傷や汚れあり'
-    };
-    return conditionMap[cond] || cond;
-  };
-
-  // 日付をフォーマット
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      return '今日';
-    } else if (diffDays === 1) {
-      return '昨日';
-    } else if (diffDays < 7) {
-      return `${diffDays}日前`;
-    } else {
-      return date.toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      });
-    }
-  };
-
-  // 価格帯でフィルタリング
-  const filterByPrice = (items: Product[], range: string): Product[] => {
-    if (!range) return items;
-
-    if (range === '0-1000') {
-      return items.filter(p => p.price <= 1000);
-    } else if (range === '1000-5000') {
-      return items.filter(p => p.price > 1000 && p.price <= 5000);
-    } else if (range === '5000-10000') {
-      return items.filter(p => p.price > 5000 && p.price <= 10000);
-    } else if (range === '10000-') {
-      return items.filter(p => p.price > 10000);
-    }
-    return items;
-  };
-
-  // キーワードでフィルタリング
-  const filterByKeyword = (items: Product[], searchKeyword: string): Product[] => {
-    if (!searchKeyword) return items;
-    const lowerKeyword = searchKeyword.toLowerCase();
-    return items.filter(p =>
-      p.name.toLowerCase().includes(lowerKeyword) ||
-      p.location.toLowerCase().includes(lowerKeyword) ||
-      p.condition.toLowerCase().includes(lowerKeyword)
-    );
-  };
-
-  // ソート
-  const sortProducts = (items: Product[], sort: string): Product[] => {
-    const sorted = [...items];
-
-    if (sort === 'price-low') {
-      sorted.sort((a, b) => a.price - b.price);
-    } else if (sort === 'price-high') {
-      sorted.sort((a, b) => b.price - a.price);
-    }
-
-    return sorted;
-  };
-
   return (
     <div>
       <div className="bg-gray-50 min-h-screen">
@@ -319,8 +237,8 @@ export default function SearchPage() {
                 <input
                   type="search"
                   placeholder="キーワードで検索"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
+                  defaultValue={keyword} // defaultValueを使い、制御されていないコンポーネントにする
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleFilterChange('keyword', e.currentTarget.value); } }}
                   className="w-full py-4 px-5 pl-12 border-2 border-gray-200 rounded-full text-base outline-none transition-colors duration-300 focus:border-[#2FA3E3] placeholder:text-gray-400"
                 />
               </form>
@@ -332,8 +250,8 @@ export default function SearchPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリー</label>
                   <CustomSelect
-                    value={category}
-                    onChange={setCategory}
+                    value={category} // URLから直接値を取得
+                    onChange={(value) => handleFilterChange('category', value)}
                     options={CATEGORY_OPTIONS}
                     placeholder="すべて"
                   />
@@ -342,7 +260,7 @@ export default function SearchPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">価格帯</label>
                   <CustomSelect
                     value={priceRange}
-                    onChange={setPriceRange}
+                    onChange={(value) => handleFilterChange('priceRange', value)}
                     options={PRICE_RANGE_OPTIONS}
                     placeholder="指定なし"
                   />
@@ -351,7 +269,7 @@ export default function SearchPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">状態</label>
                   <CustomSelect
                     value={condition}
-                    onChange={setCondition}
+                    onChange={(value) => handleFilterChange('condition', value)}
                     options={CONDITION_OPTIONS}
                     placeholder="すべて"
                   />
@@ -366,7 +284,7 @@ export default function SearchPage() {
                 <span className="text-sm text-gray-600">並び替え:</span>
                 <CustomSelect
                   value={sortBy}
-                  onChange={setSortBy}
+                  onChange={(value) => handleFilterChange('sortBy', value)}
                   options={SORT_OPTIONS}
                   className="min-w-[200px]"
                 />
