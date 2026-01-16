@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Fish, ChevronLeft, ChevronRight } from "lucide-react";
-import { useAuth } from "@/lib/useAuth";
 import PostCard, { Post } from "@/components/PostCard";
 import Button from "@/components/Button";
 
@@ -12,7 +11,6 @@ interface ProfPostProps {
 }
 
 export default function ProfPost({ onCountChange, userId }: ProfPostProps) {
-  const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);

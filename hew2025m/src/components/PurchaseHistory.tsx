@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
 import { useAuth } from '@/lib/useAuth';
-import { Package, Calendar, CreditCard, ShoppingBag, Fish } from 'lucide-react';
+import { Calendar, CreditCard, ShoppingBag, Fish } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';

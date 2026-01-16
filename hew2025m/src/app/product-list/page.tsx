@@ -9,6 +9,8 @@ import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } f
 import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
 import { SiHelix } from 'react-icons/si';
 import CustomSelect from '@/components/CustomSelect';
+import { useAuth } from '@/lib/useAuth';
+import LoginRequiredModal from '@/components/LoginRequiredModal';
 
 const CATEGORY_OPTIONS = [
   { label: 'すべて', value: '' },
@@ -80,10 +82,35 @@ const formatDate = (dateString: string): string => {
   }
 };
 
+// キーワードでフィルタリング
+const filterByKeyword = (items: Product[], searchKeyword: string): Product[] => {
+  if (!searchKeyword) return items;
+  const lowerKeyword = searchKeyword.toLowerCase();
+  return items.filter(p =>
+    p.name.toLowerCase().includes(lowerKeyword) ||
+    p.location.toLowerCase().includes(lowerKeyword) ||
+    p.condition.toLowerCase().includes(lowerKeyword)
+  );
+};
+
+// ソート
+const sortProducts = (items: Product[], sort: string): Product[] => {
+  const sorted = [...items];
+
+  if (sort === 'price-low') {
+    sorted.sort((a, b) => a.price - b.price);
+  } else if (sort === 'price-high') {
+    sorted.sort((a, b) => b.price - a.price);
+  }
+
+  return sorted;
+};
+
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,12 +118,16 @@ export default function SearchPage() {
   const [totalCount, setTotalCount] = useState(0);
 
   // フィルター状態（URLパラメータから初期値を取得）
-  const [category, setCategory] = useState(() => searchParams.get('category') || '');
+  const [category] = useState(() => searchParams.get('category') || '');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [shippingPayer, setShippingPayer] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy] = useState('newest');
   const [keyword, setKeyword] = useState('');
+
+  // ログインモーダル用の状態
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginRequiredAction, setLoginRequiredAction] = useState('');
 
   // Intersection Observer用のref
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -167,7 +198,7 @@ export default function SearchPage() {
       });
 
       // フィルタリング（キーワードのみクライアント側、価格はサーバー側）
-      let filtered = formattedProducts;
+      let filtered = newProducts;
       if (keyword) {
         filtered = filterByKeyword(filtered, keyword);
       }
@@ -176,12 +207,12 @@ export default function SearchPage() {
       filtered = sortProducts(filtered, sortBy);
 
       if (resetProducts) {
-        setProducts(newProducts);
+        setProducts(filtered);
       } else {
         // 重複を防ぐため、既存のIDセットを作成
         setProducts((prev) => {
           const existingIds = new Set(prev.map(p => p.id));
-          const uniqueNewProducts = newProducts.filter(p => !existingIds.has(p.id));
+          const uniqueNewProducts = filtered.filter(p => !existingIds.has(p.id));
           return [...prev, ...uniqueNewProducts];
         });
       }
@@ -229,77 +260,36 @@ export default function SearchPage() {
     };
   }, [loading, hasMore, fetchProducts, products.length]);
 
-  // 状態を日本語に変換
-  const formatCondition = (cond: string): string => {
-    const conditionMap: Record<string, string> = {
-      'new': '新品・未使用',
-      'like-new': '未使用に近い',
-      'good': '目立った傷汚れなし',
-      'fair': 'やや傷や汚れあり',
-      'poor': '傷や汚れあり'
-    };
-    return conditionMap[cond] || cond;
-  };
-
-  // 日付をフォーマット
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      return '今日';
-    } else if (diffDays === 1) {
-      return '昨日';
-    } else if (diffDays < 7) {
-      return `${diffDays}日前`;
-    } else {
-      return date.toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      });
-    }
-  };
-
-
-
-  // キーワードでフィルタリング
-  const filterByKeyword = (items: Product[], searchKeyword: string): Product[] => {
-    if (!searchKeyword) return items;
-    const lowerKeyword = searchKeyword.toLowerCase();
-    return items.filter(p =>
-      p.name.toLowerCase().includes(lowerKeyword) ||
-      p.location.toLowerCase().includes(lowerKeyword) ||
-      p.condition.toLowerCase().includes(lowerKeyword)
-    );
-  };
-
-  // ソート
-  const sortProducts = (items: Product[], sort: string): Product[] => {
-    const sorted = [...items];
-
-    if (sort === 'price-low') {
-      sorted.sort((a, b) => a.price - b.price);
-    } else if (sort === 'price-high') {
-      sorted.sort((a, b) => b.price - a.price);
-    }
-
-    return sorted;
-  };
-
   return (
     <div>
       <div className="bg-gray-50 min-h-screen">
         <div className="container mx-auto px-4 sm:px-5 py-4 sm:py-8">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-800 mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
-              商品を探す
-            </h1>
-            <p className="text-center text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
-              あなたが探している釣り用品を見つけましょう
-            </p>
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <div className="text-center sm:text-left flex-1">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+                  商品を探す
+                </h1>
+                <p className="text-sm sm:text-base text-gray-600">
+                  あなたが探している釣り用品を見つけましょう
+                </p>
+              </div>
+              <Button
+                onClick={() => {
+                  if (!user) {
+                    setLoginRequiredAction('投稿');
+                    setShowLoginModal(true);
+                  } else {
+                    router.push('/post');
+                  }
+                }}
+                variant="primary"
+                size="md"
+                className="shadow-lg hover:shadow-xl transition-shadow text-xs sm:text-sm w-full sm:w-auto"
+              >
+                投稿する
+              </Button>
+            </div>
 
             {/* 検索バー */}
             <div className="flex justify-center mb-6 sm:mb-8">
@@ -419,6 +409,13 @@ export default function SearchPage() {
           </div>
         </div>
       </div>
+
+      {/* ログイン必須モーダル */}
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginRequiredAction}
+      />
     </div>
   );
 }

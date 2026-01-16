@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
-import { Megaphone, MessageSquare, Trash2, Heart, Star, ShoppingCart, UserPlus, Mail, Bell, CheckCheck, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Megaphone, MessageSquare, Trash2, Heart, Star, ShoppingCart, UserPlus, Mail, Bell, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import CustomSelect from '@/components/CustomSelect';
 import Button from '@/components/Button';
