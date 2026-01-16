@@ -15,10 +15,11 @@ export type ProductCategory =
 
 // 商品の状態型定義
 export type ProductCondition =
-  | 'new'   // 新品・未使用
-  | 'good'  // 目立った傷や汚れなし
-  | 'fair'  // やや傷や汚れあり
-  | 'poor'; // 傷や汚れあり
+  | 'new'       // 新品・未使用
+  | 'like-new'  // 未使用に近い
+  | 'good'      // 目立った傷や汚れなし
+  | 'fair'      // やや傷や汚れあり
+  | 'poor';     // 傷や汚れあり
 
 // 商品の型定義
 export interface IProduct {
@@ -64,7 +65,7 @@ const ProductSchema = new Schema<IProduct>(
     },
     condition: {
       type: String,
-      enum: ['new', 'good', 'fair', 'poor'],
+      enum: ['new', 'like-new', 'good', 'fair', 'poor'],
       required: [true, '商品の状態は必須です'],
     },
     images: {

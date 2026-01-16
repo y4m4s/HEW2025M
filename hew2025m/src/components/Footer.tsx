@@ -88,19 +88,19 @@ export default function Footer() {
             </h3>
             <ul className="list-none space-y-2 sm:space-y-3">
               <li>
-                <a href="" className="text-gray-400 text-xs sm:text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1">
+                <a href="/legal" className="text-gray-400 text-xs sm:text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1">
                   特定商取引法に基づく表記
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="" className="text-gray-400 text-xs sm:text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1">
+                <a href="/privacy" className="text-gray-400 text-xs sm:text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1">
                   プライバシーポリシー
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="" className="text-gray-400 text-xs sm:text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1">
+                <a href="/terms" className="text-gray-400 text-xs sm:text-sm transition-colors duration-300 hover:text-[#2FA3E3] hover:pl-1">
                   利用規約
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -110,19 +110,19 @@ export default function Footer() {
 
           <ul className="flex flex-wrap justify-center md:justify-start gap-3 sm:gap-4 md:gap-6 list-none p-0">
             <li>
-              <a href="" className="text-gray-400 text-[10px] sm:text-xs transition-colors duration-300 hover:text-[#2FA3E3]">
+              <a href="/legal" className="text-gray-400 text-[10px] sm:text-xs transition-colors duration-300 hover:text-[#2FA3E3]">
                 特定商取引法に基づく表記
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="" className="text-gray-400 text-[10px] sm:text-xs transition-colors duration-300 hover:text-[#2FA3E3]">
+              <a href="/privacy" className="text-gray-400 text-[10px] sm:text-xs transition-colors duration-300 hover:text-[#2FA3E3]">
                 プライバシーポリシー
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="" className="text-gray-400 text-[10px] sm:text-xs transition-colors duration-300 hover:text-[#2FA3E3]">
+              <a href="/terms" className="text-gray-400 text-[10px] sm:text-xs transition-colors duration-300 hover:text-[#2FA3E3]">
                 利用規約
-              </a>
+              </Link>
             </li>
           </ul>
 

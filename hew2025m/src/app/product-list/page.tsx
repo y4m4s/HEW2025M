@@ -1,15 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import ProductCard, { Product } from '@/components/ProductCard';
 import Button from '@/components/Button';
 import { Fish, Search, Puzzle } from 'lucide-react';
 import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from 'react-icons/gi';
 import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
 import { SiHelix } from 'react-icons/si';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 import CustomSelect from '@/components/CustomSelect';
 
 const CATEGORY_OPTIONS = [
@@ -48,8 +46,44 @@ const SORT_OPTIONS = [
   { label: '価格の高い順', value: 'price-high' },
 ];
 
+// Helper functions can be defined outside the component scope
+// as they don't depend on component state or props.
+// This prevents them from being recreated on every render.
+
+// 状態を日本語に変換
+const formatCondition = (cond: string): string => {
+  const conditionMap: Record<string, string> = {
+    'new': '新品・未使用',
+    'like-new': '未使用に近い',
+    'good': '目立った傷汚れなし',
+    'fair': 'やや傷や汚れあり',
+    'poor': '傷や汚れあり'
+  };
+  return conditionMap[cond] || cond;
+};
+
+// 日付をフォーマット
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - date.getTime());
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return '今日';
+  } else if (diffDays === 1) {
+    return '昨日';
+  } else if (diffDays < 7) {
+    return `${diffDays}日前`;
+  } else {
+    return date.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  }
+};
+
 export default function SearchPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,42 +102,22 @@ export default function SearchPage() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // URLパラメータが変更された時にカテゴリを更新
-  useEffect(() => {
-    const categoryParam = searchParams.get('category') || '';
-    setCategory(categoryParam);
-  }, [searchParams]);
+  // フィルターが変更されたときにURLを更新する関数
+  const handleFilterChange = useCallback((filterName: string, value: string) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
 
-  // Firestoreからユーザー情報を取得（バッチ処理）
-  const fetchUserProfiles = async (sellerIds: string[]) => {
-    const uniqueIds = [...new Set(sellerIds)];
-    const profiles: Record<string, { displayName?: string; photoURL?: string }> = {};
+    if (!value) {
+      current.delete(filterName);
+    } else {
+      current.set(filterName, value);
+    }
 
-    await Promise.all(
-      uniqueIds.map(async (sellerId) => {
-        try {
-          const uid = sellerId.startsWith('user-') ? sellerId.replace('user-', '') : sellerId;
-          const userDocRef = doc(db, 'users', uid);
-          const userDocSnap = await getDoc(userDocRef);
+    const search = current.toString();
+    const query = search ? `?${search}` : "";
 
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            profiles[sellerId] = {
-              displayName: userData.displayName || undefined,
-              photoURL: userData.photoURL || undefined,
-            };
-          }
-        } catch (error) {
-          if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
-            return;
-          }
-          console.error('ユーザー情報取得エラー:', error);
-        }
-      })
-    );
-
-    return profiles;
-  };
+    // `replace`を使い、ブラウザの履歴スタックに新しいエントリを追加しない
+    router.replace(`${pathname}${query}`);
+  }, [searchParams, pathname, router]);
 
   const fetchProducts = useCallback(async (pageNum: number, resetProducts = false) => {
     try {
@@ -126,12 +140,7 @@ export default function SearchPage() {
 
       const data = await response.json();
 
-      // ユーザー情報をバッチで取得
-      const sellerIds = data.products.map((p: { sellerId?: string }) => p.sellerId).filter(Boolean);
-      const userProfiles = await fetchUserProfiles(sellerIds);
-
-      // データベースのデータをProduct型に変換
-      const formattedProducts: Product[] = data.products.map((product: {
+      const newProducts: Product[] = data.products.map((product: {
         _id: string;
         title: string;
         price: number;
@@ -140,12 +149,10 @@ export default function SearchPage() {
         images?: string[];
         sellerId?: string;
         sellerName?: string;
+        sellerPhotoURL?: string;
         createdAt: string;
       }) => {
-        const userProfile = product.sellerId ? userProfiles[product.sellerId] : null;
-        const sellerDisplayName = userProfile?.displayName || product.sellerName || '出品者未設定';
-        const sellerPhotoURL = userProfile?.photoURL;
-
+        const sellerDisplayName = product.sellerName || '出品者未設定';
         return {
           id: product._id,
           name: product.title,
@@ -155,7 +162,7 @@ export default function SearchPage() {
           postedDate: formatDate(product.createdAt),
           imageUrl: product.images?.[0],
           status: product.status,
-          sellerPhotoURL,
+          sellerPhotoURL: product.sellerPhotoURL,
         };
       });
 
@@ -169,13 +176,13 @@ export default function SearchPage() {
       filtered = sortProducts(filtered, sortBy);
 
       if (resetProducts) {
-        setProducts(filtered);
+        setProducts(newProducts);
       } else {
         // 重複を防ぐため、既存のIDセットを作成
         setProducts((prev) => {
           const existingIds = new Set(prev.map(p => p.id));
-          const newProducts = filtered.filter(p => !existingIds.has(p.id));
-          return [...prev, ...newProducts];
+          const uniqueNewProducts = newProducts.filter(p => !existingIds.has(p.id));
+          return [...prev, ...uniqueNewProducts];
         });
       }
 
@@ -316,8 +323,8 @@ export default function SearchPage() {
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">カテゴリー</label>
                   <CustomSelect
-                    value={category}
-                    onChange={setCategory}
+                    value={category} // URLから直接値を取得
+                    onChange={(value) => handleFilterChange('category', value)}
                     options={CATEGORY_OPTIONS}
                     placeholder="すべて"
                   />
@@ -362,7 +369,7 @@ export default function SearchPage() {
                 <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">並び替え:</span>
                 <CustomSelect
                   value={sortBy}
-                  onChange={setSortBy}
+                  onChange={(value) => handleFilterChange('sortBy', value)}
                   options={SORT_OPTIONS}
                   className="w-[180px]"
                 />
