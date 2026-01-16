@@ -6,10 +6,10 @@ import { X, MapPin, Navigation, Search } from 'lucide-react';
 import Button from './Button';
 import toast from 'react-hot-toast';
 
-const containerStyle = {
+const getContainerStyle = () => ({
   width: '100%',
-  height: '400px',
-};
+  height: typeof window !== 'undefined' && window.innerWidth < 640 ? '280px' : '400px',
+});
 
 const defaultCenter = {
   lat: 35.6895,
@@ -114,8 +114,8 @@ const MapModal: React.FC<MapModalProps> = ({
         getAddressFromLatLng(newCenter.lat, newCenter.lng);
       }
       // 場所が見つからなくてもエラーは表示しない
-    } catch (error) {
-      console.error('場所の検索に失敗しました:', error);
+    } catch {
+      // Geocoding APIのエラーはログに出力せず、静かに無視する
       // エラーが発生してもトーストは表示しない
     } finally {
       setIsSearching(false);
@@ -179,32 +179,32 @@ const MapModal: React.FC<MapModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[100vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl max-w-3xl w-full max-h-[100vh] flex flex-col overflow-hidden">
         {/* ヘッダー */}
-        <div className="bg-gray-50 px-6 py-4 border-b flex justify-between items-center flex-shrink-0">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <MapPin size={20} className="text-blue-600" />
+        <div className="bg-gray-50 px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b flex justify-between items-center flex-shrink-0">
+          <h2 className="text-base sm:text-lg md:text-xl font-bold flex items-center gap-1.5 sm:gap-2">
+            <MapPin size={18} className="text-blue-600 sm:w-5 sm:h-5" />
             位置情報を選択
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            className="text-gray-500 hover:text-gray-700 transition-colors p-1"
           >
-            <X size={24} />
+            <X size={20} className="sm:w-6 sm:h-6" />
           </button>
         </div>
 
         {/* コンテンツ */}
-        <div className="px-6 py-3 overflow-y-auto flex-1">
+        <div className="px-3 sm:px-4 md:px-6 py-3 overflow-y-auto flex-1">
           {/* 住所検索 */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="mb-3 sm:mb-4">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
               住所で検索
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
-                <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Search size={18} className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -214,8 +214,8 @@ const MapModal: React.FC<MapModalProps> = ({
                       handleSearchLocation();
                     }
                   }}
-                  placeholder="例：愛知県名古屋市、東京都渋谷区"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="例：愛知県名古屋市"
+                  className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm sm:text-base"
                   disabled={isSearching}
                 />
               </div>
@@ -225,7 +225,7 @@ const MapModal: React.FC<MapModalProps> = ({
                 size="md"
                 onClick={handleSearchLocation}
                 disabled={!searchQuery.trim() || isSearching}
-                className="px-6"
+                className="px-4 sm:px-6 w-full sm:w-auto"
               >
                 {isSearching ? '検索中...' : '検索'}
               </Button>
@@ -233,17 +233,17 @@ const MapModal: React.FC<MapModalProps> = ({
           </div>
 
           {/* 選択された住所（自動生成・表示専用） */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="mb-3 sm:mb-4">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
               選択された位置
             </label>
-            <div className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800">
+            <div className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 text-sm sm:text-base">
               {isLoadingAddress ? (
                 <span className="text-gray-500">住所を取得中...</span>
               ) : selectedPosition && address ? (
                 address
               ) : (
-                <span className="text-gray-400">地図をクリックするか検索で位置情報を登録してください。</span>
+                <span className="text-gray-400 text-xs sm:text-sm">地図をクリックするか検索で位置情報を登録してください。</span>
               )}
             </div>
           </div>
@@ -253,7 +253,7 @@ const MapModal: React.FC<MapModalProps> = ({
             {isLoaded ? (
               <div className="border rounded-lg overflow-hidden">
                 <GoogleMap
-                  mapContainerStyle={containerStyle}
+                  mapContainerStyle={getContainerStyle()}
                   center={mapCenter}
                   zoom={selectedPosition ? 15 : 12}
                   onClick={handleMapClick}
@@ -265,27 +265,27 @@ const MapModal: React.FC<MapModalProps> = ({
                 </GoogleMap>
               </div>
             ) : (
-              <div className="h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
-                <p className="text-gray-500">マップを読み込み中...</p>
+              <div className="h-[280px] sm:h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
+                <p className="text-sm sm:text-base text-gray-500">マップを読み込み中...</p>
               </div>
             )}
           </div>
         </div>
 
         {/* フッター */}
-        <div className="bg-gray-50 px-6 py-4 border-t flex justify-between items-center flex-shrink-0 gap-3">
+        <div className="bg-gray-50 px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-t flex flex-col sm:flex-row justify-between items-stretch sm:items-center flex-shrink-0 gap-2 sm:gap-3">
           {/* 現在地ボタン */}
           <Button
             variant="outline"
             size="md"
             onClick={handleGetCurrentLocation}
             icon={<Navigation size={16} />}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto order-2 sm:order-1"
           >
             現在地を取得
           </Button>
-          <div className="flex gap-3">
-            <Button variant="outline" size="md" onClick={onClose}>
+          <div className="flex gap-2 sm:gap-3 order-1 sm:order-2">
+            <Button variant="outline" size="md" onClick={onClose} className="flex-1 sm:flex-none">
               キャンセル
             </Button>
             <Button
@@ -293,6 +293,7 @@ const MapModal: React.FC<MapModalProps> = ({
               size="md"
               onClick={handleConfirm}
               disabled={!selectedPosition || !address || isLoadingAddress}
+              className="flex-1 sm:flex-none"
             >
               この位置に決定
             </Button>

@@ -16,33 +16,20 @@ export async function GET(request: NextRequest) {
 
     // フィルター
     const category = searchParams.get('category');
-    const condition = searchParams.get('condition');
     const sellerId = searchParams.get('sellerId');
     const status = searchParams.get('status');
-    const priceRange = searchParams.get('priceRange');
-    const keyword = searchParams.get('keyword');
-
-    // ソート
-    const sortBy = searchParams.get('sortBy') || 'newest';
+    const shippingPayer = searchParams.get('shippingPayer');
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '12');
 
     let query: any = {};
-
-    // フィルター条件の構築
-    if (category) query.category = category;
-    if (condition) query.condition = condition;
-    if (sellerId) query.sellerId = sellerId;
-    if (status) query.status = status;
-
-    // 価格帯フィルター
-    if (priceRange) {
-      const [min, max] = priceRange.split('-');
-      if (min) query.price = { ...query.price, $gte: parseInt(min) };
-      if (max) query.price = { ...query.price, $lte: parseInt(max) };
+    if (category) {
+      query.category = category;
     }
-
-    // キーワード検索（テキストインデックスが必要）
-    if (keyword) {
-      query.$text = { $search: keyword };
+    if (sellerId) {
+      query.sellerId = sellerId;
     }
 
     // ソート条件の構築
@@ -54,6 +41,20 @@ export async function GET(request: NextRequest) {
     } else if (sortBy === 'popular') {
       // TODO: 人気順のロジックを実装（例：閲覧数、いいね数など）
       sortOptions = { createdAt: -1 }; // 現時点では新着順にフォールバック
+    }
+    if (shippingPayer) {
+      query.shippingPayer = shippingPayer;
+    }
+
+    // 価格帯フィルター
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) {
+        query.price.$gte = parseInt(minPrice);
+      }
+      if (maxPrice) {
+        query.price.$lte = parseInt(maxPrice);
+      }
     }
 
     // 総数を取得

@@ -10,7 +10,9 @@ import {
   ShoppingCart,
   MessageSquare,
   List,
-  Map
+  Map,
+  Menu,
+  X
 } from "lucide-react";
 import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner  } from "react-icons/gi";
 import { FaTape, FaTshirt, FaBox } from "react-icons/fa";
@@ -51,6 +53,7 @@ export default function Header() {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginRequiredAction, setLoginRequiredAction] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // コミュニティメニューリスト（useStateフック内で定義してuserを参照できるようにする）
   const communityMenuItems = [
@@ -109,10 +112,11 @@ export default function Header() {
   }, [user]);
 
   return (
-    <header className="bg-white py-4 px-10 border-b border-gray-200 relative z-50">
-      <div className="flex justify-around items-center">
+    <header className="sticky top-0 bg-white py-3 sm:py-4 px-4 sm:px-6 lg:px-10 border-b border-gray-200 z-50">
+      <div className="flex justify-between lg:justify-around items-center">
+        {/* ロゴ */}
         <h1
-          className="text-7xl font-bold text-[#2FA3E3]"
+          className="text-4xl sm:text-5xl lg:text-7xl font-bold text-[#2FA3E3]"
           style={{ fontFamily: "せのびゴシック, sans-serif" }}
         >
           <Link
@@ -123,7 +127,8 @@ export default function Header() {
           </Link>
         </h1>
 
-        <nav className="mx-11 flex justify-around gap-12 items-center">
+        {/* デスクトップナビゲーション */}
+        <nav className="hidden lg:flex mx-11 justify-around gap-12 items-center">
           <button
             onClick={() => {
               if (!user) {
@@ -161,7 +166,8 @@ export default function Header() {
           </div>
         </nav>
 
-        <div className="flex items-center gap-4">
+        {/* デスクトップアイコン */}
+        <div className="hidden lg:flex items-center gap-4">
           {user ? (
             <>
               <Link
@@ -275,6 +281,210 @@ export default function Header() {
             </>
           )}
         </div>
+
+        {/* モバイル用アイコンとメニューボタン */}
+        <div className="flex lg:hidden items-center gap-2 sm:gap-3">
+          {user && (
+            <>
+              {/* メッセージアイコン（モバイル） */}
+              <Link
+                href="/message"
+                className="relative flex justify-center items-center w-9 h-9 rounded-full bg-gray-100 text-gray-600 transition-all duration-300 hover:bg-gray-200"
+                aria-label="メッセージ"
+              >
+                <Mail size={16} />
+                {unreadMessageCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+                  </span>
+                )}
+              </Link>
+
+              {/* カートアイコン（モバイル） */}
+              <Link
+                href="/cart"
+                className="relative flex justify-center items-center w-9 h-9 rounded-full bg-gray-100 text-gray-600 transition-all duration-300 hover:bg-gray-200"
+                aria-label="カート"
+              >
+                <ShoppingCart size={16} />
+                {cartItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                    {cartItems.length}
+                  </span>
+                )}
+              </Link>
+
+              {/* 通知アイコン（モバイル） */}
+              <Link
+                href="/notification"
+                className="relative flex justify-center items-center w-9 h-9 rounded-full bg-gray-100 text-gray-600 transition-all duration-300 hover:bg-gray-200"
+                aria-label="通知"
+              >
+                <Bell size={16} />
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                  </span>
+                )}
+              </Link>
+            </>
+          )}
+
+          {/* ハンバーガーメニューボタン */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="flex justify-center items-center w-9 h-9 rounded-full bg-gray-100 text-gray-600 transition-all duration-300 hover:bg-gray-200 relative"
+            aria-label="メニュー"
+          >
+            <div className="relative w-5 h-5">
+              <Menu
+                size={20}
+                className={`absolute inset-0 transition-all duration-300 ${
+                  isMobileMenuOpen
+                    ? 'opacity-0 rotate-90 scale-50'
+                    : 'opacity-100 rotate-0 scale-100'
+                }`}
+              />
+              <X
+                size={20}
+                className={`absolute inset-0 transition-all duration-300 ${
+                  isMobileMenuOpen
+                    ? 'opacity-100 rotate-0 scale-100'
+                    : 'opacity-0 -rotate-90 scale-50'
+                }`}
+              />
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* モバイルメニュー */}
+      <div
+        className={`lg:hidden overflow-hidden transition-all duration-300 ease-in-out border-t border-gray-200 bg-white ${
+          isMobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0 border-t-0'
+        }`}
+      >
+        <nav className="px-4 py-4 space-y-1">
+            {user ? (
+              <>
+                {/* ユーザー情報 */}
+                <Link
+                  href={user?.uid ? `/profile/${user.uid}` : "/profile"}
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0">
+                    <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                      {profile.photoURL ? (
+                        <Image
+                          src={profile.photoURL}
+                          alt="プロフィール画像"
+                          width={40}
+                          height={40}
+                          className="w-full h-full object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <UserIcon size={20} />
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 truncate">{profile.displayName || "ユーザー"}</p>
+                    {profile.username && (
+                      <p className="text-sm text-gray-500 truncate">@{profile.username}</p>
+                    )}
+                  </div>
+                </Link>
+
+                <div className="border-t border-gray-200 my-2"></div>
+
+                {/* メニュー項目 */}
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    router.push('/sell');
+                  }}
+                  className="w-full text-left px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium"
+                >
+                  出品する
+                </button>
+
+                <Link
+                  href="/product-list"
+                  className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  商品を探す
+                </Link>
+
+                <Link
+                  href="/community"
+                  className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  コミュニティ
+                </Link>
+
+                <Link
+                  href="/post"
+                  className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  投稿する
+                </Link>
+
+                <Link
+                  href="/message"
+                  className="flex items-center justify-between px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <span>メッセージ</span>
+                  {unreadMessageCount > 0 && (
+                    <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
+                      {unreadMessageCount}
+                    </span>
+                  )}
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/product-list"
+                  className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  商品を探す
+                </Link>
+
+                <Link
+                  href="/community"
+                  className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  コミュニティ
+                </Link>
+
+                <div className="border-t border-gray-200 my-2"></div>
+
+                <Link
+                  href="/login"
+                  className="block px-3 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors text-center text-gray-700 font-medium"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  ログイン
+                </Link>
+
+                <Link
+                  href="/register"
+                  className="block px-3 py-3 rounded-lg bg-[#2FA3E3] hover:bg-[#2892c9] transition-colors text-center text-white font-medium"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  新規登録
+                </Link>
+              </>
+            )}
+        </nav>
       </div>
 
       {/* ログイン必須モーダル */}

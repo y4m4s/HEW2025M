@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/components/useCartStore';
 import Button from '@/components/Button';
+import { CartProduct } from '@/components/CartProductCard';
 import Image from 'next/image';
 import { CreditCard, Loader2, Home, Fish } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
@@ -35,24 +36,85 @@ export default function PayPage() {
   const [isLoadingAddress, setIsLoadingAddress] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  // 追加: APIから取得する詳細な商品情報
+  const [products, setProducts] = useState<(CartProduct & { cartItemId: string; shippingPayer?: string })[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // 認証チェック
+  // 認証チェック：未ログインならログインページへリダイレクト
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
     }
   }, [user, authLoading, router]);
 
-  // カートが空ならリダイレクト
   useEffect(() => {
-    if (isMounted && items.length === 0) {
-      toast.error('カートに商品がありません。');
-      router.replace('/');
-    }
-  }, [items, isMounted, router]);
+    setIsMounted(true);
+  }, []);
+
+  // カート内の商品の詳細情報をAPIから取得
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      if (!isMounted || items.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const productDetails = await Promise.all(
+          items.map(async (item) => {
+            try {
+              const response = await fetch(`/api/products/${item.id}`);
+              if (!response.ok) {
+                // 商品が削除されている場合はnullを返す
+                console.warn(`商品ID ${item.id} は削除されています`);
+                return null;
+              }
+
+              const data = await response.json();
+              const product = data.product;
+
+              // 商品が売り切れまたは予約済みの場合はnullを返してカートから削除
+              if (product.status === 'sold' || product.status === 'reserved') {
+                console.warn(`商品ID ${item.id} は${product.status === 'sold' ? 'SOLD' : 'SOLD'}です`);
+                return null;
+              }
+
+              return {
+                cartItemId: item.id,
+                id: product._id,
+                name: product.title,
+                price: product.price, // APIから最新の価格を取得
+                sellerName: product.sellerName || '出品者未設定',
+                imageUrl: product.images?.[0],
+                category: product.category,
+                condition: product.condition,
+                shippingDays: product.shippingDays,
+                description: product.description,
+                shippingPayer: product.shippingPayer, // 送料負担情報を追加
+              };
+            } catch (error) {
+              console.error(`商品ID ${item.id} の取得エラー:`, error);
+              return null;
+            }
+          })
+        );
+
+        // nullを除外して有効な商品のみを設定
+        setProducts(productDetails.filter((product) => product !== null) as (CartProduct & { cartItemId: string; shippingPayer?: string })[]);
+      } catch (error) {
+        console.error('商品詳細取得エラー:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProductDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMounted, items]);
+
+  // 有効な商品のみで計算
+  const validProducts = products.filter((product) => product !== null);
 
   // ユーザーの保存済み住所を取得
   useEffect(() => {
@@ -74,8 +136,6 @@ export default function PayPage() {
     fetchAddress();
   }, [user]);
 
-  const subtotal = useMemo(() => items.reduce((acc, item) => acc + item.price * item.quantity, 0), [items]);
-
   const calculateShippingFee = (prefecture: string | undefined) => {
     if (!prefecture) return 0;
     const prefectures: { [key: string]: number } = {
@@ -95,12 +155,30 @@ export default function PayPage() {
     return 800; // デフォルト
   };
 
-  const shippingFee = useMemo(() => {
-    if (subtotal === 0) return 0;
-    return calculateShippingFee(address.prefecture);
-  }, [subtotal, address.prefecture]);
+  const calculateSubtotal = () => {
+    return validProducts.reduce((acc, product) => {
+      const cartItem = items.find(i => i.id === product.cartItemId);
+      const quantity = cartItem ? cartItem.quantity : 1;
+      return acc + (product.price * quantity);
+    }, 0);
+  };
 
-  const total = subtotal + shippingFee;
+  const subtotalWithQuantity = useMemo(() => calculateSubtotal(), [validProducts, items]);
+
+  const shippingFeeWithQuantity = useMemo(() => {
+    if (subtotalWithQuantity === 0) return 0;
+
+    // 購入者負担の商品が含まれているかチェック
+    const hasBuyerPaysItem = validProducts.some(product => product.shippingPayer === 'buyer');
+
+    if (!hasBuyerPaysItem) {
+      return 0;
+    }
+
+    return calculateShippingFee(address.prefecture);
+  }, [subtotalWithQuantity, address.prefecture, validProducts]);
+
+  const totalWithQuantity = subtotalWithQuantity + shippingFeeWithQuantity;
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAddress({ ...address, [e.target.name]: e.target.value });
@@ -125,7 +203,7 @@ export default function PayPage() {
     }
   };
 
-  if (!isMounted || authLoading || isLoadingAddress) {
+  if (!isMounted || authLoading || isLoadingAddress || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-10 w-10 animate-spin text-[#2FA3E3]" />
@@ -146,46 +224,52 @@ export default function PayPage() {
           <div className="bg-white p-6 rounded-lg shadow-md h-fit">
             <h2 className="text-xl font-bold mb-4 border-b pb-3">注文概要</h2>
             <div className="space-y-4 mb-6">
-              {items.map((item) => (
-                <div key={item.id} className="flex items-center gap-4">
-                  <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded-md border flex items-center justify-center overflow-hidden">
-                    {item.image ? (
-                      <Image
-                        src={item.image}
-                        alt={item.title}
-                        width={64}
-                        height={64}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Fish size={24} className="text-gray-400" />
-                    )}
+              {validProducts.map((product) => {
+                const cartItem = items.find(i => i.id === product.cartItemId);
+                const quantity = cartItem ? cartItem.quantity : 1;
+
+                return (
+                  <div key={product.id} className="flex items-center gap-4">
+                    <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded-md border flex items-center justify-center overflow-hidden">
+                      {product.imageUrl ? (
+                        <Image
+                          src={product.imageUrl}
+                          alt={product.name}
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Fish size={24} className="text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold line-clamp-1">{product.name}</h3>
+                      <p className="text-sm text-gray-600">数量: {quantity}</p>
+                      <p className="text-xs text-gray-500">{product.shippingPayer === 'buyer' ? '送料別（購入者負担）' : '送料込み（出品者負担）'}</p>
+                    </div>
+                    <p className="font-bold">¥{(product.price * quantity).toLocaleString()}</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold line-clamp-1">{item.title}</h3>
-                    <p className="text-sm text-gray-600">数量: {item.quantity}</p>
-                  </div>
-                  <p className="font-bold">¥{(item.price * item.quantity).toLocaleString()}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="border-t pt-4 space-y-3 text-gray-700">
-              <div className="flex justify-between"><span>小計</span><span>¥{subtotal.toLocaleString()}</span></div>
+              <div className="flex justify-between"><span>小計</span><span>¥{subtotalWithQuantity.toLocaleString()}</span></div>
               <div className="flex justify-between">
                 <span>送料</span>
-                <span className={shippingFee > 0 ? "font-semibold" : "text-gray-500"}>
-                  {shippingFee > 0 ? `¥${shippingFee.toLocaleString()}` : "住所入力後に計算"}
+                <span className={shippingFeeWithQuantity > 0 ? "font-semibold" : "text-gray-500"}>
+                  {shippingFeeWithQuantity > 0 ? `¥${shippingFeeWithQuantity.toLocaleString()}` : address.prefecture && !isLoadingAddress && products.length > 0 ? "¥0 (出品者負担)" : "住所入力後に計算"}
                 </span>
               </div>
-              {shippingFee > 0 && (
+              {shippingFeeWithQuantity > 0 && (
                 <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
                   ※送料は都道府県により異なります（¥500〜¥1,500）
                 </p>
               )}
               <div className="flex justify-between font-bold text-2xl border-t pt-4 mt-4">
                 <span>合計</span>
-                <span className="text-[#2FA3E3]">¥{total.toLocaleString()}</span>
+                <span className="text-[#2FA3E3]">¥{totalWithQuantity.toLocaleString()}</span>
               </div>
             </div>
           </div>

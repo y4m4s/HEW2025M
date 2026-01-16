@@ -400,7 +400,7 @@ export default function UserProfilePage() {
             <div className="lg:col-span-2 bg-white rounded-xl shadow-lg">
               <div className="flex border-b text-sm overflow-x-auto">
                 <button
-                  className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "selling"
+                  className={`flex-shrink-0 px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "selling"
                     ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                     : "text-gray-600 hover:text-[#2FA3E3]"
                     }`}
@@ -409,7 +409,7 @@ export default function UserProfilePage() {
                   出品中 ({sellingCount})
                 </button>
                 <button
-                  className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "history"
+                  className={`flex-shrink-0 px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "history"
                     ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                     : "text-gray-600 hover:text-[#2FA3E3]"
                     }`}
@@ -418,7 +418,7 @@ export default function UserProfilePage() {
                   出品履歴 ({historyCount})
                 </button>
                 <button
-                  className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "posts"
+                  className={`flex-shrink-0 px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "posts"
                     ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                     : "text-gray-600 hover:text-[#2FA3E3]"
                     }`}
@@ -429,9 +429,9 @@ export default function UserProfilePage() {
 
                 {isOwnProfile && (
                   <button
-                    className={`px-6 py-4 font-medium transition-colors ${activeTab === "purchases"
-                        ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
-                        : "text-gray-600 hover:text-[#2FA3E3]"
+                    className={`flex-shrink-0 px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "purchases"
+                      ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
+                      : "text-gray-600 hover:text-[#2FA3E3]"
                       }`}
                     onClick={() => setActiveTab("purchases")}
                   >
@@ -441,7 +441,7 @@ export default function UserProfilePage() {
                 {/* ブックマークは自分のプロフィールの場合のみ表示 */}
                 {isOwnProfile && (
                   <button
-                    className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "bookmarks"
+                    className={`flex-shrink-0 px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "bookmarks"
                       ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                       : "text-gray-600 hover:text-[#2FA3E3]"
                       }`}
@@ -453,7 +453,7 @@ export default function UserProfilePage() {
                 {/* いいねは自分のプロフィールの場合のみ表示 */}
                 {isOwnProfile && (
                   <button
-                    className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "likedPosts"
+                    className={`flex-shrink-0 px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === "likedPosts"
                       ? "text-[#2FA3E3] border-b-2 border-[#2FA3E3]"
                       : "text-gray-600 hover:text-[#2FA3E3]"
                       }`}

@@ -239,25 +239,26 @@ export default function NotificationPage() {
   ];
 
   return (
-    <div className="bg-gray-100 min-h-screen p-8">
+    <div className="bg-gray-100 min-h-screen p-3 sm:p-5 md:p-8">
       <div className="max-w-4xl mx-auto">
         {/* ヘッダー（「すべて既読にする」ボタンが機能するようになりました） */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <Bell size={28} className="text-[#2FA3E3]" />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <Bell size={24} className="text-[#2FA3E3] sm:w-7 sm:h-7" />
             通知
           </h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
             <Button
               onClick={handleDeleteAll}
               variant="secondary"
               size="sm"
               icon={<Trash2 size={16} />}
+              className="flex-shrink-0"
             >
               すべて削除する
             </Button>
             {/* フィルター機能 */}
-            <div className="w-48">
+            <div className="flex-1 sm:flex-none sm:w-48">
               <CustomSelect
                 value={filterValue}
                 onChange={setFilterValue}
@@ -269,13 +270,13 @@ export default function NotificationPage() {
         </div>
 
         {/* 通知リスト */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {/* 通知がない場合にメッセージを表示します */}
           {filteredNotifications.length === 0 && (
-            <div className="bg-white shadow-md rounded-lg p-6 text-center text-gray-500">
+            <div className="bg-white shadow-md rounded-lg p-4 sm:p-6 text-center text-gray-500">
               <div className="flex items-center justify-center gap-2">
-                <Bell size={20} />
-                <p>{filterValue === 'unread' ? '未読の通知はありません。' : 'まだ通知はありません。'}</p>
+                <Bell size={18} className="sm:w-5 sm:h-5" />
+                <p className="text-sm sm:text-base">{filterValue === 'unread' ? '未読の通知はありません。' : 'まだ通知はありません。'}</p>
               </div>
             </div>
           )}
@@ -283,7 +284,7 @@ export default function NotificationPage() {
           {paginatedNotifications.map((notification, index) => (
             <div
               key={notification.id}
-              className={`bg-white rounded-xl p-5 flex items-start gap-4 transition-all duration-300 relative ${notification.isUnread
+              className={`bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 flex items-start gap-2 sm:gap-3 md:gap-4 transition-all duration-300 relative ${notification.isUnread
                 ? 'border-l-4 border-[#2FA3E3] shadow-lg'
                 : 'border-l-4 border-transparent shadow-md'
                 } ${notification.link || notification.linkUserId ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-l-[#2FA3E3]' : ''}`}
@@ -296,22 +297,22 @@ export default function NotificationPage() {
                   e.stopPropagation();
                   handleDelete(notification.id);
                 }}
-                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-gray-500 hover:bg-red-500 text-white flex items-center justify-center transition-colors duration-200"
+                className="absolute top-1 sm:top-2 right-1 sm:right-2 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-500 hover:bg-red-500 text-white flex items-center justify-center transition-colors duration-200"
                 aria-label="削除"
               >
-                <X size={16} />
+                <X size={14} className="sm:w-4 sm:h-4" />
               </button>
 
               {/* 1. アイコン */}
               <div
-                className="w-14 h-14 my-auto rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-[#2FA3E3] to-[#1d7bb8] shadow-md"
+                className="w-12 h-12 sm:w-14 sm:h-14 my-auto rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-[#2FA3E3] to-[#1d7bb8] shadow-md"
               >
                 {getNotificationIcon(notification.iconType)}
               </div>
 
               {/* 2. コンテンツ */}
-              <div className="flex-1 min-w-0 pr-8">
-                <h3 className="text-gray-900 break-words text-base">
+              <div className="flex-1 min-w-0 pr-6 sm:pr-8">
+                <h3 className="text-gray-900 break-words text-sm sm:text-base">
                   {(() => {
                     // actorUserIdとactorDisplayNameがある場合はUserHoverCardを使用
                     if (notification.actorUserId && notification.actorDisplayName) {
@@ -342,19 +343,19 @@ export default function NotificationPage() {
                     return <span className="font-bold">{notification.title}</span>;
                   })()}
                 </h3>
-                <p className="text-sm text-gray-600 mt-2 line-clamp-2 break-words leading-relaxed">
+                <p className="text-xs sm:text-sm text-gray-600 mt-1.5 sm:mt-2 line-clamp-2 break-words leading-relaxed">
                   {notification.description}
                 </p>
-                <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-3 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
                     <Bell size={12} />
-                    {formatTimestamp(notification.timestamp)}
+                    <span className="text-[10px] sm:text-xs">{formatTimestamp(notification.timestamp)}</span>
                   </span>
-                  <span className="bg-gradient-to-r from-blue-50 to-cyan-50 text-[#2FA3E3] px-3 py-1 rounded-full font-medium border border-blue-100 w-20 text-center">
+                  <span className="bg-gradient-to-r from-blue-50 to-cyan-50 text-[#2FA3E3] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full font-medium border border-blue-100 text-[10px] sm:text-xs w-16 sm:w-20 text-center">
                     {notification.tag}
                   </span>
                   {notification.isUnread && (
-                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm animate-pulse">
+                    <span className="bg-red-500 text-white px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold shadow-sm animate-pulse">
                       New
                     </span>
                   )}
@@ -366,23 +367,24 @@ export default function NotificationPage() {
 
         {/* ページネーション */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-8">
+          <div className="flex items-center justify-center gap-1 sm:gap-2 mt-6 sm:mt-8">
             <Button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
               variant="outline"
               size="sm"
               icon={<ChevronLeft size={16} />}
+              className="text-xs sm:text-sm"
             >
-              前へ
+              <span className="hidden sm:inline">前へ</span>
             </Button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`w-10 h-10 rounded-lg font-semibold transition-all duration-200 ${currentPage === page
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg font-semibold transition-all duration-200 text-sm sm:text-base ${currentPage === page
                     ? 'bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] text-white shadow-md'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
                     }`}
@@ -398,8 +400,9 @@ export default function NotificationPage() {
               variant="outline"
               size="sm"
               icon={<ChevronRight size={16} />}
+              className="text-xs sm:text-sm"
             >
-              次へ
+              <span className="hidden sm:inline">次へ</span>
             </Button>
           </div>
         )}
