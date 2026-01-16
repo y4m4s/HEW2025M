@@ -248,12 +248,6 @@ export default function PostDetailPage() {
     });
   };
 
-  const getCategoryLabel = (category?: string): string => {
-    if (category === 'sea') return '海釣り';
-    if (category === 'river') return '川釣り';
-    return 'その他';
-  };
-
   const handleDelete = () => {
     if (!post || !user) return;
 
@@ -354,41 +348,54 @@ export default function PostDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto max-w-4xl px-4 py-8">
+      <div className="container mx-auto max-w-4xl px-4 py-4 md:py-8">
         <Button
           onClick={() => router.back()}
           variant="ghost"
           size="sm"
           icon={<ArrowLeft size={16} />}
-          className="mb-6"
+          className="mb-4 md:mb-6"
         >
           戻る
         </Button>
 
         <article className="bg-white rounded-lg shadow-md overflow-hidden">
           {/* ヘッダー */}
-          <div className="p-6 border-b">
-            <div className="flex items-center justify-between mb-4">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium text-white ${post.category === 'sea' ? 'bg-blue-500' : 'bg-green-500'
-                }`}>
-                {getCategoryLabel(post.category)}
-              </span>
+          <div className="p-4 md:p-6 border-b">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              {/* タグを表示 */}
+              <div className="flex flex-wrap gap-2">
+                {post.tags && post.tags.length > 0 ? (
+                  post.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className={`px-3 py-1 rounded-full text-sm font-medium text-white ${post.category === 'sea' ? 'bg-blue-500' : 'bg-green-500'}`}
+                    >
+                      {tag}
+                    </span>
+                  ))
+                ) : (
+                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-300 text-gray-600">
+                    (タグなし)
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2 text-gray-500 text-sm">
                 <Calendar size={16} />
                 <span>{formatDate(post.createdAt)}</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold text-gray-800">{post.title}</h1>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 flex-1">{post.title}</h1>
               {isOwnPost && (
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 px-3 md:px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed self-start"
                   title="投稿を削除"
                 >
-                  <Trash2 size={20} />
+                  <Trash2 size={18} className="md:w-5 md:h-5" />
                   <span className="text-sm font-medium">{deleting ? '削除中...' : '削除'}</span>
                 </button>
               )}
@@ -397,7 +404,7 @@ export default function PostDetailPage() {
 
           {/* 画像ギャラリー - カルーセル */}
           {post.media && post.media.length > 0 ? (
-            <div className="bg-gray-100 p-4">
+            <div className="bg-gray-100 p-3 md:p-4">
               <div className="relative overflow-hidden rounded-lg bg-gray-200">
                 <div
                   className="flex transition-transform duration-300 ease-in-out"
@@ -411,12 +418,12 @@ export default function PostDetailPage() {
                           alt={`投稿画像${index + 1}`}
                           width={800}
                           height={600}
-                          className="w-full h-96 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          className="w-full h-64 sm:h-80 md:h-96 object-cover cursor-pointer hover:opacity-90 transition-opacity"
                           onClick={() => handleImageClick(index)}
                         />
                       ) : (
-                        <div className="w-full h-96 flex items-center justify-center">
-                          <Fish size={64} className="text-gray-400" />
+                        <div className="w-full h-64 sm:h-80 md:h-96 flex items-center justify-center">
+                          <Fish size={48} className="text-gray-400 md:w-16 md:h-16" />
                         </div>
                       )}
                     </div>
@@ -428,15 +435,15 @@ export default function PostDetailPage() {
                   <>
                     <button
                       onClick={prevSlide}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-1.5 md:p-2 shadow-lg transition-all"
                     >
-                      <ChevronLeft size={20} />
+                      <ChevronLeft size={18} className="md:w-5 md:h-5" />
                     </button>
                     <button
                       onClick={nextSlide}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-1.5 md:p-2 shadow-lg transition-all"
                     >
-                      <ChevronRight size={20} />
+                      <ChevronRight size={18} className="md:w-5 md:h-5" />
                     </button>
                   </>
                 )}
@@ -444,12 +451,12 @@ export default function PostDetailPage() {
 
               {/* インジケーター（複数画像がある場合のみ） */}
               {post.media && post.media.length > 1 && (
-                <div className="flex justify-center mt-4 gap-2">
+                <div className="flex justify-center mt-3 md:mt-4 gap-2">
                   {post.media.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => goToSlide(index)}
-                      className={`w-3 h-3 rounded-full transition-colors ${currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
+                      className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full transition-colors ${currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
                         }`}
                     />
                   ))}
@@ -457,50 +464,36 @@ export default function PostDetailPage() {
               )}
             </div>
           ) : (
-            <div className="aspect-video bg-gray-200 rounded-lg flex flex-col items-center justify-center">
-              <Fish size={64} className="text-gray-400 mb-3" />
+            <div className="aspect-video bg-gray-200 rounded-lg flex flex-col items-center justify-center mx-3 md:mx-4 my-3 md:my-4">
+              <Fish size={48} className="text-gray-400 mb-3 md:w-16 md:h-16" />
               <p className="text-gray-500 text-sm">画像がありません</p>
             </div>
           )}
 
           {/* 本文 */}
-          <div className="p-6">
-            <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap mb-6">
+          <div className="p-4 md:p-6">
+            <p className="text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed whitespace-pre-wrap mb-4 md:mb-6">
               {post.content}
             </p>
 
-            {/* タグ */}
-            {post.tags && post.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-6">
-                {post.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-
             {/* 場所 */}
             {post.address && (
-              <div className="flex items-center gap-2 text-gray-600 mb-6">
-                <MapPin size={20} />
-                <span>{post.address}</span>
+              <div className="flex items-center gap-2 text-gray-600 mb-4 md:mb-6">
+                <MapPin size={18} className="md:w-5 md:h-5 flex-shrink-0" />
+                <span className="text-sm md:text-base break-words">{post.address}</span>
               </div>
             )}
 
             {/* アクション */}
-            <div className="flex items-center gap-6 pt-4 border-t">
+            <div className="flex items-center gap-4 md:gap-6 pt-4 border-t">
               <button
                 onClick={handleLikeToggle}
                 disabled={likeLoading}
                 className={`flex items-center gap-2 ${isLiked ? 'text-red-500' : 'text-gray-600 hover:text-red-500'
                   } transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                <Heart size={20} className={isLiked ? 'fill-current' : ''} />
-                <span>{likesCount}</span>
+                <Heart size={18} className={`${isLiked ? 'fill-current' : ''} md:w-5 md:h-5`} />
+                <span className="text-sm md:text-base">{likesCount}</span>
               </button>
               <button
                 onClick={() => {
@@ -511,17 +504,17 @@ export default function PostDetailPage() {
                 }}
                 className="flex items-center gap-2 text-gray-600 hover:text-blue-500 transition-colors"
               >
-                <MessageCircle size={20} />
-                <span>{commentCount}</span>
+                <MessageCircle size={18} className="md:w-5 md:h-5" />
+                <span className="text-sm md:text-base">{commentCount}</span>
               </button>
             </div>
 
             {/* いいねしたユーザーを表示 */}
             {likesCount > 0 && (
-              <div className="pt-4">
+              <div className="pt-3 md:pt-4">
                 <button
                   onClick={() => setShowLikedUsersModal(true)}
-                  className="text-sm text-gray-600 hover:text-blue-500 hover:underline transition-colors"
+                  className="text-xs md:text-sm text-gray-600 hover:text-blue-500 hover:underline transition-colors"
                 >
                   {likesCount}人がいいねしています
                 </button>
@@ -540,8 +533,8 @@ export default function PostDetailPage() {
         />
 
         {/* コメントセクション */}
-        <section id="comment-section" className="mt-8 bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-xl font-bold mb-4">コメント</h3>
+        <section id="comment-section" className="mt-6 md:mt-8 bg-white rounded-lg shadow-md p-4 md:p-6">
+          <h3 className="text-lg md:text-xl font-bold mb-4">コメント</h3>
           <Comment
             postId={params.id as string}
             itemOwnerId={post.authorId.startsWith('user-') ? post.authorId.replace('user-', '') : post.authorId}
@@ -573,9 +566,22 @@ export default function PostDetailPage() {
         <div className="bg-white rounded-lg shadow-md overflow-hidden max-w-md w-full">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium text-white ${post.category === 'sea' ? 'bg-blue-500' : 'bg-green-500'}`}>
-                {getCategoryLabel(post.category)}
-              </span>
+              <div className="flex flex-wrap gap-2">
+                {post.tags && post.tags.length > 0 ? (
+                  post.tags.slice(0, 2).map((tag, index) => (
+                    <span
+                      key={index}
+                      className={`px-3 py-1 rounded-full text-sm font-medium text-white ${post.category === 'sea' ? 'bg-blue-500' : 'bg-green-500'}`}
+                    >
+                      {tag}
+                    </span>
+                  ))
+                ) : (
+                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-300 text-gray-600">
+                    (タグなし)
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2 text-gray-500 text-sm">
                 <Calendar size={16} />
                 <span>{formatDate(post.createdAt)}</span>

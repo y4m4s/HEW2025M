@@ -77,7 +77,7 @@ export default function MessagePage() {
   const [selectedUser, setSelectedUser] = useState<Conversation | null>(null);
 
   // レスポンシブ対応: モバイル用のサイドバー表示制御
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
   const [showProfileSidebar, setShowProfileSidebar] = useState(false);
 
   // 画像添付用の状態
@@ -123,6 +123,7 @@ export default function MessagePage() {
             bio: userData.bio || '',
           });
           hasLoadedFromUrl.current = true; // 読み込み完了フラグ
+          setShowSidebar(false); // モバイルの場合はサイドバーを閉じてチャットを表示
         }
       } catch (error) {
         console.error('ユーザー情報の取得エラー:', error);
@@ -573,7 +574,7 @@ export default function MessagePage() {
       {/* --- 1. サイドバー (会話リスト) --- */}
       {/* デスクトップ: 常に表示、モバイル: showSidebarがtrueの時のみ表示 */}
       <div className={`
-        w-80 flex-shrink-0 bg-white shadow-lg border-r border-gray-200 flex flex-col h-full
+        w-full lg:w-80 flex-shrink-0 bg-white shadow-lg border-r border-gray-200 flex flex-col h-full
         lg:relative lg:translate-x-0
         fixed inset-y-0 left-0 z-30 transform transition-transform duration-300
         ${showSidebar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -612,9 +613,9 @@ export default function MessagePage() {
             conversationList.map((convo) => (
               <div
                 key={convo.id}
-                className={`flex items-center p-4 cursor-pointer border-l-4 transition-colors duration-150 relative ${selectedUser?.id === convo.id
-                  ? 'bg-blue-50 border-blue-500'
-                  : 'border-transparent hover:bg-gray-100'
+                className={`flex items-center p-4 cursor-pointer border-l-4 border-b border-gray-200 transition-colors duration-150 relative ${selectedUser?.id === convo.id
+                  ? 'bg-blue-50 border-l-blue-500'
+                  : 'border-l-transparent hover:bg-gray-100'
                   }`}
                 onClick={() => handleSelectUser(convo)}
               >

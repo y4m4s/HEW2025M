@@ -26,28 +26,26 @@ const CATEGORY_OPTIONS = [
   { label: 'その他', value: 'other', icon: Puzzle },
 ];
 
-const PRICE_RANGE_OPTIONS = [
+const PRICE_OPTIONS = [
   { label: '指定なし', value: '' },
-  { label: '〜1,000円', value: '0-1000' },
-  { label: '1,000〜5,000円', value: '1000-5000' },
-  { label: '5,000〜10,000円', value: '5000-10000' },
-  { label: '10,000円〜', value: '10000-' },
+  { label: '500円', value: '500' },
+  { label: '1,000円', value: '1000' },
+  { label: '2,000円', value: '2000' },
+  { label: '3,000円', value: '3000' },
+  { label: '4,000円', value: '4000' },
+  { label: '5,000円', value: '5000' },
+  { label: '10,000円', value: '10000' },
 ];
 
-const CONDITION_OPTIONS = [
-  { label: 'すべて', value: '' },
-  { label: '新品・未使用', value: 'new' },
-  { label: '未使用に近い', value: 'like-new' },
-  { label: '目立った傷汚れなし', value: 'good' },
-  { label: 'やや傷や汚れあり', value: 'fair' },
-  { label: '傷や汚れあり', value: 'poor' },
+const SHIPPING_PAYER_OPTIONS = [
+  { label: '指定なし', value: '' },
+  { label: '出品者負担', value: 'seller' },
+  { label: '購入者負担', value: 'buyer' },
 ];
-
 const SORT_OPTIONS = [
   { label: '新着順', value: 'newest' },
   { label: '価格の安い順', value: 'price-low' },
   { label: '価格の高い順', value: 'price-high' },
-  { label: '人気順', value: 'popular' },
 ];
 
 export default function SearchPage() {
@@ -60,8 +58,9 @@ export default function SearchPage() {
 
   // フィルター状態（URLパラメータから初期値を取得）
   const [category, setCategory] = useState(() => searchParams.get('category') || '');
-  const [priceRange, setPriceRange] = useState('');
-  const [condition, setCondition] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [shippingPayer, setShippingPayer] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [keyword, setKeyword] = useState('');
 
@@ -113,7 +112,9 @@ export default function SearchPage() {
 
       const params = new URLSearchParams();
       if (category) params.append('category', category);
-      if (condition) params.append('condition', condition);
+      if (minPrice) params.append('minPrice', minPrice);
+      if (maxPrice) params.append('maxPrice', maxPrice);
+      if (shippingPayer) params.append('shippingPayer', shippingPayer);
       // statusフィルターを削除 - 全ての商品（販売中とSOLD）を表示
       params.append('page', pageNum.toString());
       params.append('limit', '12');
@@ -158,11 +159,8 @@ export default function SearchPage() {
         };
       });
 
-      // フィルタリング（価格帯とキーワード）
+      // フィルタリング（キーワードのみクライアント側、価格はサーバー側）
       let filtered = formattedProducts;
-      if (priceRange) {
-        filtered = filterByPrice(filtered, priceRange);
-      }
       if (keyword) {
         filtered = filterByKeyword(filtered, keyword);
       }
@@ -189,14 +187,14 @@ export default function SearchPage() {
     } finally {
       setLoading(false);
     }
-  }, [category, condition, priceRange, sortBy, keyword]);
+  }, [category, minPrice, maxPrice, shippingPayer, sortBy, keyword]);
 
   // フィルター変更時にリセット
   useEffect(() => {
     setProducts([]);
     setHasMore(true);
     fetchProducts(1, true);
-  }, [category, condition, priceRange, sortBy, keyword, fetchProducts]);
+  }, [category, minPrice, maxPrice, shippingPayer, sortBy, keyword, fetchProducts]);
 
   // Intersection Observerの設定
   useEffect(() => {
@@ -258,21 +256,7 @@ export default function SearchPage() {
     }
   };
 
-  // 価格帯でフィルタリング
-  const filterByPrice = (items: Product[], range: string): Product[] => {
-    if (!range) return items;
 
-    if (range === '0-1000') {
-      return items.filter(p => p.price <= 1000);
-    } else if (range === '1000-5000') {
-      return items.filter(p => p.price > 1000 && p.price <= 5000);
-    } else if (range === '5000-10000') {
-      return items.filter(p => p.price > 5000 && p.price <= 10000);
-    } else if (range === '10000-') {
-      return items.filter(p => p.price > 10000);
-    }
-    return items;
-  };
 
   // キーワードでフィルタリング
   const filterByKeyword = (items: Product[], searchKeyword: string): Product[] => {
@@ -301,19 +285,19 @@ export default function SearchPage() {
   return (
     <div>
       <div className="bg-gray-50 min-h-screen">
-        <div className="container mx-auto px-5 py-8">
+        <div className="container mx-auto px-4 sm:px-5 py-4 sm:py-8">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-4xl font-bold text-center text-gray-800 mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-800 mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
               商品を探す
             </h1>
-            <p className="text-center text-gray-600 mb-8">
+            <p className="text-center text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
               あなたが探している釣り用品を見つけましょう
             </p>
 
             {/* 検索バー */}
-            <div className="flex justify-center mb-8">
+            <div className="flex justify-center mb-6 sm:mb-8">
               <form className="relative max-w-2xl w-full" onSubmit={(e) => e.preventDefault()}>
-                <div className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-600">
+                <div className="absolute left-4 sm:left-5 top-1/2 transform -translate-y-1/2 text-gray-600">
                   <Search size={16} />
                 </div>
                 <input
@@ -321,16 +305,16 @@ export default function SearchPage() {
                   placeholder="キーワードで検索"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
-                  className="w-full py-4 px-5 pl-12 border-2 border-gray-200 rounded-full text-base outline-none transition-colors duration-300 focus:border-[#2FA3E3] placeholder:text-gray-400"
+                  className="w-full py-3 sm:py-4 px-4 sm:px-5 pl-11 sm:pl-12 border-2 border-gray-200 rounded-full text-sm sm:text-base outline-none transition-colors duration-300 focus:border-[#2FA3E3] placeholder:text-gray-400"
                 />
               </form>
             </div>
 
             {/* 検索フィルター */}
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリー</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">カテゴリー</label>
                   <CustomSelect
                     value={category}
                     onChange={setCategory}
@@ -339,76 +323,88 @@ export default function SearchPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">価格帯</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">価格 (下限 〜 上限)</label>
+                  <div className="flex items-center gap-2">
+                    <CustomSelect
+                      value={minPrice}
+                      onChange={setMinPrice}
+                      options={PRICE_OPTIONS}
+                      placeholder="指定なし"
+                      className="flex-1"
+                    />
+                    <span className="text-gray-400">〜</span>
+                    <CustomSelect
+                      value={maxPrice}
+                      onChange={setMaxPrice}
+                      options={PRICE_OPTIONS}
+                      placeholder="指定なし"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">配送料の負担</label>
                   <CustomSelect
-                    value={priceRange}
-                    onChange={setPriceRange}
-                    options={PRICE_RANGE_OPTIONS}
+                    value={shippingPayer}
+                    onChange={setShippingPayer}
+                    options={SHIPPING_PAYER_OPTIONS}
                     placeholder="指定なし"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">状態</label>
-                  <CustomSelect
-                    value={condition}
-                    onChange={setCondition}
-                    options={CONDITION_OPTIONS}
-                    placeholder="すべて"
-                  />
-                </div>
+
               </div>
             </div>
 
             {/* 並び替え */}
-            <div className="flex justify-between items-center mb-6">
-              <p className="text-gray-600">検索結果: {products.length}件{totalCount > products.length ? ` (全${totalCount}件)` : ''}</p>
+            <div className="flex flex-row justify-between items-center gap-3 sm:gap-0 mb-6">
+              <p className="text-sm sm:text-base text-gray-600">表示中: {products.length}件{totalCount > products.length ? ` (全${totalCount}件)` : ''}</p>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">並び替え:</span>
+                <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">並び替え:</span>
                 <CustomSelect
                   value={sortBy}
                   onChange={setSortBy}
                   options={SORT_OPTIONS}
-                  className="min-w-[200px]"
+                  className="w-[180px]"
                 />
               </div>
             </div>
 
             {/* 商品一覧 */}
             {loading && products.length === 0 ? (
-              <div className="flex justify-center items-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2FA3E3]"></div>
+              <div className="flex justify-center items-center py-12 sm:py-20">
+                <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-[#2FA3E3]"></div>
               </div>
             ) : error ? (
-              <div className="text-center py-20">
-                <p className="text-red-600 mb-4">{error}</p>
+              <div className="text-center py-12 sm:py-20 px-4">
+                <p className="text-red-600 mb-4 text-sm sm:text-base">{error}</p>
                 <Button onClick={() => fetchProducts(1, true)} variant="primary" size="md">
                   再読み込み
                 </Button>
               </div>
             ) : products.length === 0 ? (
-              <div className="text-center py-20">
-                <Fish className="mx-auto text-gray-400 mb-4" size={64} />
-                <p className="text-gray-600 text-lg mb-2">商品が見つかりませんでした</p>
-                <p className="text-gray-500 text-sm">条件を変えて検索してみてください</p>
+              <div className="text-center py-12 sm:py-20 px-4">
+                <Fish className="mx-auto text-gray-400 mb-4" size={48} />
+                <p className="text-gray-600 text-base sm:text-lg mb-2">商品が見つかりませんでした</p>
+                <p className="text-gray-500 text-xs sm:text-sm">条件を変えて検索してみてください</p>
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8">
                   {products.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
 
                 {/* 無限スクロール用のローディングインジケーター */}
-                <div ref={loadMoreRef} className="flex justify-center items-center py-8">
+                <div ref={loadMoreRef} className="flex justify-center items-center py-6 sm:py-8">
                   {loading && (
                     <div className="flex flex-col items-center gap-2">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2FA3E3]"></div>
-                      <p className="text-sm text-gray-500">読み込み中...</p>
+                      <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-[#2FA3E3]"></div>
+                      <p className="text-xs sm:text-sm text-gray-500">読み込み中...</p>
                     </div>
                   )}
                   {!hasMore && products.length > 0 && (
-                    <p className="text-sm text-gray-500">すべての商品を表示しました</p>
+                    <p className="text-xs sm:text-sm text-gray-500">すべての商品を表示しました</p>
                   )}
                 </div>
               </>

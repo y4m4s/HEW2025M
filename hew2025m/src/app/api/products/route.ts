@@ -10,9 +10,11 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
-    const condition = searchParams.get('condition');
     const sellerId = searchParams.get('sellerId');
     const status = searchParams.get('status');
+    const shippingPayer = searchParams.get('shippingPayer');
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '12');
 
@@ -20,14 +22,25 @@ export async function GET(request: NextRequest) {
     if (category) {
       query.category = category;
     }
-    if (condition) {
-      query.condition = condition;
-    }
     if (sellerId) {
       query.sellerId = sellerId;
     }
     if (status) {
       query.status = status;
+    }
+    if (shippingPayer) {
+      query.shippingPayer = shippingPayer;
+    }
+
+    // 価格帯フィルター
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) {
+        query.price.$gte = parseInt(minPrice);
+      }
+      if (maxPrice) {
+        query.price.$lte = parseInt(maxPrice);
+      }
     }
 
     // 総数を取得

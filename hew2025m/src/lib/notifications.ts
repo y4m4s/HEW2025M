@@ -42,7 +42,6 @@ export async function createFollowNotification(
       notificationData
     );
 
-    console.log('フォロー通知を作成しました');
   } catch (error) {
     console.error('フォロー通知の作成に失敗しました:', error);
   }

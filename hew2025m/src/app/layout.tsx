@@ -22,7 +22,9 @@ export default function RootLayout({
       <body>
         <ClientProviders>
           <Header />
-          {children}
+          <main>
+            {children}
+          </main>
           <Footer />
         </ClientProviders>
       </body>

@@ -105,7 +105,7 @@ export default function CartProductCard({ product }: CartProductCardProps) {
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer">
         <div className="flex">
           {/* 商品画像 */}
-          <div className="w-40 h-40 flex-shrink-0 bg-gray-200 flex items-center justify-center">
+          <div className="w-28 h-28 sm:w-40 sm:h-40 flex-shrink-0 bg-gray-200 flex items-center justify-center">
             {product.imageUrl ? (
               <Image
                 src={product.imageUrl}
@@ -127,7 +127,7 @@ export default function CartProductCard({ product }: CartProductCardProps) {
             </h3>
 
             {/* カテゴリ、状態、発送日数を横並びで固定幅表示 */}
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               {product.category && (
                 <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full whitespace-nowrap flex-shrink-0">
                   {formatCategory(product.category)}

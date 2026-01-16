@@ -288,19 +288,19 @@ export default function Post() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="container mx-auto px-5 py-8">
+      <div className="container mx-auto px-4 sm:px-5 py-4 sm:py-6 md:py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold text-center text-gray-800 mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-800 mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
             投稿を作成する
           </h1>
-          <p className="text-center text-gray-600 mb-12">
+          <p className="text-center text-sm sm:text-base text-gray-600 mb-6 sm:mb-10 md:mb-12">
             釣果情報や釣り場の様子を共有しましょう
           </p>
 
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
+            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
               <div>
-                <label htmlFor="title" className="block text-lg font-semibold text-gray-700 mb-3">
+                <label htmlFor="title" className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                   件名 <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -308,7 +308,7 @@ export default function Post() {
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                  className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 text-sm sm:text-base ${
                     title.length > 30
                       ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
@@ -326,7 +326,7 @@ export default function Post() {
               </div>
 
               <div>
-                <label htmlFor="content" className="block text-lg font-semibold text-gray-700 mb-3">
+                <label htmlFor="content" className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                   本文 <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -334,7 +334,7 @@ export default function Post() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   rows={6}
-                  className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none ${
+                  className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none text-sm sm:text-base ${
                     content.length > 140
                       ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
@@ -352,22 +352,22 @@ export default function Post() {
               </div>
 
               <div>
-                <label className="block text-lg font-semibold text-gray-700 mb-3">
+                <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                   メディア ({selectedFiles.length}/4)
                 </label>
                 <div
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-[#2FA3E3] transition-colors duration-300 cursor-pointer"
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 sm:p-8 md:p-12 text-center hover:border-[#2FA3E3] transition-colors duration-300 cursor-pointer"
                   onClick={() => selectedFiles.length < 4 && fileInputRef.current?.click()}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
                 >
-                  <div className="flex justify-center text-gray-400 mb-4">
-                    <Upload size={64} />
+                  <div className="flex justify-center text-gray-400 mb-3 sm:mb-4">
+                    <Upload size={48} className="sm:w-16 sm:h-16" />
                   </div>
-                  <p className="text-gray-500 mb-4">
+                  <p className="text-sm sm:text-base text-gray-500 mb-3 sm:mb-4">
                     画像や動画をドラッグ&ドロップまたはクリックして選択
                   </p>
-                  <p className="text-sm text-gray-400 mb-4">最大4つまで、各ファイル10MB以下</p>
+                  <p className="text-xs sm:text-sm text-gray-400 mb-3 sm:mb-4">最大4つまで、各ファイル10MB以下</p>
                   <Button type="button" variant="primary" size="md" disabled={selectedFiles.length >= 4 || isSubmitting}>
                     メディアを選択
                   </Button>
@@ -384,7 +384,7 @@ export default function Post() {
 
                 {/* プレビュー表示 */}
                 {previewUrls.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
                     {previewUrls.map((url, index) => (
                       <div key={index} className="relative group">
                         <Image
@@ -392,15 +392,15 @@ export default function Post() {
                           alt={`プレビュー ${index + 1}`}
                           width={200}
                           height={200}
-                          className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
+                          className="w-full h-24 sm:h-32 object-cover rounded-lg border-2 border-gray-200"
                         />
                         <button
                           type="button"
                           onClick={() => handleRemoveFile(index)}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           disabled={isSubmitting}
                         >
-                          <X size={16} />
+                          <X size={16} className="w-3 h-3 sm:w-4 sm:h-4" />
                         </button>
                       </div>
                     ))}
@@ -409,17 +409,17 @@ export default function Post() {
               </div>
 
               <div>
-                <label className="block text-lg font-semibold text-gray-700 mb-3">
+                <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                   タグ
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 sm:gap-2.5">
                   {availableTags.map((tag) => (
                     <button
                       key={tag}
                       type="button"
                       onClick={() => toggleTag(tag)}
                       disabled={isSubmitting}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 ${
                         selectedTags.includes(tag)
                           ? 'bg-[#2FA3E3] text-white shadow-md'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -429,13 +429,13 @@ export default function Post() {
                     </button>
                   ))}
                 </div>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-xs sm:text-sm text-gray-500 mt-2">
                   複数選択可能です
                 </p>
               </div>
 
               <div>
-                <label className="block text-lg font-semibold text-gray-700 mb-3">
+                <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                   <MapPin size={16} className="inline mr-1" />
                   位置情報
                 </label>
@@ -453,12 +453,12 @@ export default function Post() {
                     位置情報を追加する
                   </Button>
                 ) : (
-                  <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-5">
+                  <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-3 sm:p-4 md:p-5">
                     {/* ヘッダー */}
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start mb-3 sm:mb-4">
                       <div className="flex items-center gap-2">
-                        <MapPin size={20} className="text-blue-600" />
-                        <h4 className="font-semibold text-gray-800">選択中の位置情報</h4>
+                        <MapPin size={18} className="text-blue-600 sm:w-5 sm:h-5" />
+                        <h4 className="text-sm sm:text-base font-semibold text-gray-800">選択中の位置情報</h4>
                       </div>
                       <button
                         type="button"
@@ -467,14 +467,14 @@ export default function Post() {
                         className="text-gray-400 hover:text-red-500 transition-colors p-1"
                         title="位置情報をクリア"
                       >
-                        <X size={20} />
+                        <X size={18} className="sm:w-5 sm:h-5" />
                       </button>
                     </div>
 
                     {/* 住所 */}
-                    <div className="bg-white rounded-lg p-4 mb-3">
+                    <div className="bg-white rounded-lg p-3 sm:p-4 mb-2 sm:mb-3">
                       <div className="text-xs text-gray-600 mb-1">住所</div>
-                      <div className="font-medium text-gray-900">{address}</div>
+                      <div className="text-sm sm:text-base font-medium text-gray-900">{address}</div>
                     </div>
 
                     {/* 変更ボタン */}
@@ -494,17 +494,17 @@ export default function Post() {
 
               {/* 進行状況表示 */}
               {uploadProgress && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                  <p className="text-blue-700">{uploadProgress}</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 text-center">
+                  <p className="text-sm sm:text-base text-blue-700">{uploadProgress}</p>
                 </div>
               )}
 
-              <div className="text-center pt-6">
+              <div className="text-center pt-4 sm:pt-6">
                 <Button
                   type="submit"
                   variant="primary"
                   size="lg"
-                  className="px-12 text-xl"
+                  className="px-8 sm:px-10 md:px-12 text-base sm:text-lg md:text-xl w-full sm:w-auto"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? '投稿中...' : '投稿を作成する'}

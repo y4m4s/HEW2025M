@@ -304,31 +304,31 @@ export default function SellPage() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="container mx-auto px-5 py-8">
+      <div className="container mx-auto px-4 sm:px-5 py-4 sm:py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold text-center text-gray-800 mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-800 mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
             商品を出品する
           </h1>
-          <p className="text-center text-gray-600 mb-12">
+          <p className="text-center text-sm sm:text-base text-gray-600 mb-6 sm:mb-12">
             釣り用品を出品して、他の釣り人とつながりましょう
           </p>
 
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <form onSubmit={handleSubmit} noValidate className="space-y-8">
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
+            <form onSubmit={handleSubmit} noValidate className="space-y-6 sm:space-y-8">
               {/* 商品の画像 */}
               <div>
-                <label className="block text-lg font-semibold text-gray-700 mb-3">
+                <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                   商品画像 ({selectedFiles.length}/4)
                 </label>
                 <div
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-[#2FA3E3] transition-colors duration-300 cursor-pointer"
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 sm:p-8 md:p-12 text-center hover:border-[#2FA3E3] transition-colors duration-300 cursor-pointer"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <div className="flex justify-center text-gray-400 mb-4">
-                    <Camera size={64} />
+                  <div className="flex justify-center text-gray-400 mb-3 sm:mb-4">
+                    <Camera size={48} className="sm:w-16 sm:h-16" />
                   </div>
-                  <p className="text-gray-500 mb-4">画像をドラッグ&ドロップまたはクリックして選択</p>
-                  <p className="text-sm text-gray-400 mb-4">最大4枚まで</p>
+                  <p className="text-sm sm:text-base text-gray-500 mb-3 sm:mb-4">画像をドラッグ&ドロップまたはクリックして選択</p>
+                  <p className="text-xs sm:text-sm text-gray-400 mb-3 sm:mb-4">最大4枚まで</p>
                   <Button type="button" variant="primary" size="md" disabled={selectedFiles.length >= 4 || isSubmitting}>
                     画像を選択
                   </Button>
@@ -371,14 +371,14 @@ export default function SellPage() {
 
               {/* 商品名 */}
               <div>
-                <label className="block text-lg font-semibold text-gray-700 mb-3">
+                <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                   商品名 <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                  className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 text-sm sm:text-base ${
                     submitted && title === "" ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
                   }`}
                   placeholder="商品名を入力してください"
@@ -401,13 +401,13 @@ export default function SellPage() {
               </div>
 
               {/* 価格・カテゴリー・商品の状態 */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                 <div>
-                  <label className="block text-lg font-semibold text-gray-700 mb-3">
+                  <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                     価格 <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">¥</span>
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm sm:text-base">¥</span>
                     <input
                       type="text"
                       inputMode="numeric"
@@ -417,7 +417,7 @@ export default function SellPage() {
                         const value = e.target.value.replace(/[^0-9]/g, '');
                         setPrice(value);
                       }}
-                      className={`w-full p-4 pl-8 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                      className={`w-full p-3 sm:p-4 pl-7 sm:pl-8 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 text-sm sm:text-base ${
                         submitted && (price === "" || Number(price) <= 0 || Number(price) > 99999999)
                           ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
                           : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
@@ -457,7 +457,7 @@ export default function SellPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-lg font-semibold text-gray-700 mb-3">
+                  <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                     カテゴリー <span className="text-red-500">*</span>
                   </label>
                   <CustomSelect
@@ -474,7 +474,7 @@ export default function SellPage() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-lg font-semibold text-gray-700 mb-3">
+                  <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                     商品の状態 <span className="text-red-500">*</span>
                   </label>
                   <CustomSelect
@@ -494,14 +494,14 @@ export default function SellPage() {
 
               {/* 商品詳細 */}
               <div>
-                <label className="block text-lg font-semibold text-gray-700 mb-3">
+                <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                   商品の説明 <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   rows={6}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className={`w-full p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none ${
+                  className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none text-sm sm:text-base ${
                     description.length > 300
                       ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
@@ -526,9 +526,9 @@ export default function SellPage() {
               </div>
 
               {/* 送信詳細*/}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                  <label className="block text-lg font-semibold text-gray-700 mb-3">
+                  <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                     配送料の負担 <span className="text-red-500">*</span>
                   </label>
                   <CustomSelect
@@ -545,7 +545,7 @@ export default function SellPage() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-lg font-semibold text-gray-700 mb-3">
+                  <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                     発送までの日数 <span className="text-red-500">*</span>
                   </label>
                   <CustomSelect
@@ -565,19 +565,19 @@ export default function SellPage() {
 
               {/* アップロード*/}
               {uploadProgress && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                  <p className="text-blue-700">{uploadProgress}</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 text-center">
+                  <p className="text-blue-700 text-sm sm:text-base">{uploadProgress}</p>
                 </div>
               )}
 
               {/*送信フォーム*/}
-              <div className="text-center pt-6">
+              <div className="text-center pt-4 sm:pt-6">
                 <Button
                   type="submit"
                   variant="primary"
                   size="lg"
-                  className="px-12 text-xl"
-                  icon={<Fish size={24} />}
+                  className="px-8 sm:px-12 text-lg sm:text-xl"
+                  icon={<Fish size={20} className="sm:w-6 sm:h-6" />}
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? '出品中...' : '商品を出品する'}

@@ -400,35 +400,35 @@ export default function SellDetailPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <main className="flex-1 container mx-auto max-w-5xl px-4 py-6">
+      <main className="flex-1 container mx-auto max-w-5xl px-4 py-4 md:py-6">
 
         {/* 戻るボタン */}
-        <Button onClick={() => router.back()} variant="ghost" size="sm" icon={<ArrowLeft size={16} />} className="mb-6">
+        <Button onClick={() => router.back()} variant="ghost" size="sm" icon={<ArrowLeft size={16} />} className="mb-4 md:mb-6">
           戻る
         </Button>
 
         {/* メイングリッド (商品情報) */}
-        <div className="grid lg:grid-cols-2 gap-8 bg-white rounded-lg shadow-md p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 bg-white rounded-lg shadow-md p-4 md:p-6">
 
           {/* 左側: 商品画像 */}
-          <section className="space-y-6">
+          <section className="space-y-4 md:space-y-6">
             <div>
-              <h1 className="text-2xl font-bold mb-2">{product.title}</h1>
-              <div className="flex justify-between text-sm text-gray-600 p-2">
+              <h1 className="text-xl md:text-2xl font-bold mb-2">{product.title}</h1>
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-2 text-sm text-gray-600 p-2">
                 <div className="flex items-center gap-1">
                   <Calendar size={14} /><span>{formatDate(product.createdAt)}</span>
                 </div>
                 {/* SOLDの場合のみ表示 */}
                 {(product.status === 'sold' || product.status === 'reserved') && (
-                  <span className="inline-block px-3 py-1 rounded-full text-sm font-bold bg-red-600 text-white shadow-lg">
+                  <span className="inline-block px-3 py-1 rounded-full text-sm font-bold bg-red-600 text-white shadow-lg self-start">
                     {getStatusLabel(product.status)}
                   </span>
                 )}
               </div>
               <div className="mt-2">
               </div>
-              <div className="border-b flex justify-between">
-                <h2 className="text-3xl font-bold text-[#2FA3E3] mb-2">{formatPrice(product.price)}</h2>
+              <div className="border-b flex justify-between flex-wrap gap-2">
+                <h2 className="text-2xl md:text-3xl font-bold text-[#2FA3E3] mb-2">{formatPrice(product.price)}</h2>
                 <p className="my-auto pr-3 text-sm text-gray-600">{product.shippingPayer === 'seller' ? '送料込み' : '送料別'}</p>
               </div>
             </div>
@@ -448,7 +448,7 @@ export default function SellDetailPage() {
                             alt={`商品画像${index + 1}`}
                             width={800}
                             height={600}
-                            className="w-full h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                            className="w-full h-60 sm:h-72 md:h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity"
                             onClick={() => handleImageClick(index)}
                           />
                         </div>
@@ -459,15 +459,15 @@ export default function SellDetailPage() {
                       <>
                         <button
                           onClick={prevSlide}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
+                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-1.5 md:p-2 shadow-lg transition-all"
                         >
-                          <ChevronLeft size={20} />
+                          <ChevronLeft size={18} className="md:w-5 md:h-5" />
                         </button>
                         <button
                           onClick={nextSlide}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-2 shadow-lg transition-all"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-1.5 md:p-2 shadow-lg transition-all"
                         >
-                          <ChevronRight size={20} />
+                          <ChevronRight size={18} className="md:w-5 md:h-5" />
                         </button>
                       </>
                     )}
@@ -479,7 +479,7 @@ export default function SellDetailPage() {
                         <button
                           key={index}
                           onClick={() => setCurrentSlide(index)}
-                          className={`w-3 h-3 rounded-full transition-colors ${currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
+                          className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full transition-colors ${currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
                             }`}
                         />
                       ))}
@@ -488,8 +488,8 @@ export default function SellDetailPage() {
                 </>
               ) : (
                 <div className="relative overflow-hidden rounded-lg bg-gray-200">
-                  <div className="w-full h-80 flex items-center justify-center">
-                    <Fish size={120} className="text-gray-400" />
+                  <div className="w-full h-60 sm:h-72 md:h-80 flex items-center justify-center">
+                    <Fish size={80} className="text-gray-400 md:w-[120px] md:h-[120px]" />
                   </div>
                 </div>
               )}
@@ -497,32 +497,32 @@ export default function SellDetailPage() {
           </section>
 
           {/* 右側: 商品詳細 */}
-          <section className="space-y-6">
+          <section className="space-y-4 md:space-y-6">
             <div>
-              <h3 className="text-xl font-semibold mb-3">商品詳細</h3>
-              <div className="h-80 overflow-y-auto rounded-lg border border-gray-200 p-4 bg-gray-50/50">
-                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed break-words overflow-wrap-anywhere">
+              <h3 className="text-lg md:text-xl font-semibold mb-3">商品詳細</h3>
+              <div className="min-h-[120px] max-h-60 overflow-y-auto rounded-lg border border-gray-200 p-3 md:p-4 bg-gray-50/50">
+                <p className="text-sm md:text-base text-gray-700 whitespace-pre-wrap leading-relaxed break-words overflow-wrap-anywhere">
                   {product.description}
                 </p>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex justify-between items-center py-2 border-b">
+            <div className="space-y-2 md:space-y-3">
+              <div className="flex justify-between items-center py-2 border-b text-sm md:text-base">
                 <span className="text-gray-600">カテゴリ</span>
                 <span className="font-medium">{getCategoryLabel(product.category)}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b">
+              <div className="flex justify-between items-center py-2 border-b text-sm md:text-base">
                 <span className="text-gray-600">商品の状態</span>
                 <span className="font-medium">{getConditionLabel(product.condition)}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b">
+              <div className="flex justify-between items-center py-2 border-b text-sm md:text-base">
                 <span className="text-gray-600">配送料の負担</span>
                 <span className="font-medium">
                   {product.shippingPayer === 'seller' ? '出品者負担' : '購入者負担'}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b">
+              <div className="flex justify-between items-center py-2 border-b text-sm md:text-base">
                 <span className="text-gray-600">発送までの日数</span>
                 <span className="font-medium">
                   {product.shippingDays === '1-2' ? '1-2日' :
@@ -548,7 +548,7 @@ export default function SellDetailPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex gap-4 pt-4">
+                  <div className="flex flex-col sm:flex-row gap-3 md:gap-4 pt-4">
                     <Button
                       variant="ghost"
                       size="md"
@@ -579,7 +579,7 @@ export default function SellDetailPage() {
         </div>
 
         {/* 出品者情報 */}
-        <div className="mt-8">
+        <div className="mt-6 md:mt-8">
           <SellerInfo
             sellerProfile={sellerProfile}
             loading={sellerProfileLoading}
@@ -589,8 +589,8 @@ export default function SellDetailPage() {
         </div>
 
         {/* コメントセクション */}
-        <section className="mt-8 bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-xl font-bold mb-4">コメント</h3>
+        <section className="mt-6 md:mt-8 bg-white rounded-lg shadow-md p-4 md:p-6">
+          <h3 className="text-lg md:text-xl font-bold mb-4">コメント</h3>
           <Comment
             productId={params.id as string}
             itemOwnerId={product.sellerId.startsWith('user-') ? product.sellerId.replace('user-', '') : product.sellerId}
