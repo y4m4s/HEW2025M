@@ -1,56 +1,26 @@
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
-import { getFirestore, Firestore } from 'firebase-admin/firestore';
-import { getAuth, Auth } from 'firebase-admin/auth';
+import * as admin from "firebase-admin";
+import { getAuth, Auth } from "firebase-admin/auth";
+import { getFirestore, Firestore } from "firebase-admin/firestore";
 
-let app: App;
-let adminDb: Firestore;
-let adminAuth: Auth;
-
-// Firebase Admin SDKの初期化
-if (!getApps().length) {
-  // 環境変数から個別に取得する場合
-  if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-    // プライベートキーの処理: 外側のクォートを削除し、エスケープされた改行を実際の改行に変換
-    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-    // 先頭と末尾のクォートを削除
-    if ((privateKey.startsWith('"') && privateKey.endsWith('"')) ||
-        (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
-      privateKey = privateKey.slice(1, -1);
-    }
-    // エスケープされた改行を実際の改行に変換
-    privateKey = privateKey.replace(/\\n/g, '\n');
-
-    app = initializeApp({
-      credential: cert({
+if (!admin.apps.length) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({
         projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: privateKey,
+        privateKey: (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
       }),
     });
-  }
-  // サービスアカウントキーJSON文字列を使用する場合
-  else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-    try {
-      const serviceAccount = JSON.parse(
-        process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-      );
-      app = initializeApp({
-        credential: cert(serviceAccount),
-      });
-    } catch (error) {
-      console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:', error);
-      throw new Error('Invalid FIREBASE_SERVICE_ACCOUNT_KEY format');
-    }
-  } else {
+  } catch (error: any) {
+    console.error("Firebase Admin SDK initialization error:", error.message);
+    // サーバー起動時にエラーを明確にするために、より詳細なメッセージをスローする
     throw new Error(
-      'Firebase Admin credentials not found. Please set FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY, or FIREBASE_SERVICE_ACCOUNT_KEY environment variables.'
+      "Firebase Admin SDKの初期化に失敗しました。環境変数（.env.local）が正しく設定されているか確認してください。"
     );
   }
-} else {
-  app = getApps()[0];
 }
 
-adminDb = getFirestore(app);
-adminAuth = getAuth(app);
+const adminAuth: Auth = getAuth();
+const adminDb: Firestore = getFirestore();
 
-export { adminDb, adminAuth };
+export { adminAuth, adminDb };
