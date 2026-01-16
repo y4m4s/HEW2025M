@@ -85,6 +85,7 @@ export default function SellPage() {
   });
 
   const titleValue = watch('title');
+  const descriptionValue = watch('description') || '';
 
   const handlePriceSelect = (suggestedPrice: number) => {
     setValue('price', suggestedPrice, { shouldValidate: true });
@@ -227,6 +228,7 @@ export default function SellPage() {
         console.log('Response body is empty or invalid JSON, but request was successful');
       }
 
+      setUploadProgress('');
       previewUrls.forEach((url) => URL.revokeObjectURL(url));
 
       // トーストを表示してから画面遷移
@@ -265,7 +267,7 @@ export default function SellPage() {
           </p>
 
           <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
-            <form onSubmit={handleSubmit} noValidate className="space-y-6 sm:space-y-8">
+            <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6 sm:space-y-8">
               {/* 商品の画像 */}
               <div>
                 <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
@@ -328,10 +330,8 @@ export default function SellPage() {
                 <input
                   {...register('title')}
                   type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
                   className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 text-sm sm:text-base ${
-                    submitted && title === "" ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
+                    errors.title ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
                   }`}
                   placeholder="商品名を入力してください"
                   aria-invalid={errors.title ? "true" : "false"}
@@ -364,7 +364,7 @@ export default function SellPage() {
                         setValue('price', value === '' ? undefined : Number(value), { shouldValidate: true });
                       }}
                       className={`w-full p-3 sm:p-4 pl-7 sm:pl-8 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 text-sm sm:text-base ${
-                        submitted && (price === "" || Number(price) <= 0 || Number(price) > 99999999)
+                        errors.price
                           ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
                           : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
                       }`}
@@ -432,10 +432,8 @@ export default function SellPage() {
                 <textarea
                   {...register('description')}
                   rows={6}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
                   className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none text-sm sm:text-base ${
-                    description.length > 300
+                    descriptionValue.length > 300
                       ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
                   }`}
@@ -444,10 +442,10 @@ export default function SellPage() {
                   disabled={isSubmitting}
                 ></textarea>
                 {errors.description && <p className="text-red-600 text-sm mt-2" role="alert">{errors.description.message}</p>}
-                <div className={`text-right text-sm mt-1 ${(watch('description')?.length || 0) > 300 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                  {watch('description')?.length || 0}/300文字
-                  {(watch('description')?.length || 0) > 300 && (
-                    <span className="ml-2">({(watch('description')?.length || 0) - 300}文字超過)</span>
+                <div className={`text-right text-sm mt-1 ${descriptionValue.length > 300 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                  {descriptionValue.length}/300文字
+                  {descriptionValue.length > 300 && (
+                    <span className="ml-2">({descriptionValue.length - 300}文字超過)</span>
                   )}
                 </div>
               </div>

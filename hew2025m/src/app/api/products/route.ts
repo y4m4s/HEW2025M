@@ -10,17 +10,13 @@ export async function GET(request: NextRequest) {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
-    // ページネーション
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '12');
-
-    // フィルター
     const category = searchParams.get('category');
     const sellerId = searchParams.get('sellerId');
     const status = searchParams.get('status');
     const shippingPayer = searchParams.get('shippingPayer');
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
+    const sortBy = searchParams.get('sortBy');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '12');
 

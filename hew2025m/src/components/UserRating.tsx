@@ -62,12 +62,13 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
     try {
       const response = await fetch(`/api/users/${targetUserId}/ratings`);
       if (!response.ok) {
-        let errorDetails = '評価の取得に失敗しました';
+        const responseText = await response.text();
+        let errorDetails = `評価の取得に失敗しました (Status: ${response.status})`;
         try {
-            const errorData = await response.json();
-            errorDetails = `評価の取得に失敗しました: ${errorData.error || response.statusText}`;
+            const errorData = JSON.parse(responseText);
+            errorDetails = `${errorDetails}: ${errorData.error || response.statusText}`;
         } catch (e) {
-            // レスポンスがJSONでない場合は何もしない
+            errorDetails = `${errorDetails}. Response: ${responseText.substring(0, 300)}`;
         }
         throw new Error(errorDetails);
       }
