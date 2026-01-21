@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Image from "next/image";
-
 import { useRouter, useParams } from "next/navigation";
-import { User, LogOut, Loader2, Home } from "lucide-react";
-
+import { useState, useEffect, useCallback } from "react";
+import { User, LogOut, Home } from "lucide-react";
+import toast from "react-hot-toast";
+import { createFollowNotification } from "@/lib/notifications";
 import { useAuth } from "@/lib/useAuth";
 import { auth, db } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, deleteDoc, Timestamp } from "firebase/firestore";
+
 import ProfileEdit from "@/components/ProfileEdit";
 import ProfSelling from "@/components/ProfSelling";
 import ProfHistory from "@/components/ProfHistory";
@@ -19,13 +20,10 @@ import ProfPost from "@/components/ProfPost";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import LoadingScreen from "@/components/LoadingScreen";
-
 import UserRating from "@/components/UserRating";
 import FollowListModal from "@/components/FollowListModal";
 import LogoutModal from "@/components/LogoutModal";
 import LoginRequiredModal from "@/components/LoginRequiredModal";
-import { createFollowNotification } from "@/lib/notifications";
-import toast from "react-hot-toast";
 import PurchaseHistory from '@/components/PurchaseHistory';
 
 type TabType = "selling" | "history" | "purchases" | "bookmarks" | "likedPosts" | "posts";
@@ -68,7 +66,7 @@ export default function UserProfilePage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // 対象ユーザーのプロフィールを取得
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     if (!userId) return;
 
     try {
@@ -86,10 +84,10 @@ export default function UserProfilePage() {
       console.error("プロフィール取得エラー:", error);
       router.push("/");
     }
-  };
+  }, [userId, router]);
 
   // フォロー/フォロワー数を取得
-  const fetchFollowCounts = async () => {
+  const fetchFollowCounts = useCallback(async () => {
     if (!userId) return;
 
     try {
@@ -107,10 +105,10 @@ export default function UserProfilePage() {
     } catch (error) {
       console.error('フォロー数取得エラー:', error);
     }
-  };
+  }, [userId]);
 
   // 現在のユーザーがこのプロフィールをフォローしているか確認
-  const checkFollowStatus = async () => {
+  const checkFollowStatus = useCallback(async () => {
     if (!user || !userId || user.uid === userId) {
       setIsFollowing(false);
       setFollowDocId(null);
@@ -136,34 +134,26 @@ export default function UserProfilePage() {
     } catch (error) {
       console.error('フォロー状態確認エラー:', error);
     }
-  };
+  }, [user, userId]);
 
   useEffect(() => {
-    fetchUserProfile();
-    fetchFollowCounts();
-    // ログイン時のみフォロー状態をチェック
-    if (user) {
-      checkFollowStatus();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     const loadAllData = async () => {
       setLoading(true);
       try {
-        // Executa todas as buscas de dados em paralelo para um carregamento mais rápido
+        // すべてのデータを並列で取得
         await Promise.all([
           fetchUserProfile(),
           fetchFollowCounts(),
-          checkFollowStatus()
+          user ? checkFollowStatus() : Promise.resolve()
         ]);
       } catch (error) {
         console.error("Failed to load profile data:", error);
-        // Opcional: redirecionar para uma página de erro ou mostrar uma mensagem
       } finally {
         setLoading(false);
       }
     };
     loadAllData();
-  }, [userId, user]);
+  }, [userId, user, fetchUserProfile, fetchFollowCounts, checkFollowStatus]);
 
   // 自分のプロフィールかどうかを判定
   const isOwnProfile = user?.uid === userId;
@@ -265,6 +255,7 @@ export default function UserProfilePage() {
         onClose={() => setFollowModalOpen(false)}
         userId={userId}
         type={followModalType}
+        onFollowChange={fetchFollowCounts}
       />
 
       {/* Logout Modal */}

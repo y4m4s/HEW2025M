@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import CustomSelect from '@/components/CustomSelect';
 import Button from '@/components/Button';
 import UserHoverCard from '@/components/UserHoverCard';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import {
   collection,
   query,
@@ -214,7 +215,11 @@ export default function NotificationPage() {
   };
 
   if (authLoading) {
-    return <div className="flex h-screen items-center justify-center">読み込み中...</div>;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <LoadingSpinner message="読み込み中..." size="lg" />
+      </div>
+    );
   }
 
   if (!user) {
@@ -255,7 +260,8 @@ export default function NotificationPage() {
               icon={<Trash2 size={16} />}
               className="flex-shrink-0"
             >
-              すべて削除する
+              <span className="hidden sm:inline">すべて削除する</span>
+              <span className="sm:hidden">全削除</span>
             </Button>
             {/* フィルター機能 */}
             <div className="flex-1 sm:flex-none sm:w-48">
@@ -264,6 +270,7 @@ export default function NotificationPage() {
                 onChange={setFilterValue}
                 options={filterOptions}
                 placeholder="フィルター"
+                size="sm"
               />
             </div>
           </div>

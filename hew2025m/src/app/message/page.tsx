@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/useAuth';
 import toast from 'react-hot-toast';
 import ImageModal from '@/components/ImageModal';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import {
   collection,
   addDoc,
@@ -551,7 +552,11 @@ export default function MessagePage() {
   };
 
   if (authLoading) {
-    return <div className="flex h-screen items-center justify-center">読み込み中...</div>;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <LoadingSpinner message="読み込み中..." size="lg" />
+      </div>
+    );
   }
 
   if (!user) {

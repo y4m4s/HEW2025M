@@ -1,16 +1,20 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import { Lock, CreditCard, Smartphone, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+import { useRouter } from 'next/navigation';
+
+import { useAuth } from '@/lib/useAuth';
+
 import { PaymentElement, Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-import { useRouter } from 'next/navigation';
+
 import Button from '@/components/Button';
 import { useCartStore } from '@/components/useCartStore';
-import { useAuth } from '@/lib/useAuth';
-import { Lock, CreditCard, Smartphone, Loader2, Fish } from 'lucide-react';
-import toast from 'react-hot-toast';
 import { CartProduct } from '@/components/CartProductCard';
-import Image from 'next/image';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 const stripePublicKey = process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
@@ -103,7 +107,6 @@ function PayCheckForm({ products, shippingAddress, shippingFee }: PayCheckFormPr
     }
 
     // 注文データをFirestoreに保存
-    let orderId = '';
     try {
       // OrderItem形式に変換
       // products が既に詳細情報を持っているのでそれを利用
@@ -172,11 +175,26 @@ function PayCheckForm({ products, shippingAddress, shippingFee }: PayCheckFormPr
 
       if (!response.ok) {
         const errorData = await response.json();
+
+        // 409 Conflictの場合は、売り切れ商品がある
+        if (response.status === 409) {
+          // エラーメッセージを表示
+          const errorMsg = errorData.message || errorData.error || '一部の商品が既に売り切れています';
+          toast.error(errorMsg);
+          setErrorMessage(errorMsg);
+          setIsLoading(false);
+
+          // 3秒後にカートページにリダイレクト（カートが更新されるように）
+          setTimeout(() => {
+            router.push('/cart');
+          }, 3000);
+          return;
+        }
+
         throw new Error(errorData.error || '注文の作成に失敗しました');
       }
 
-      const result = await response.json();
-      orderId = result.orderId;
+      await response.json();
       clearCart();
       sessionStorage.removeItem('shippingAddress');
 
@@ -185,7 +203,9 @@ function PayCheckForm({ products, shippingAddress, shippingFee }: PayCheckFormPr
       router.push('/order-success');
     } catch (error) {
       console.error('注文保存エラー:', error);
-      setErrorMessage(error instanceof Error ? error.message : '注文の保存に失敗しました。');
+      const errorMsg = error instanceof Error ? error.message : '注文の保存に失敗しました。';
+      toast.error(errorMsg);
+      setErrorMessage(errorMsg);
       setIsLoading(false);
       return;
     }
@@ -356,7 +376,7 @@ export default function PayCheck() {
 
         if (isSubscribed) {
           setShippingAddress(address);
-          setProducts(productDetails.filter(p => p !== null) as any[]);
+          setProducts(productDetails.filter((p): p is CartProduct & { cartItemId: string; shippingPayer?: string; sellerId?: string; sellerPhotoURL?: string } => p !== null));
           setIsDataLoaded(true);
         }
       } catch (error) {
@@ -442,12 +462,7 @@ export default function PayCheck() {
   }, [isDataLoaded, user, items, shippingFee]); // Recalculate only when data loaded
 
   if (!clientSecret || !isDataLoaded || !shippingAddress) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-        <p className="text-gray-500">決済システムを読み込み中...</p>
-      </div>
-    );
+    return <LoadingSpinner message="決済システムを読み込み中..." size="lg" fullScreen />;
   }
 
   return (

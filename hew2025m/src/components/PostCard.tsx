@@ -174,7 +174,7 @@ export default function PostCard({ post, variant = 'default' }: PostCardProps) {
               </>
             ) : (
               <span className="px-2 py-0.5 bg-gray-300 text-gray-600 text-xs rounded-full">
-                (タグなし)
+                タグなし
               </span>
             )}
           </div>

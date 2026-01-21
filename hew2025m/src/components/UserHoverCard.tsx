@@ -29,7 +29,6 @@ export default function UserHoverCard({
   const [profile, setProfile] = useState<UserProfile>({
     displayName: displayName,
   });
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -46,8 +45,6 @@ export default function UserHoverCard({
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
-      } finally {
-        setLoading(false);
       }
     };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/components/useCartStore';
 import Button from '@/components/Button';
@@ -110,7 +110,6 @@ export default function PayPage() {
     };
 
     fetchProductDetails();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted, items]);
 
   // 有効な商品のみで計算
@@ -155,15 +154,15 @@ export default function PayPage() {
     return 800; // デフォルト
   };
 
-  const calculateSubtotal = () => {
+  const calculateSubtotal = useCallback(() => {
     return validProducts.reduce((acc, product) => {
       const cartItem = items.find(i => i.id === product.cartItemId);
       const quantity = cartItem ? cartItem.quantity : 1;
       return acc + (product.price * quantity);
     }, 0);
-  };
+  }, [validProducts, items]);
 
-  const subtotalWithQuantity = useMemo(() => calculateSubtotal(), [validProducts, items]);
+  const subtotalWithQuantity = useMemo(() => calculateSubtotal(), [calculateSubtotal]);
 
   const shippingFeeWithQuantity = useMemo(() => {
     if (subtotalWithQuantity === 0) return 0;

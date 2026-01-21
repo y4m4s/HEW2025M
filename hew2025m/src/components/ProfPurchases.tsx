@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { Order } from "@/types/order";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface ProfPurchasesProps {
   onCountChange?: (count: number) => void;
@@ -110,10 +111,7 @@ export default function ProfPurchases({ onCountChange, userId }: ProfPurchasesPr
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-20">
-        <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-12 w-12 animate-spin text-[#2FA3E3]" />
-          <p className="text-gray-500">読み込み中...</p>
-        </div>
+        <LoadingSpinner message="読み込み中..." size="lg" />
       </div>
     );
   }

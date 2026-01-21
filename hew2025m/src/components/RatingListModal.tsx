@@ -47,13 +47,19 @@ export default function RatingListModal({
 
     if (isOpen) {
       window.addEventListener("keydown", handleKeyDown);
-      // スクロールを無効化
+
+      // スクロールバーの幅を計算
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+      // スクロールを無効化し、スクロールバーの幅分だけpaddingを追加してズレを防ぐ
       document.body.style.overflow = "hidden";
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
+      document.body.style.paddingRight = "0px";
     };
   }, [isOpen, onClose]);
 

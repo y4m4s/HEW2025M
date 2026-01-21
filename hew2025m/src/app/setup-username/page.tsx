@@ -1,11 +1,14 @@
 "use client";
-import { useState, useEffect } from "react";
+
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { Fish } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
-import { useProfile } from "@/contexts/ProfileContext";
 import { db } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
-import { Fish } from "lucide-react";
+
+import { useProfile } from "@/contexts/ProfileContext";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function SetupUsernamePage() {
   const { user, loading: authLoading } = useAuth();
@@ -93,14 +96,7 @@ export default function SetupUsernamePage() {
   };
 
   if (authLoading || profileLoading || !user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2FA3E3] mx-auto mb-4"></div>
-          <p className="text-gray-600">読み込み中...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="読み込み中..." size="lg" fullScreen />;
   }
 
   return (

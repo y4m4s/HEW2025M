@@ -134,67 +134,108 @@ export default function SellerInfo({
   const isOwnProfile = user?.uid === sellerProfile.uid;
 
   return (
-    <section className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-xl font-bold mb-4">出品者情報</h3>
+    <section className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+      {/* ヘッダー部分 */}
+      <div className="bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] px-6 py-4">
+        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+          <User size={20} />
+          出品者情報
+        </h3>
+      </div>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        {/* 左側: 出品者情報 */}
-        <Link
-          href={`/profile/${sellerProfile.uid}`}
-          className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-[#2FA3E3] flex-shrink-0"
-        >
-          {sellerProfile.photoURL ? (
-            <Image
-              src={sellerProfile.photoURL}
-              alt={sellerProfile.displayName}
-              width={48}
-              height={48}
-              quality={90}
-              className="w-12 h-12 rounded-full object-cover border-2 border-gray-300 flex-shrink-0"
-            />
-          ) : (
-            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-              <User size={24} className="text-gray-600" />
+      <div className="p-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* 左側: 出品者プロフィールカード */}
+          <Link
+            href={`/profile/${sellerProfile.uid}`}
+            className="flex-1 group"
+          >
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-white border-2 border-gray-200 hover:border-[#2FA3E3] hover:shadow-md transition-all duration-300 h-full">
+              {/* アバター */}
+              <div className="flex-shrink-0">
+                {sellerProfile.photoURL ? (
+                  <Image
+                    src={sellerProfile.photoURL}
+                    alt={sellerProfile.displayName}
+                    width={64}
+                    height={64}
+                    quality={90}
+                    className="w-16 h-16 rounded-full object-cover border-4 border-gray-100 group-hover:border-[#2FA3E3] transition-colors"
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center border-4 border-gray-100 group-hover:border-[#2FA3E3] transition-colors">
+                    <User size={32} className="text-gray-600" />
+                  </div>
+                )}
+              </div>
+
+              {/* 名前・ユーザー名 */}
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-lg text-gray-900 truncate group-hover:text-[#2FA3E3] transition-colors">
+                  {sellerProfile.displayName}
+                </p>
+                <p className="text-sm text-gray-500 truncate">@{sellerProfile.username}</p>
+                {sellerProfile.bio && (
+                  <p className="text-xs text-gray-600 mt-1 line-clamp-2">{sellerProfile.bio}</p>
+                )}
+              </div>
             </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-base truncate">{sellerProfile.displayName}</p>
-            <p className="text-xs text-gray-500 truncate">@{sellerProfile.username}</p>
-          </div>
-        </Link>
+          </Link>
 
-        {/* 中央: 評価表示 */}
-        <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-lg flex-shrink-0">
-          <div className="flex items-center gap-1">
-            <Star size={18} className="fill-yellow-400 text-yellow-400" />
-            <span className="font-semibold text-base">
-              {averageRating > 0 ? averageRating.toFixed(1) : "---"}
-            </span>
+          {/* 右側: 評価とアクション */}
+          <div className="flex flex-col gap-4 lg:w-80">
+            {/* 評価カード */}
+            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4 border-2 border-yellow-200 shadow-sm flex-1 flex items-center">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        size={20}
+                        className={`${
+                          i < Math.floor(averageRating)
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : averageRating > i && averageRating < i + 1
+                            ? 'fill-yellow-400/50 text-yellow-400'
+                            : 'fill-gray-200 text-gray-200'
+                        } transition-colors`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900">
+                    {averageRating > 0 ? averageRating.toFixed(1) : "---"}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    {totalRatings}件の評価
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* アクションボタン（自分の商品でない場合のみ表示） */}
+            {!isOwnProfile && (
+              <div className="flex gap-3">
+                <button
+                  onClick={handleRatingClick}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-[#2FA3E3] text-[#2FA3E3] rounded-xl hover:bg-[#2FA3E3] hover:text-white transition-all duration-300 hover:shadow-md font-medium"
+                >
+                  <Star size={18} />
+                  <span className="text-sm">評価する</span>
+                </button>
+                <button
+                  onClick={handleMessageClick}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] text-white rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105 font-medium"
+                >
+                  <MessageCircle size={18} />
+                  <span className="text-sm">メッセージ</span>
+                </button>
+              </div>
+            )}
           </div>
-          <span className="text-sm text-gray-600">
-            ({totalRatings}件)
-          </span>
         </div>
-
-        {/* 右側: ボタン（自分の商品でない場合のみ表示） */}
-        {!isOwnProfile && (
-          <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
-            <button
-              onClick={handleRatingClick}
-              className="flex items-center justify-center gap-2 px-4 py-2 border border-[#2FA3E3] text-[#2FA3E3] rounded-lg hover:bg-[#2FA3E3] hover:text-white transition-colors flex-1 sm:flex-initial"
-            >
-              <Star size={16} />
-              <span className="text-sm font-medium">評価する</span>
-            </button>
-            <button
-              onClick={handleMessageClick}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-[#2FA3E3] text-white rounded-lg hover:bg-[#1d7bb8] transition-colors flex-1 sm:flex-initial"
-            >
-              <MessageCircle size={16} />
-              <span className="text-sm font-medium">メッセージ</span>
-            </button>
-          </div>
-        )}
       </div>
 
       {/* ログイン必須モーダル */}

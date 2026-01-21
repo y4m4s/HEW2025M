@@ -50,6 +50,12 @@ export default function ImageModal({
 
   if (!isOpen) return null;
 
+  // 画像が空、またはインデックスが範囲外の場合はモーダルを閉じる
+  if (images.length === 0 || currentIndex >= images.length || !images[currentIndex]) {
+    handleClose();
+    return null;
+  }
+
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % images.length);
   };
