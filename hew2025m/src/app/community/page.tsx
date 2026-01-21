@@ -1,17 +1,20 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { Fish, MapPin, User } from 'lucide-react';
+import { useAuth } from '@/lib/useAuth';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+
 import PostCard, { Post } from '@/components/PostCard';
 import Button from '@/components/Button';
 import RecommendedUsers from '@/components/RecommendedUsers';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import LoginRequiredModal from '@/components/LoginRequiredModal';
-import { Fish, MapPin, User } from 'lucide-react';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { useAuth } from '@/lib/useAuth';
+
+
 
 export default function CommunityPage() {
   const { user } = useAuth();
@@ -22,30 +25,6 @@ export default function CommunityPage() {
   const [error, setError] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginRequiredAction, setLoginRequiredAction] = useState('');
-
-  // タグから魚の名前を抽出
-  const extractFishName = useCallback((tags: string[] = []): string => {
-    const fishTag = tags.find(tag => tag.startsWith('魚:'));
-    return fishTag ? fishTag.replace('魚:', '') : '';
-  }, []);
-
-  // タグからサイズを抽出
-  const extractFishSize = useCallback((tags: string[] = []): string => {
-    const sizeTag = tags.find(tag => tag.includes('cm'));
-    return sizeTag || '';
-  }, []);
-
-  // タグから重さを抽出
-  const extractFishWeight = useCallback((tags: string[] = []): string => {
-    const weightTag = tags.find(tag => tag.includes('kg') || tag.includes('g'));
-    return weightTag || '';
-  }, []);
-
-  // タグから匹数を抽出
-  const extractFishCount = useCallback((tags: string[] = []): string => {
-    const countTag = tags.find(tag => tag.includes('匹'));
-    return countTag || '';
-  }, []);
 
   // 日付のフォーマット
   const formatDate = useCallback((dateString: string): string => {
@@ -135,10 +114,6 @@ export default function CommunityPage() {
             id: post._id,
             title: post.title,
             excerpt: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
-            fishName: extractFishName(post.tags),
-            fishSize: extractFishSize(post.tags),
-            fishWeight: extractFishWeight(post.tags),
-            fishCount: extractFishCount(post.tags),
             location: post.address || '場所未設定',
             author: authorDisplayName,
             authorId: post.authorId,
@@ -148,6 +123,7 @@ export default function CommunityPage() {
             comments: post.comments?.length || 0,
             category: post.category || 'other',
             isLiked: false,
+            tags: post.tags,
             imageUrl: post.media && post.media.length > 0
               ? post.media.sort((a, b) => a.order - b.order)[0].url
               : undefined
@@ -169,7 +145,7 @@ export default function CommunityPage() {
     } finally {
       setLoading(false);
     }
-  }, [fetchUserProfile, extractFishName, extractFishSize, extractFishWeight, extractFishCount, formatDate]);
+  }, [fetchUserProfile, formatDate]);
 
   useEffect(() => {
     fetchPosts();

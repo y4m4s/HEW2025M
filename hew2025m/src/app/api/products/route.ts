@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
 import { requireAuth } from '@/lib/simpleAuth';
 import { ProductPostSchema } from '@/lib/schemas';
+import { adminDb } from '@/lib/firebase-admin';
 
 // 商品一覧を取得
 export async function GET(request: NextRequest) {
@@ -21,8 +22,7 @@ export async function GET(request: NextRequest) {
     const shippingPayer = searchParams.get('shippingPayer');
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '12');
+    const sortBy = searchParams.get('sortBy');
 
     let query: any = {};
     if (category) {
@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
     }
     if (sellerId) {
       query.sellerId = sellerId;
+    }
+    if (status) {
+      query.status = status;
     }
 
     // ソート条件の構築
@@ -67,9 +70,44 @@ export async function GET(request: NextRequest) {
       .skip(skip)
       .limit(limit);
 
+    // 各商品の出品者情報をFirestoreから取得
+    const productsWithSellerInfo = await Promise.all(
+      products.map(async (product) => {
+        const productObj = product.toObject();
+
+        if (productObj.sellerId) {
+          try {
+            // sellerIdが'user-XXX'形式の場合は'XXX'に変換
+            const firebaseUserId = productObj.sellerId.startsWith('user-')
+              ? productObj.sellerId.replace('user-', '')
+              : productObj.sellerId;
+
+            const userDoc = await adminDb.collection('users').doc(firebaseUserId).get();
+
+            if (userDoc.exists) {
+              const userData = userDoc.data();
+              return {
+                ...productObj,
+                sellerName: userData?.displayName || userData?.username || '出品者未設定',
+                sellerPhotoURL: userData?.photoURL || null,
+              };
+            }
+          } catch (error) {
+            console.error(`Failed to fetch seller info for ${productObj.sellerId}:`, error);
+          }
+        }
+
+        return {
+          ...productObj,
+          sellerName: '出品者未設定',
+          sellerPhotoURL: null,
+        };
+      })
+    );
+
     return NextResponse.json({
       success: true,
-      products,
+      products: productsWithSellerInfo,
       pagination: {
         total,
         page,

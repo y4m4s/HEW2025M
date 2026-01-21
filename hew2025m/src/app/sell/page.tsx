@@ -17,6 +17,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import CustomSelect from '@/components/CustomSelect';
 import { ProductFormSchema } from '@/lib/schemas';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import ImageModal from '@/components/ImageModal';
+import { z } from 'zod';
 
 // カテゴリの定義（表示名とDB保存用の値のマッピング）
 const CATEGORIES = [
@@ -30,7 +32,7 @@ const CATEGORIES = [
   { label: 'セット用品', value: 'set', icon: FaBox },
   { label: 'サービス', value: 'service', icon: GiSpanner },
   { label: 'その他', value: 'other', icon: Puzzle },
-] as const;
+];
 
 const CONDITIONS = [
   { label: '新品・未使用', value: 'new' },
@@ -64,6 +66,8 @@ export default function SellPage() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState('');
   const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   // 認証チェック：未ログインならログインページへリダイレクト
   useEffect(() => {
@@ -79,12 +83,21 @@ export default function SellPage() {
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<ProductFormData>({
+  } = useForm({
     resolver: zodResolver(ProductFormSchema),
-    defaultValues: { title: '', price: undefined, category: '', condition: '', description: '', shippingPayer: '', shippingDays: '' },
+    defaultValues: {
+      title: '',
+      price: undefined as number | undefined,
+      category: '',
+      condition: undefined as 'new' | 'like-new' | 'good' | 'fair' | 'poor' | undefined,
+      description: '',
+      shippingPayer: undefined as 'seller' | 'buyer' | undefined,
+      shippingDays: undefined as '1-2' | '2-3' | '4-7' | undefined
+    },
   });
 
   const titleValue = watch('title');
+  const descriptionValue = watch('description');
 
   const handlePriceSelect = (suggestedPrice: number) => {
     setValue('price', suggestedPrice, { shouldValidate: true });
@@ -211,7 +224,7 @@ export default function SellPage() {
           if (errorData.details) {
             console.error("Server validation failed:", errorData.details);
           }
-        } catch (e) {
+        } catch {
           // レスポンスがJSONでない場合、より具体的なエラーを提供
           console.error("Could not parse error response as JSON:", productResponse.statusText);
           errorMessage = `サーバーで問題が発生しました (Status: ${productResponse.status})。設定を確認してください。`;
@@ -222,7 +235,7 @@ export default function SellPage() {
       // 成功時のレスポンスを取得（エラーが発生しても無視）
       try {
         await productResponse.json();
-      } catch (jsonError) {
+      } catch {
         // レスポンスが空でもエラーにしない
         console.log('Response body is empty or invalid JSON, but request was successful');
       }
@@ -265,7 +278,7 @@ export default function SellPage() {
           </p>
 
           <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
-            <form onSubmit={handleSubmit} noValidate className="space-y-6 sm:space-y-8">
+            <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6 sm:space-y-8">
               {/* 商品の画像 */}
               <div>
                 <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
@@ -299,17 +312,29 @@ export default function SellPage() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                     {previewUrls.map((url, index) => (
                       <div key={index} className="relative group">
-                        <Image
-                          src={url}
-                          alt={`プレビュー ${index + 1}`}
-                          width={200}
-                          height={200}
-                          className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
-                        />
+                        <div
+                          className="relative w-full h-32 cursor-pointer overflow-hidden rounded-lg border-2 border-gray-200 hover:border-[#2FA3E3] transition-all hover:shadow-lg"
+                          onClick={() => {
+                            setSelectedImageIndex(index);
+                            setIsImageModalOpen(true);
+                          }}
+                        >
+                          <Image
+                            src={url}
+                            alt={`プレビュー ${index + 1}`}
+                            width={200}
+                            height={200}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                        </div>
                         <button
                           type="button"
-                          onClick={() => handleRemoveFile(index)}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFile(index);
+                          }}
+                          className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
                           disabled={isSubmitting}
                         >
                           <X size={16} />
@@ -328,10 +353,8 @@ export default function SellPage() {
                 <input
                   {...register('title')}
                   type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
                   className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 text-sm sm:text-base ${
-                    submitted && title === "" ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
+                    errors.title ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
                   }`}
                   placeholder="商品名を入力してください"
                   aria-invalid={errors.title ? "true" : "false"}
@@ -364,7 +387,7 @@ export default function SellPage() {
                         setValue('price', value === '' ? undefined : Number(value), { shouldValidate: true });
                       }}
                       className={`w-full p-3 sm:p-4 pl-7 sm:pl-8 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 text-sm sm:text-base ${
-                        submitted && (price === "" || Number(price) <= 0 || Number(price) > 99999999)
+                        errors.price
                           ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
                           : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
                       }`}
@@ -432,10 +455,8 @@ export default function SellPage() {
                 <textarea
                   {...register('description')}
                   rows={6}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
                   className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none text-sm sm:text-base ${
-                    description.length > 300
+                    (descriptionValue?.length || 0) > 300
                       ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
                       : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
                   }`}
@@ -444,10 +465,10 @@ export default function SellPage() {
                   disabled={isSubmitting}
                 ></textarea>
                 {errors.description && <p className="text-red-600 text-sm mt-2" role="alert">{errors.description.message}</p>}
-                <div className={`text-right text-sm mt-1 ${(watch('description')?.length || 0) > 300 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                  {watch('description')?.length || 0}/300文字
-                  {(watch('description')?.length || 0) > 300 && (
-                    <span className="ml-2">({(watch('description')?.length || 0) - 300}文字超過)</span>
+                <div className={`text-right text-sm mt-1 ${(descriptionValue?.length || 0) > 300 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                  {descriptionValue?.length || 0}/300文字
+                  {(descriptionValue?.length || 0) > 300 && (
+                    <span className="ml-2">({(descriptionValue?.length || 0) - 300}文字超過)</span>
                   )}
                 </div>
               </div>
@@ -522,6 +543,14 @@ export default function SellPage() {
         onClose={() => setIsAdvisorOpen(false)}
         productName={titleValue}
         onPriceSelect={handlePriceSelect}
+      />
+
+      {/* 画像拡大モーダル */}
+      <ImageModal
+        images={previewUrls}
+        initialIndex={selectedImageIndex}
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
       />
     </div>
   );

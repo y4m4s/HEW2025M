@@ -8,6 +8,7 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface Bookmark {
   id: string;
@@ -122,7 +123,7 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
   if (loading) {
     return (
       <div className="p-6 text-center">
-        <p className="text-gray-500">読み込み中...</p>
+        <LoadingSpinner message="読み込み中..." size="sm" />
       </div>
     );
   }

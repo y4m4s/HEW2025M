@@ -78,6 +78,8 @@ export async function POST(request: Request) {
       updatedAt: new Date(),
     };
 
+    // 注文データをFirestoreに追加（商品更新前）
+    // 注意: 商品更新に失敗した場合はこの注文を削除する必要がある
     const docRef = await adminDb.collection('orders').add(orderData);
 
     // 購入者のFirestoreプロフィールから表示名を取得
@@ -93,23 +95,60 @@ export async function POST(request: Request) {
       // エラー時はbuyerNameをそのまま使用
     }
 
-    // 購入された商品のステータスを'sold'に更新し、出品者に通知を送信（並列処理で高速化）
+    // 購入された商品のステータスを'sold'に更新し、出品者に通知を送信
     await dbConnect();
 
-    // 全ての商品処理を並列実行
-    await Promise.all(items.map(async (item) => {
-      try {
+    // まず全ての商品が購入可能か確認（在庫チェック）
+    const unavailableProducts = [];
+    for (const item of items) {
+      const product = await Product.findById(item.productId);
+      if (!product) {
+        unavailableProducts.push({ productId: item.productId, reason: '商品が見つかりません' });
+      } else if (product.status === 'sold') {
+        unavailableProducts.push({ productId: item.productId, name: item.productName, reason: '既に売り切れています' });
+      } else if (product.status === 'reserved') {
+        unavailableProducts.push({ productId: item.productId, name: item.productName, reason: '予約済みです' });
+      }
+    }
+
+    // 購入できない商品がある場合はエラーを返す
+    if (unavailableProducts.length > 0) {
+      return NextResponse.json(
+        {
+          error: '一部の商品が購入できません',
+          unavailableProducts,
+          message: unavailableProducts.map(p => `${p.name || p.productId}: ${p.reason}`).join(', ')
+        },
+        { status: 409 } // 409 Conflict
+      );
+    }
+
+    // 全ての商品処理を実行（アトミックな更新を使用）
+    const productUpdateErrors: string[] = [];
+    const updatedProducts: string[] = [];
+
+    try {
+      await Promise.all(items.map(async (item) => {
         console.log(`Processing product: ${item.productId}, sellerId: ${item.sellerId}`);
 
-        // MongoDBで商品ステータスを更新
-        const product = await Product.findById(item.productId);
-        if (product) {
-          product.status = 'sold';
-          await product.save();
-          console.log(`Product ${item.productId} status updated to sold`);
-        } else {
-          console.error(`Product not found: ${item.productId}`);
+        // MongoDBで商品ステータスをアトミックに更新（条件付き更新）
+        // statusが'available'の場合のみ'sold'に更新
+        const result = await Product.findOneAndUpdate(
+          { _id: item.productId, status: 'available' },
+          { $set: { status: 'sold', updatedAt: new Date() } },
+          { new: true }
+        );
+
+        if (!result) {
+          // 更新に失敗した場合（既に他のユーザーが購入済み）
+          const errorMsg = `商品「${item.productName}」は既に売り切れています`;
+          console.error(`Product ${item.productId} is no longer available`);
+          productUpdateErrors.push(errorMsg);
+          throw new Error(errorMsg);
         }
+
+        updatedProducts.push(item.productId);
+        console.log(`Product ${item.productId} status updated to sold`);
 
         // 出品者に通知を送信
         if (item.sellerId) {
@@ -144,11 +183,39 @@ export async function POST(request: Request) {
         } else {
           console.warn(`No sellerId for product: ${item.productId}`);
         }
-      } catch (error) {
-        console.error(`Error processing product ${item.productId}:`, error);
-        // 個別の商品でエラーが発生しても他の商品の処理は続行
+      }));
+    } catch (error) {
+      // 商品更新に失敗した場合は注文を削除（ロールバック）
+      console.error('Product update failed, rolling back order:', error);
+
+      try {
+        await docRef.delete();
+        console.log(`Order ${docRef.id} rolled back successfully`);
+      } catch (rollbackError) {
+        console.error('Failed to rollback order:', rollbackError);
       }
-    }));
+
+      // 既に更新された商品を元に戻す（ベストエフォート）
+      if (updatedProducts.length > 0) {
+        console.log(`Attempting to revert ${updatedProducts.length} products...`);
+        await Promise.all(updatedProducts.map(async (productId) => {
+          try {
+            await Product.findByIdAndUpdate(productId, { status: 'available' });
+            console.log(`Product ${productId} reverted to available`);
+          } catch (revertError) {
+            console.error(`Failed to revert product ${productId}:`, revertError);
+          }
+        }));
+      }
+
+      return NextResponse.json(
+        {
+          error: productUpdateErrors.length > 0 ? productUpdateErrors[0] : '商品の更新に失敗しました',
+          message: 'ご指定の商品は既に売り切れている可能性があります。カートを更新してください。'
+        },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

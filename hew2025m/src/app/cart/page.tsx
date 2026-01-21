@@ -1,14 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
+import { Trash2, ShoppingCart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/lib/useAuth';
+
 import { useCartStore } from '@/components/useCartStore';
 import Button from '@/components/Button';
 import CartProductCard, { CartProduct } from '@/components/CartProductCard';
-import { Trash2, ShoppingCart } from 'lucide-react';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { useAuth } from '@/lib/useAuth';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 
 export default function CartPage() {
@@ -43,6 +47,7 @@ export default function CartPage() {
 
       try {
         setLoading(true);
+        let removedCount = 0;
         const productDetails = await Promise.all(
           items.map(async (item) => {
             try {
@@ -51,6 +56,7 @@ export default function CartPage() {
                 // 商品が削除されている場合はnullを返す
                 console.warn(`商品ID ${item.id} は削除されています`);
                 removeItem(item.id);
+                removedCount++;
                 return null;
               }
 
@@ -61,6 +67,7 @@ export default function CartPage() {
               if (product.status === 'sold' || product.status === 'reserved') {
                 console.warn(`商品ID ${item.id} は${product.status === 'sold' ? 'SOLD' : 'SOLD'}です`);
                 removeItem(item.id);
+                removedCount++;
                 return null;
               }
 
@@ -108,6 +115,7 @@ export default function CartPage() {
               console.error(`商品ID ${item.id} の取得エラー:`, error);
               // エラー時は商品が削除されたとみなしてカートから削除
               removeItem(item.id);
+              removedCount++;
               return null;
             }
           })
@@ -115,6 +123,11 @@ export default function CartPage() {
 
         // nullを除外して有効な商品のみを設定
         setProducts(productDetails.filter((product) => product !== null) as (CartProduct & { cartItemId: string })[]);
+
+        // 削除された商品がある場合は通知を表示
+        if (removedCount > 0) {
+          toast.error(`${removedCount}件の商品が売り切れまたは削除されたため、カートから削除されました。`);
+        }
       } catch (error) {
         console.error('商品詳細取得エラー:', error);
       } finally {
@@ -128,7 +141,7 @@ export default function CartPage() {
 
   // サーバーサイドレンダリングとクライアントの表示の差異によるエラーを防ぎます
   if (!isMounted) {
-    return <div className="min-h-screen flex justify-center items-center bg-gray-100">読み込み中...</div>;
+    return <LoadingSpinner message="読み込み中..." size="lg" fullScreen />;
   }
 
   // 有効な商品のみで計算

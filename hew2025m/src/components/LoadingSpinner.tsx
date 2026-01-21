@@ -1,5 +1,4 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 
 interface LoadingSpinnerProps {
   message?: string;
@@ -8,49 +7,42 @@ interface LoadingSpinnerProps {
 }
 
 export default function LoadingSpinner({
-  message = 'データを読み込み中……',
+  message,
   size = 'md',
   fullScreen = false
 }: LoadingSpinnerProps) {
   const sizeClasses = {
-    sm: 'w-8 h-8',
-    md: 'w-12 h-12',
-    lg: 'w-16 h-16',
+    sm: 'h-6 w-6 sm:h-8 sm:w-8 border-b-2',
+    md: 'h-10 w-10 sm:h-12 sm:w-12 border-b-2',
+    lg: 'h-16 w-16 border-b-4',
   };
 
-  const textSizeClasses = {
-    sm: 'text-sm',
-    md: 'text-base',
-    lg: 'text-lg',
-  };
-
-  const content = (
-    <div className="flex flex-col items-center justify-center gap-4">
-      {/* 回転するスピナー */}
-      <div className="relative">
-        {/* 外側のリング */}
-        <div className={`${sizeClasses[size]} rounded-full border-4 border-gray-200`}></div>
-        {/* 回転するアクセントリング */}
-        <Loader2
-          className={`${sizeClasses[size]} text-[#2FA3E3] absolute top-0 left-0 animate-spin`}
-          strokeWidth={3}
-        />
-      </div>
-
-      {/* メッセージ */}
-      <p className={`${textSizeClasses[size]} text-gray-600 font-medium`}>
-        {message}
-      </p>
-    </div>
+  const spinner = (
+    <div className={`animate-spin rounded-full ${sizeClasses[size]} border-[#2FA3E3]`}></div>
   );
 
   if (fullScreen) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        {content}
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        {spinner}
+        {message && (
+          <p className="mt-4 text-gray-600 font-medium text-sm sm:text-base">
+            {message}
+          </p>
+        )}
       </div>
     );
   }
 
-  return content;
+  // If there is a message, wrap in a flex column
+  if (message) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2">
+        {spinner}
+        <p className="text-xs sm:text-sm text-gray-500">{message}</p>
+      </div>
+    );
+  }
+
+  return spinner;
 }
