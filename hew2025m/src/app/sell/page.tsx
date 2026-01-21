@@ -240,6 +240,7 @@ export default function SellPage() {
         console.log('Response body is empty or invalid JSON, but request was successful');
       }
 
+      setUploadProgress('');
       previewUrls.forEach((url) => URL.revokeObjectURL(url));
 
       // トーストを表示してから画面遷移

@@ -11,11 +11,6 @@ export async function GET(request: NextRequest) {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
-    // ページネーション
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '12');
-
-    // フィルター
     const category = searchParams.get('category');
     const sellerId = searchParams.get('sellerId');
     const status = searchParams.get('status');
