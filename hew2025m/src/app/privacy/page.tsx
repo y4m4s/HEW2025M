@@ -52,7 +52,7 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <p className="text-right mt-8">以上</p>
-            <p className="text-right text-sm">制定日: 2024年1月1日</p>
+            <p className="text-right text-sm">制定日: 2026年1月1日</p>
           </div>
         </div>
       </div>

@@ -1,23 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ArrowLeft, Calendar, Bookmark, Fish } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useAuth } from '@/lib/useAuth';
+import { db } from '@/lib/firebase';
+import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
+
 import Button from '@/components/Button';
 import Comment from '@/components/Comment';
 import ImageModal from '@/components/ImageModal';
 import CancelModal from '@/components/CancelModal';
 import LoginRequiredModal from '@/components/LoginRequiredModal';
 import ProductCard from '@/components/ProductCard';
-
 import SmartRakuten from '@/components/SmartRakuten';
-import SellerInfo from '@/components/SellerInfo';
-
-import { useAuth } from '@/lib/useAuth';
-import { db } from '@/lib/firebase';
-import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
-import toast from 'react-hot-toast';
+import UserInfoCard from '@/components/UserInfoCard';
 import { useCartStore } from '@/components/useCartStore';
 
 interface ProductDetail {
@@ -579,14 +578,15 @@ export default function SellDetailPage() {
         </div>
 
         {/* 出品者情報 */}
-        <div className="mt-6 md:mt-8">
-          <SellerInfo
-            sellerProfile={sellerProfile}
-            loading={sellerProfileLoading}
-            fallbackName={product.sellerName}
-            isOwnProduct={!!(user && (product.sellerId === user.uid || product.sellerId === `user-${user.uid}`))}
-          />
-        </div>
+        <UserInfoCard
+          title="出品者情報"
+          userProfile={sellerProfile}
+          loading={sellerProfileLoading}
+          fallbackName={product.sellerName}
+          showRating={true}
+          showActions={true}
+          isOwnProfile={!!(user && (product.sellerId === user.uid || product.sellerId === `user-${user.uid}`))}
+        />
 
         {/* コメントセクション */}
         <section className="mt-6 md:mt-8 bg-white rounded-lg shadow-md p-4 md:p-6">

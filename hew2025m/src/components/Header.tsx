@@ -14,7 +14,7 @@ import {
   Menu,
   X
 } from "lucide-react";
-import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner  } from "react-icons/gi";
+import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from "react-icons/gi";
 import { FaTape, FaTshirt, FaBox } from "react-icons/fa";
 import { SiHelix } from "react-icons/si";
 import { Users, Puzzle } from "lucide-react";
@@ -208,7 +208,7 @@ export default function Header() {
                   </span>
                 )}
               </Link>
-              
+
               <HoverCard
                 trigger={
                   <Link
@@ -339,19 +339,17 @@ export default function Header() {
             <div className="relative w-5 h-5">
               <Menu
                 size={20}
-                className={`absolute inset-0 transition-all duration-300 ${
-                  isMobileMenuOpen
-                    ? 'opacity-0 rotate-90 scale-50'
-                    : 'opacity-100 rotate-0 scale-100'
-                }`}
+                className={`absolute inset-0 transition-all duration-300 ${isMobileMenuOpen
+                  ? 'opacity-0 rotate-90 scale-50'
+                  : 'opacity-100 rotate-0 scale-100'
+                  }`}
               />
               <X
                 size={20}
-                className={`absolute inset-0 transition-all duration-300 ${
-                  isMobileMenuOpen
-                    ? 'opacity-100 rotate-0 scale-100'
-                    : 'opacity-0 -rotate-90 scale-50'
-                }`}
+                className={`absolute inset-0 transition-all duration-300 ${isMobileMenuOpen
+                  ? 'opacity-100 rotate-0 scale-100'
+                  : 'opacity-0 -rotate-90 scale-50'
+                  }`}
               />
             </div>
           </button>
@@ -360,130 +358,130 @@ export default function Header() {
 
       {/* モバイルメニュー */}
       <div
-        className={`lg:hidden overflow-hidden transition-all duration-300 ease-in-out border-t border-gray-200 bg-white ${
-          isMobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0 border-t-0'
-        }`}
+        className={`lg:hidden overflow-hidden transition-all duration-300 ease-in-out border-t border-gray-200 bg-white ${isMobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0 border-t-0'
+          }`}
       >
         <nav className="px-4 py-4 space-y-1">
-            {user ? (
-              <>
-                {/* ユーザー情報 */}
-                <Link
-                  href={user?.uid ? `/profile/${user.uid}` : "/profile"}
-                  className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0">
-                    <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                      {profile.photoURL ? (
-                        <Image
-                          src={profile.photoURL}
-                          alt="プロフィール画像"
-                          width={40}
-                          height={40}
-                          className="w-full h-full object-cover"
-                          unoptimized
-                        />
-                      ) : (
-                        <UserIcon size={20} />
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">{profile.displayName || "ユーザー"}</p>
-                    {profile.username && (
-                      <p className="text-sm text-gray-500 truncate">@{profile.username}</p>
+          {user ? (
+            <>
+              {/* ユーザー情報 */}
+              <Link
+                href={user?.uid ? `/profile/${user.uid}` : "/profile"}
+                className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0">
+                  <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
+                    {profile.photoURL ? (
+                      <Image
+                        src={profile.photoURL}
+                        alt="プロフィール画像"
+                        width={40}
+                        height={40}
+                        className="w-full h-full object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <UserIcon size={20} />
                     )}
                   </div>
-                </Link>
-
-                <div className="border-t border-gray-200 my-2"></div>
-
-                {/* メニュー項目 */}
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    router.push('/sell');
-                  }}
-                  className="w-full text-left px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium"
-                >
-                  出品する
-                </button>
-
-                <Link
-                  href="/product-list"
-                  className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  商品を探す
-                </Link>
-
-                <Link
-                  href="/community"
-                  className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  コミュニティ
-                </Link>
-
-                <Link
-                  href="/post"
-                  className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  投稿する
-                </Link>
-
-                <Link
-                  href="/message"
-                  className="flex items-center justify-between px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <span>メッセージ</span>
-                  {unreadMessageCount > 0 && (
-                    <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
-                      {unreadMessageCount}
-                    </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 truncate">{profile.displayName || "ユーザー"}</p>
+                  {profile.username && (
+                    <p className="text-sm text-gray-500 truncate">@{profile.username}</p>
                   )}
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/product-list"
-                  className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  商品を探す
-                </Link>
+                </div>
+              </Link>
 
-                <Link
-                  href="/community"
-                  className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  コミュニティ
-                </Link>
+              <div className="border-t border-gray-200 my-2"></div>
 
-                <div className="border-t border-gray-200 my-2"></div>
+              {/* メニュー項目 */}
+              <Link
+                href="/sell"
+                className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                出品する
+              </Link>
 
-                <Link
-                  href="/login"
-                  className="block px-3 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors text-center text-gray-700 font-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  ログイン
-                </Link>
+              <Link
+                href="/product-list"
+                className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                商品を探す
+              </Link>
 
-                <Link
-                  href="/register"
-                  className="block px-3 py-3 rounded-lg bg-[#2FA3E3] hover:bg-[#2892c9] transition-colors text-center text-white font-medium"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  新規登録
-                </Link>
-              </>
-            )}
+              <Link
+                href="/community"
+                className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                コミュニティ
+              </Link>
+
+              <Link
+                href="/post"
+                className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                投稿する
+              </Link>
+
+              <Link
+                href="/post-list"
+                className="flex items-center justify-between px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                投稿一覧
+              </Link>
+
+              <Link
+                href="/map"
+                className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                地図
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/product-list"
+                className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                商品を探す
+              </Link>
+
+              <Link
+                href="/community"
+                className="block px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                コミュニティ
+              </Link>
+
+              <div className="border-t border-gray-200 my-2"></div>
+
+              <Link
+                href="/login"
+                className="block px-3 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors text-center text-gray-700 font-medium"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                ログイン
+              </Link>
+
+              <Link
+                href="/register"
+                className="block px-3 py-3 rounded-lg bg-[#2FA3E3] hover:bg-[#2892c9] transition-colors text-center text-white font-medium"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                新規登録
+              </Link>
+            </>
+          )}
         </nav>
       </div>
 

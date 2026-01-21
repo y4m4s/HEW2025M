@@ -2,6 +2,7 @@ import React, { useEffect, useState, useImperativeHandle, forwardRef, useCallbac
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import toast from "react-hot-toast";
 import { Search, X } from "lucide-react";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const containerStyle = {
   width: "100%",
@@ -164,7 +165,11 @@ const Map = forwardRef<MapRef, MapProps>(({ onMarkerClick, onMapClick }, ref) =>
       });
   }, []);
 
-  if (!isLoaded) return <div className="h-full flex items-center justify-center text-gray-500">マップを読み込み中...</div>;
+  if (!isLoaded) return (
+    <div className="h-full flex items-center justify-center">
+      <LoadingSpinner message="マップを読み込み中..." size="md" />
+    </div>
+  );
 
   return (
     <div className="relative w-full h-full">

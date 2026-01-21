@@ -1,81 +1,73 @@
-import { NextResponse } from 'next/server';
-import { collection, query, where, getDocs, doc, getDoc, orderBy } from 'firebase/firestore';
-import { adminDb } from '@/lib/firebase-admin';
-
-interface RatingDoc {
-  ratedUserId: string;
-  raterUserId: string;
-  rating: number;
-  comment: string;
-  createdAt: FirebaseFirestore.Timestamp;
-}
-
-interface RatingWithUser {
-  id: string;
-  raterName: string;
-  raterPhotoURL: string;
-  ratedUserId: string;
-  raterUserId: string;
-  rating: number;
-  comment: string;
-  createdAt: string; // ISO string
-}
+// src/app/api/users/[id]/ratings/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = params.id;
-
-  if (!userId) {
-    return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
-  }
-
   try {
-    const ratingsQuery = query(
-      collection(adminDb, 'ratings'),
-      where('ratedUserId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
-    const ratingsSnapshot = await getDocs(ratingsQuery);
+    const { id: userId } = await params;
 
-    if (ratingsSnapshot.empty) {
-      return NextResponse.json({ ratings: [] }, { status: 200 });
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    const ratings: RatingWithUser[] = await Promise.all(
-      ratingsSnapshot.docs.map(async (ratingDoc) => {
-        const ratingData = ratingDoc.data() as RatingDoc;
-        const raterId = ratingData.raterUserId;
+    // Firestoreから評価データを取得
+    const ratingsQuery = query(
+      collection(db, 'ratings'),
+      where('ratedUserId', '==', userId)
+    );
 
-        const userRef = doc(adminDb, 'users', raterId);
-        const userSnap = await getDoc(userRef);
+    const snapshot = await getDocs(ratingsQuery);
+    const ratingsData = await Promise.all(
+      snapshot.docs.map(async (ratingDoc) => {
+        const ratingData = ratingDoc.data();
 
-        let raterName = '名無しさん';
-        let raterPhotoURL = '/avatars/default.png'; 
+        // 評価者の情報を取得
+        let raterName = '不明なユーザー';
+        let raterPhotoURL = '';
 
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          raterName = userData.displayName || '名無しさん';
-          raterPhotoURL = userData.photoURL || '/avatars/default.png';
+        try {
+          const raterDocRef = doc(db, 'users', ratingData.raterUserId);
+          const raterDocSnap = await getDoc(raterDocRef);
+
+          if (raterDocSnap.exists()) {
+            const raterData = raterDocSnap.data();
+            raterName = raterData.displayName || raterData.username || '不明なユーザー';
+            raterPhotoURL = raterData.photoURL || '';
+          }
+        } catch (error) {
+          console.error('評価者情報の取得エラー:', error);
         }
 
         return {
           id: ratingDoc.id,
-          ...ratingData,
-          createdAt: ratingData.createdAt.toDate().toISOString(),
+          ratedUserId: ratingData.ratedUserId,
+          raterUserId: ratingData.raterUserId,
+          rating: ratingData.rating,
+          comment: ratingData.comment,
+          createdAt: ratingData.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
           raterName,
           raterPhotoURL,
         };
       })
     );
 
-    return NextResponse.json({ ratings }, { status: 200 });
+    // 評価を新しい順にソート
+    ratingsData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return NextResponse.json({
+      success: true,
+      ratings: ratingsData
+    });
+
   } catch (error) {
-    console.error('Error fetching ratings:', error);
-    if (error instanceof Error) {
-        return NextResponse.json({ error: `Internal Server Error: ${error.message}` }, { status: 500 });
-    }
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('Get user ratings error:', error);
+    return NextResponse.json({
+      error: 'Failed to fetch user ratings',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

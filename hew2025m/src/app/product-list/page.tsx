@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import ProductCard, { Product } from '@/components/ProductCard';
-import Button from '@/components/Button';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Fish, Search, Puzzle } from 'lucide-react';
 import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from 'react-icons/gi';
 import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
 import { SiHelix } from 'react-icons/si';
-import CustomSelect from '@/components/CustomSelect';
 import { useAuth } from '@/lib/useAuth';
+
+import ProductCard, { Product } from '@/components/ProductCard';
+import Button from '@/components/Button';
+import CustomSelect from '@/components/CustomSelect';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import LoginRequiredModal from '@/components/LoginRequiredModal';
 
 const CATEGORY_OPTIONS = [
@@ -277,17 +279,17 @@ export default function SearchPage() {
               <Button
                 onClick={() => {
                   if (!user) {
-                    setLoginRequiredAction('投稿');
+                    setLoginRequiredAction('出品');
                     setShowLoginModal(true);
                   } else {
-                    router.push('/post');
+                    router.push('/sell');
                   }
                 }}
                 variant="primary"
                 size="md"
                 className="shadow-lg hover:shadow-xl transition-shadow text-xs sm:text-sm w-full sm:w-auto"
               >
-                投稿する
+                出品する
               </Button>
             </div>
 
@@ -369,7 +371,7 @@ export default function SearchPage() {
             {/* 商品一覧 */}
             {loading && products.length === 0 ? (
               <div className="flex justify-center items-center py-12 sm:py-20">
-                <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-[#2FA3E3]"></div>
+                <LoadingSpinner size="md" />
               </div>
             ) : error ? (
               <div className="text-center py-12 sm:py-20 px-4">
@@ -395,10 +397,7 @@ export default function SearchPage() {
                 {/* 無限スクロール用のローディングインジケーター */}
                 <div ref={loadMoreRef} className="flex justify-center items-center py-6 sm:py-8">
                   {loading && (
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-[#2FA3E3]"></div>
-                      <p className="text-xs sm:text-sm text-gray-500">読み込み中...</p>
-                    </div>
+                    <LoadingSpinner size="sm" message="読み込み中..." />
                   )}
                   {!hasMore && products.length > 0 && (
                     <p className="text-xs sm:text-sm text-gray-500">すべての商品を表示しました</p>

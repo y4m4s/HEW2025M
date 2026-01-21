@@ -1,15 +1,22 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { Upload, MapPin, X } from 'lucide-react';
-import Button from '@/components/Button';
 import { useRouter, useSearchParams } from 'next/navigation';
-import MapModal, { LocationData } from '@/components/MapModal';
-import { useAuth } from '@/lib/useAuth';
-import { useProfile } from '@/contexts/ProfileContext';
+import { useState, useRef, useEffect } from 'react';
+import { Upload, MapPin, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { PostFormSchema } from '@/lib/schemas';
+import { z } from 'zod';
+import { useAuth } from '@/lib/useAuth';
 
+import Button from '@/components/Button';
+import MapModal, { LocationData } from '@/components/MapModal';
+import { useProfile } from '@/contexts/ProfileContext';
+import ImageModal from '@/components/ImageModal';
+
+type PostFormData = z.infer<typeof PostFormSchema>;
 
 export default function Post() {
   const router = useRouter();
@@ -18,16 +25,31 @@ export default function Post() {
   const { profile } = useProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
   const [address, setAddress] = useState('');
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<PostFormData>({
+    resolver: zodResolver(PostFormSchema),
+    defaultValues: {
+      title: '',
+      content: '',
+    },
+  });
+
+  const titleValue = watch('title');
+  const contentValue = watch('content');
 
   // タグの選択肢
   const availableTags = [
@@ -152,9 +174,7 @@ export default function Post() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const onSubmit = async (data: PostFormData) => {
     if (isSubmitting) return;
 
     // ログインチェック
@@ -163,38 +183,6 @@ export default function Post() {
       return;
     }
 
-    // バリデーションチェック - エラーメッセージを収集
-    const errors: string[] = [];
-
-    if (!title) {
-      errors.push('件名を入力してください');
-    } else if (title.length > 30) {
-      errors.push('件名は30文字以内で入力してください');
-    }
-
-    if (!content) {
-      errors.push('本文を入力してください');
-    } else if (content.length > 140) {
-      errors.push('本文は140文字以内で入力してください');
-    }
-
-    // エラーがある場合はtoastで表示
-    if (errors.length > 0) {
-      toast.error(
-        <div className="flex flex-col">
-          <div className="font-bold mb-2">入力内容に不備があります</div>
-          <ul className="list-disc list-inside space-y-1 ml-1">
-            {errors.map((error, index) => (
-              <li key={index} className="text-sm">{error}</li>
-            ))}
-          </ul>
-        </div>,
-        { duration: 5000 }
-      );
-      return;
-    }
-
-    setIsSubmitting(true);
     setUploadProgress('投稿を準備中...');
 
     try {
@@ -251,8 +239,8 @@ export default function Post() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          title,
-          content,
+          title: data.title,
+          content: data.content,
           category: '一般',
           media: uploadedMedia,
           authorId,
@@ -281,7 +269,6 @@ export default function Post() {
     } catch (error) {
       console.error('投稿エラー:', error);
       toast.error(error instanceof Error ? error.message : '投稿の作成に失敗しました');
-      setIsSubmitting(false);
       setUploadProgress('');
     }
   };
@@ -298,29 +285,28 @@ export default function Post() {
           </p>
 
           <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
-            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8" noValidate>
               <div>
                 <label htmlFor="title" className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
                   件名 <span className="text-red-500">*</span>
                 </label>
                 <input
+                  {...register('title')}
                   type="text"
                   id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 text-sm sm:text-base ${
-                    title.length > 30
-                      ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
-                      : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
-                  }`}
+                  className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 text-sm sm:text-base ${errors.title
+                    ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
+                    : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
+                    }`}
                   placeholder="件名を入力してください"
-                  required
                   disabled={isSubmitting}
+                  aria-invalid={errors.title ? "true" : "false"}
                 />
-                <div className={`text-right text-sm mt-1 ${title.length > 30 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                  {title.length}/30文字
-                  {title.length > 30 && (
-                    <span className="ml-2">({title.length - 30}文字超過)</span>
+                {errors.title && <p className="text-red-600 text-sm mt-2" role="alert">{errors.title.message}</p>}
+                <div className={`text-right text-sm mt-1 ${(titleValue?.length || 0) > 30 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                  {titleValue?.length || 0}/30文字
+                  {(titleValue?.length || 0) > 30 && (
+                    <span className="ml-2">({(titleValue?.length || 0) - 30}文字超過)</span>
                   )}
                 </div>
               </div>
@@ -330,23 +316,22 @@ export default function Post() {
                   本文 <span className="text-red-500">*</span>
                 </label>
                 <textarea
+                  {...register('content')}
                   id="content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
                   rows={6}
-                  className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none text-sm sm:text-base ${
-                    content.length > 140
-                      ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
-                      : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
-                  }`}
+                  className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none text-sm sm:text-base ${errors.content
+                    ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
+                    : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
+                    }`}
                   placeholder="本文を140字以内で入力してください"
-                  required
                   disabled={isSubmitting}
+                  aria-invalid={errors.content ? "true" : "false"}
                 />
-                <div className={`text-right text-sm mt-1 ${content.length > 140 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                  {content.length}/140文字
-                  {content.length > 140 && (
-                    <span className="ml-2">({content.length - 140}文字超過)</span>
+                {errors.content && <p className="text-red-600 text-sm mt-2" role="alert">{errors.content.message}</p>}
+                <div className={`text-right text-sm mt-1 ${(contentValue?.length || 0) > 140 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                  {contentValue?.length || 0}/140文字
+                  {(contentValue?.length || 0) > 140 && (
+                    <span className="ml-2">({(contentValue?.length || 0) - 140}文字超過)</span>
                   )}
                 </div>
               </div>
@@ -387,17 +372,29 @@ export default function Post() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
                     {previewUrls.map((url, index) => (
                       <div key={index} className="relative group">
-                        <Image
-                          src={url}
-                          alt={`プレビュー ${index + 1}`}
-                          width={200}
-                          height={200}
-                          className="w-full h-24 sm:h-32 object-cover rounded-lg border-2 border-gray-200"
-                        />
+                        <div
+                          className="relative w-full h-24 sm:h-32 cursor-pointer overflow-hidden rounded-lg border-2 border-gray-200 hover:border-[#2FA3E3] transition-all hover:shadow-lg"
+                          onClick={() => {
+                            setSelectedImageIndex(index);
+                            setIsImageModalOpen(true);
+                          }}
+                        >
+                          <Image
+                            src={url}
+                            alt={`プレビュー ${index + 1}`}
+                            width={200}
+                            height={200}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                        </div>
                         <button
                           type="button"
-                          onClick={() => handleRemoveFile(index)}
-                          className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFile(index);
+                          }}
+                          className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
                           disabled={isSubmitting}
                         >
                           <X size={16} className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -419,11 +416,10 @@ export default function Post() {
                       type="button"
                       onClick={() => toggleTag(tag)}
                       disabled={isSubmitting}
-                      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 ${
-                        selectedTags.includes(tag)
-                          ? 'bg-[#2FA3E3] text-white shadow-md'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 ${selectedTags.includes(tag)
+                        ? 'bg-[#2FA3E3] text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {tag}
                     </button>
@@ -521,6 +517,14 @@ export default function Post() {
         onClose={() => setIsMapModalOpen(false)}
         onSelectLocation={handleSelectLocation}
         initialLocation={location && address ? { ...location, address } : undefined}
+      />
+
+      {/* 画像拡大モーダル */}
+      <ImageModal
+        images={previewUrls}
+        initialIndex={selectedImageIndex}
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
       />
     </div>
   );

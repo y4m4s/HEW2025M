@@ -23,14 +23,15 @@ interface FollowListModalProps {
   onClose: () => void;
   userId: string;
   type: 'following' | 'followers';
+  onFollowChange?: () => void; // フォロー数が変更された時のコールバック
 }
 
-export default function FollowListModal({ isOpen, onClose, userId, type: initialType }: FollowListModalProps) {
+export default function FollowListModal({ isOpen, onClose, userId, type: initialType, onFollowChange }: FollowListModalProps) {
   const router = useRouter();
   const { user } = useAuth();
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [followStates, setFollowStates] = useState<Record<string, { isFollowing: boolean; docId: string | null }>>({});
+  const [followStates, setFollowStates] = useState<Record<string, { isFollowing: boolean; docId: string | null; isMutual: boolean }>>({});
   const [activeTab, setActiveTab] = useState<'following' | 'followers'>(initialType);
   const [profileUser, setProfileUser] = useState<{ displayName: string; username: string } | null>(null);
 
@@ -108,16 +109,18 @@ export default function FollowListModal({ isOpen, onClose, userId, type: initial
 
         // 各ユーザーのフォロー状態をチェック
         if (user) {
-          const followStatesMap: Record<string, { isFollowing: boolean; docId: string | null }> = {};
+          const followStatesMap: Record<string, { isFollowing: boolean; docId: string | null; isMutual: boolean }> = {};
 
           for (const userInfo of filteredUsers) {
             if (userInfo.uid === user.uid) {
               // 自分自身はスキップ
-              followStatesMap[userInfo.uid] = { isFollowing: false, docId: null };
+              followStatesMap[userInfo.uid] = { isFollowing: false, docId: null, isMutual: false };
               continue;
             }
 
             const followsRef = collection(db, 'follows');
+
+            // 自分が相手をフォローしているかチェック
             const q = query(
               followsRef,
               where('followingUserId', '==', user.uid),
@@ -125,17 +128,22 @@ export default function FollowListModal({ isOpen, onClose, userId, type: initial
             );
             const snapshot = await getDocs(q);
 
-            if (!snapshot.empty) {
-              followStatesMap[userInfo.uid] = {
-                isFollowing: true,
-                docId: snapshot.docs[0].id
-              };
-            } else {
-              followStatesMap[userInfo.uid] = {
-                isFollowing: false,
-                docId: null
-              };
-            }
+            // 相手が自分をフォローしているかチェック（相互フォロー判定）
+            const reverseQ = query(
+              followsRef,
+              where('followingUserId', '==', userInfo.uid),
+              where('followedUserId', '==', user.uid)
+            );
+            const reverseSnapshot = await getDocs(reverseQ);
+
+            const isFollowing = !snapshot.empty;
+            const isFollowedBack = !reverseSnapshot.empty;
+
+            followStatesMap[userInfo.uid] = {
+              isFollowing,
+              docId: isFollowing ? snapshot.docs[0].id : null,
+              isMutual: isFollowing && isFollowedBack
+            };
           }
 
           setFollowStates(followStatesMap);
@@ -189,8 +197,13 @@ export default function FollowListModal({ isOpen, onClose, userId, type: initial
         await deleteDoc(doc(db, 'follows', currentState.docId));
         setFollowStates(prev => ({
           ...prev,
-          [targetUserId]: { isFollowing: false, docId: null }
+          [targetUserId]: { isFollowing: false, docId: null, isMutual: false }
         }));
+
+        // フォロー数変更を親コンポーネントに通知
+        if (onFollowChange) {
+          onFollowChange();
+        }
       } else {
         // フォロー
         const followData = {
@@ -199,13 +212,29 @@ export default function FollowListModal({ isOpen, onClose, userId, type: initial
           createdAt: Timestamp.now(),
         };
         const docRef = await addDoc(collection(db, 'follows'), followData);
+
+        // 相手が自分をフォローしているかチェック
+        const followsRef = collection(db, 'follows');
+        const reverseQ = query(
+          followsRef,
+          where('followingUserId', '==', targetUserId),
+          where('followedUserId', '==', user.uid)
+        );
+        const reverseSnapshot = await getDocs(reverseQ);
+        const isMutual = !reverseSnapshot.empty;
+
         setFollowStates(prev => ({
           ...prev,
-          [targetUserId]: { isFollowing: true, docId: docRef.id }
+          [targetUserId]: { isFollowing: true, docId: docRef.id, isMutual }
         }));
 
         // フォロー通知を作成
         await createFollowNotification(targetUserId, user.uid);
+
+        // フォロー数変更を親コンポーネントに通知
+        if (onFollowChange) {
+          onFollowChange();
+        }
       }
     } catch (error) {
       console.error('フォロー処理エラー:', error);
@@ -334,16 +363,23 @@ export default function FollowListModal({ isOpen, onClose, userId, type: initial
 
                       {/* フォローボタン */}
                       {!isOwnProfile && followState && (
-                        <button
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
-                            followState.isFollowing
-                              ? 'border border-gray-300 text-gray-700 hover:bg-red-50 hover:border-red-300 hover:text-red-600'
-                              : 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
-                          }`}
-                          onClick={(e) => handleFollowToggle(userItem.uid, e)}
-                        >
-                          {followState.isFollowing ? 'フォロー解除' : 'フォローする'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {followState.isMutual && (
+                            <span className="text-xs text-gray-600 px-3 py-1.5 border border-gray-300 rounded-full bg-gray-50">
+                              相互フォロー
+                            </span>
+                          )}
+                          <button
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
+                              followState.isFollowing
+                                ? 'border border-gray-300 text-gray-700 hover:bg-red-50 hover:border-red-300 hover:text-red-600'
+                                : 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
+                            }`}
+                            onClick={(e) => handleFollowToggle(userItem.uid, e)}
+                          >
+                            {followState.isFollowing ? 'フォロー解除' : 'フォローする'}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
