@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
-import { Fish, MapPin, User } from 'lucide-react';
+import { Fish, MapPin, User, List } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -326,7 +326,7 @@ export default function CommunityPage() {
             <div className="bg-white rounded-xl shadow-lg p-4 sm:p-5 md:p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300">
               <div className="flex items-center gap-2.5 sm:gap-3 mb-3 sm:mb-4">
                 <div className="bg-blue-100 rounded-lg p-1.5 sm:p-2">
-                  <span className="text-xl sm:text-2xl">📋</span>
+                  <List className="text-blue-600" size={20} />
                 </div>
                 <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-800" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
                   投稿一覧

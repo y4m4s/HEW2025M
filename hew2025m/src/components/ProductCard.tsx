@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Fish, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export interface Product {
   id: string;
@@ -12,6 +15,7 @@ export interface Product {
   imageUrl?: string;
   status?: 'available' | 'sold' | 'reserved';
   sellerPhotoURL?: string;
+  sellerId?: string;
 }
 
 interface ProductCardProps {
@@ -20,6 +24,33 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, variant = 'default' }: ProductCardProps) {
+  const [sellerName, setSellerName] = useState(product.location);
+  const [sellerPhoto, setSellerPhoto] = useState(product.sellerPhotoURL);
+
+  useEffect(() => {
+    const fetchSellerInfo = async () => {
+      if (!product.sellerId) return;
+
+      // sellerIdが 'user-XXX' 形式の場合、'XXX'部分のみを抽出
+      const userId = product.sellerId.startsWith('user-')
+        ? product.sellerId.replace('user-', '')
+        : product.sellerId;
+
+      try {
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setSellerName(data.displayName || data.username || '出品者');
+          setSellerPhoto(data.photoURL || null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch seller info', error);
+      }
+    };
+
+    fetchSellerInfo();
+  }, [product.sellerId]);
+
   const formatPrice = (price: number) => {
     return `¥${price.toLocaleString()}`;
   };
@@ -65,13 +96,13 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
             </p>
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-                {product.sellerPhotoURL ? (
-                  <Image src={product.sellerPhotoURL} alt={product.location} width={24} height={24} quality={90} className="w-full h-full object-cover" />
+                {sellerPhoto ? (
+                  <Image src={sellerPhoto} alt={sellerName} width={24} height={24} quality={90} className="w-full h-full object-cover" />
                 ) : (
                   <User size={12} className="text-gray-600" />
                 )}
               </div>
-              <span className="text-gray-600 text-sm truncate">{product.location}</span>
+              <span className="text-gray-600 text-sm truncate">{sellerName}</span>
             </div>
           </div>
         </div>
@@ -86,10 +117,10 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
           {product.imageUrl ? (
             <Image src={product.imageUrl} alt={product.name} width={400} height={300} className="w-full h-full object-cover" />
           ) : (
-              <div className="aspect-video bg-gray-200 rounded-lg flex flex-col items-center justify-center">
-                <Fish size={64} className="text-gray-400 mb-3" />
-                <p className="text-gray-500 text-sm">画像がありません</p>
-              </div>
+            <div className="aspect-video bg-gray-200 rounded-lg flex flex-col items-center justify-center">
+              <Fish size={64} className="text-gray-400 mb-3" />
+              <p className="text-gray-500 text-sm">画像がありません</p>
+            </div>
           )}
           {/* SOLDバッジ（メルカリ風デザイン） */}
           {getStatusLabel(product.status) && (
@@ -112,13 +143,13 @@ export default function ProductCard({ product, variant = 'default' }: ProductCar
             </p>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <div className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-                {product.sellerPhotoURL ? (
-                  <Image src={product.sellerPhotoURL} alt={product.location} width={20} height={20} quality={90} className="w-full h-full object-cover" />
+                {sellerPhoto ? (
+                  <Image src={sellerPhoto} alt={sellerName} width={20} height={20} quality={90} className="w-full h-full object-cover" />
                 ) : (
                   <User size={10} className="text-gray-600" />
                 )}
               </div>
-              <span className="truncate">{product.location}</span>
+              <span className="truncate">{sellerName}</span>
             </div>
           </div>
         </div>

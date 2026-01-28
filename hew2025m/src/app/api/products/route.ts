@@ -3,7 +3,6 @@ import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
 import { requireAuth } from '@/lib/simpleAuth';
 import { ProductPostSchema } from '@/lib/schemas';
-import { adminDb } from '@/lib/firebase-admin';
 
 // 商品一覧を取得
 export async function GET(request: NextRequest) {
@@ -18,6 +17,8 @@ export async function GET(request: NextRequest) {
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
     const sortBy = searchParams.get('sortBy');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '12');
 
     let query: any = {};
     if (category) {
@@ -37,8 +38,7 @@ export async function GET(request: NextRequest) {
     } else if (sortBy === 'price-high') {
       sortOptions = { price: -1 };
     } else if (sortBy === 'popular') {
-      // TODO: 人気順のロジックを実装（例：閲覧数、いいね数など）
-      sortOptions = { createdAt: -1 }; // 現時点では新着順にフォールバック
+      sortOptions = { createdAt: -1 };
     }
     if (shippingPayer) {
       query.shippingPayer = shippingPayer;
@@ -65,40 +65,15 @@ export async function GET(request: NextRequest) {
       .skip(skip)
       .limit(limit);
 
-    // 各商品の出品者情報をFirestoreから取得
-    const productsWithSellerInfo = await Promise.all(
-      products.map(async (product) => {
-        const productObj = product.toObject();
-
-        if (productObj.sellerId) {
-          try {
-            // sellerIdが'user-XXX'形式の場合は'XXX'に変換
-            const firebaseUserId = productObj.sellerId.startsWith('user-')
-              ? productObj.sellerId.replace('user-', '')
-              : productObj.sellerId;
-
-            const userDoc = await adminDb.collection('users').doc(firebaseUserId).get();
-
-            if (userDoc.exists) {
-              const userData = userDoc.data();
-              return {
-                ...productObj,
-                sellerName: userData?.displayName || userData?.username || '出品者未設定',
-                sellerPhotoURL: userData?.photoURL || null,
-              };
-            }
-          } catch (error) {
-            console.error(`Failed to fetch seller info for ${productObj.sellerId}:`, error);
-          }
-        }
-
-        return {
-          ...productObj,
-          sellerName: '出品者未設定',
-          sellerPhotoURL: null,
-        };
-      })
-    );
+    // 各商品の出品者情報を取得せずに返す（エラー回避のため）
+    const productsWithSellerInfo = products.map((product) => {
+      const productObj = product.toObject();
+      return {
+        ...productObj,
+        sellerName: '出品者',
+        sellerPhotoURL: null,
+      };
+    });
 
     return NextResponse.json({
       success: true,
@@ -111,7 +86,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    // エラー発生時にリクエストのURLもログに出力するとデバッグが容易になる
     console.error(`Get products error for URL: ${request.url}`, error);
     return NextResponse.json(
       { error: '商品の取得に失敗しました' },

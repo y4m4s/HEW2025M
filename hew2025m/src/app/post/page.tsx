@@ -15,6 +15,7 @@ import Button from '@/components/Button';
 import MapModal, { LocationData } from '@/components/MapModal';
 import { useProfile } from '@/contexts/ProfileContext';
 import ImageModal from '@/components/ImageModal';
+import { uploadFileToFirebase } from '@/lib/firebaseUtils';
 
 type PostFormData = z.infer<typeof PostFormSchema>;
 
@@ -200,27 +201,34 @@ export default function Post() {
         order: number;
       }> = [];
 
-      // ファイルがある場合はアップロード
+      // ファイルがある場合はFirebase Storageにアップロード
       if (selectedFiles.length > 0) {
         setUploadProgress('画像をアップロード中...');
-        const formData = new FormData();
-        selectedFiles.forEach((file) => {
-          formData.append('files', file);
+
+        // 並列でアップロードを実行
+        const uploadPromises = selectedFiles.map(async (file, index) => {
+          try {
+            // プログレス表示の更新（簡易的）
+            setUploadProgress(`画像をアップロード中 (${index + 1}/${selectedFiles.length})...`);
+
+            const downloadUrl = await uploadFileToFirebase(file, 'posts');
+
+            // DB保存用のメタデータ作成
+            return {
+              url: downloadUrl,
+              originalName: file.name,
+              mimeType: file.type,
+              size: file.size,
+              uniqueId: `${timestamp}-${authorId}-${index + 1}`, // 一意なIDを生成
+              order: index + 1
+            };
+          } catch (error) {
+            console.error(`File upload failed for ${file.name}`, error);
+            throw new Error(`${file.name}のアップロードに失敗しました`);
+          }
         });
-        formData.append('authorId', authorId);
-        formData.append('timestamp', timestamp);
 
-        const uploadResponse = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error('ファイルのアップロードに失敗しました');
-        }
-
-        const uploadData = await uploadResponse.json();
-        uploadedMedia = uploadData.files;
+        uploadedMedia = await Promise.all(uploadPromises);
       }
 
       // 投稿を作成

@@ -101,7 +101,7 @@ export default function CartProductCard({ product }: CartProductCardProps) {
   };
 
   return (
-    <Link href={`/productDetail/${product.id}`}>
+    <Link href={`/product-detail/${product.id}`}>
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer">
         <div className="flex">
           {/* 商品画像 */}
