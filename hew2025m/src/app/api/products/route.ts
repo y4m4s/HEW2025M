@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
 import { requireAuth } from '@/lib/simpleAuth';
 import { ProductPostSchema } from '@/lib/schemas';
+import { adminDb } from '@/lib/firebase-admin';
 
 /* ============================
    型定義
@@ -25,12 +26,15 @@ export async function GET(request: NextRequest) {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
+<<<<<<< HEAD
 
     // ページネーション
     const page = Number(searchParams.get('page') || 1);
     const limit = Number(searchParams.get('limit') || 12);
 
     // フィルター
+=======
+>>>>>>> cb419159b3721729b5f6473b8d5c1528dd246d6f
     const category = searchParams.get('category');
     const sellerId = searchParams.get('sellerId');
     const shippingPayer = searchParams.get('shippingPayer');
@@ -38,7 +42,20 @@ export async function GET(request: NextRequest) {
     const maxPrice = searchParams.get('maxPrice');
     const sortBy = searchParams.get('sortBy');
 
+<<<<<<< HEAD
     const query: ProductQuery = {};
+=======
+    let query: any = {};
+    if (category) {
+      query.category = category;
+    }
+    if (sellerId) {
+      query.sellerId = sellerId;
+    }
+    if (status) {
+      query.status = status;
+    }
+>>>>>>> cb419159b3721729b5f6473b8d5c1528dd246d6f
 
     if (category) query.category = category;
     if (sellerId) query.sellerId = sellerId;
@@ -67,9 +84,44 @@ export async function GET(request: NextRequest) {
       .skip(skip)
       .limit(limit);
 
+    // 各商品の出品者情報をFirestoreから取得
+    const productsWithSellerInfo = await Promise.all(
+      products.map(async (product) => {
+        const productObj = product.toObject();
+
+        if (productObj.sellerId) {
+          try {
+            // sellerIdが'user-XXX'形式の場合は'XXX'に変換
+            const firebaseUserId = productObj.sellerId.startsWith('user-')
+              ? productObj.sellerId.replace('user-', '')
+              : productObj.sellerId;
+
+            const userDoc = await adminDb.collection('users').doc(firebaseUserId).get();
+
+            if (userDoc.exists) {
+              const userData = userDoc.data();
+              return {
+                ...productObj,
+                sellerName: userData?.displayName || userData?.username || '出品者未設定',
+                sellerPhotoURL: userData?.photoURL || null,
+              };
+            }
+          } catch (error) {
+            console.error(`Failed to fetch seller info for ${productObj.sellerId}:`, error);
+          }
+        }
+
+        return {
+          ...productObj,
+          sellerName: '出品者未設定',
+          sellerPhotoURL: null,
+        };
+      })
+    );
+
     return NextResponse.json({
       success: true,
-      products,
+      products: productsWithSellerInfo,
       pagination: {
         total,
         page,

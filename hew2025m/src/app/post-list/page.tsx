@@ -1,15 +1,17 @@
 'use client';
 
+import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Fish, Plus, Search, Filter, X } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { useAuth } from "@/lib/useAuth";
+import { doc, getDoc } from 'firebase/firestore';
+
+import LoginRequiredModal from "@/components/LoginRequiredModal";
+import LoadingSpinner from '@/components/LoadingSpinner';
 import PostCard, { Post } from '@/components/PostCard';
 import Button from '@/components/Button';
 import CustomSelect from '@/components/CustomSelect';
-import { Fish, Plus, Search, Filter, X } from 'lucide-react';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { useAuth } from "@/lib/useAuth";
-import { useRouter } from "next/navigation";
-import LoginRequiredModal from "@/components/LoginRequiredModal";
 
 export default function PostList() {
   const { user } = useAuth();
@@ -25,6 +27,7 @@ export default function PostList() {
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [tagCounts, setTagCounts] = useState<Record<string, number>>({});
 
   // Intersection Observer用のref
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -134,6 +137,11 @@ export default function PostList() {
 
       setHasMore(data.pagination.hasMore);
       setTotalCount(data.pagination.total);
+
+      // タグごとの投稿数を設定
+      if (data.tagCounts) {
+        setTagCounts(data.tagCounts);
+      }
     } catch (err) {
       console.error('投稿取得エラー:', err);
       setError(err instanceof Error ? err.message : '投稿の取得に失敗しました');
@@ -304,10 +312,7 @@ export default function PostList() {
                   {/* 無限スクロール用のローディングインジケーター */}
                   <div ref={loadMoreRef} className="flex justify-center items-center py-8">
                     {loading && (
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2FA3E3]"></div>
-                        <p className="text-sm text-gray-500">読み込み中...</p>
-                      </div>
+                      <LoadingSpinner message="読み込み中..." size="sm" />
                     )}
                     {!hasMore && posts.length > 0 && (
                       <p className="text-sm text-gray-500">すべての投稿を表示しました</p>
@@ -373,10 +378,10 @@ export default function PostList() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">タグで探す</label>
                   <div className="flex flex-col space-y-1">
                     {filterTabs.map((tab) => {
-                      // 現在読み込まれている投稿から簡易的にカウント（実際はAPIから取得すべき）
+                      // 'all'の場合は全投稿数、それ以外はAPIから取得したタグ別投稿数
                       const count = tab.key === 'all'
                         ? totalCount
-                        : posts.filter(p => p.tags?.includes(tab.key)).length; // Note: incomplete count but serves UI
+                        : tagCounts[tab.key] || 0;
 
                       return (
                         <button
@@ -388,20 +393,13 @@ export default function PostList() {
                             }`}
                         >
                           <span className="flex items-center gap-2">
-                            {/* icon could go here */}
                             {tab.label}
                           </span>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${activeFilter === tab.key
                             ? 'bg-[#2FA3E3] text-white'
                             : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
                             }`}>
-                            {/* データがない場合は仮の数値を表示せず、クライアント側のマッチ数（デモ用）またはAPI実装待ち */}
-                            {/* ここでは一旦、'all'以外は「詳細不明」または単にレイアウトを示すため空欄等は避けたいが...
-                                APIがカウントを返さないので、今回はUIのみ実装します。
-                                要望は「表示するようにしてほしい」なので、UI枠を作ることが優先 */}
-                            {/* 仮の実装として、クライアント側で計算できる範囲を表示（ページネーションあるので不正確だが） */}
-                            {/* あるいは、もっともらしくは "-" とする */}
-                            -
+                            {count}
                           </span>
                         </button>
                       );

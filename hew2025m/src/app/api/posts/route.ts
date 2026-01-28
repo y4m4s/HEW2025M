@@ -48,6 +48,17 @@ export async function GET(request: NextRequest) {
       .skip(skip)
       .limit(limit);
 
+    // タグごとの投稿数を集計（すべてのタグ）
+    const tagCounts: Record<string, number> = {};
+    const allTags = ['釣行記', '情報共有', '質問', 'レビュー', '雑談', '初心者向け', 'トラブル相談', '釣果報告'];
+
+    await Promise.all(
+      allTags.map(async (tagName) => {
+        const count = await Post.countDocuments({ tags: tagName });
+        tagCounts[tagName] = count;
+      })
+    );
+
     return NextResponse.json({
       success: true,
       posts,
@@ -57,6 +68,7 @@ export async function GET(request: NextRequest) {
         limit,
         hasMore: skip + posts.length < total,
       },
+      tagCounts,
     });
   } catch (error) {
     console.error('Get posts error:', error);

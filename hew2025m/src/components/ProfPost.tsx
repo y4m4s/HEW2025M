@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Fish, ChevronLeft, ChevronRight } from "lucide-react";
 import PostCard, { Post } from "@/components/PostCard";
 import Button from "@/components/Button";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface ProfPostProps {
   onCountChange?: (count: number) => void;
@@ -99,7 +100,7 @@ export default function ProfPost({ onCountChange, userId }: ProfPostProps) {
   if (loading) {
     return (
       <div className="p-6 text-center">
-        <p className="text-gray-500">読み込み中...</p>
+        <LoadingSpinner message="読み込み中..." size="sm" />
       </div>
     );
   }

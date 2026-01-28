@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/components/useCartStore';
 import Button from '@/components/Button';
 import PayCheckout from './PayCheck';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function Pay() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function Pay() {
 
   // isMountedがfalseの間は何も描画しないか、ローディング表示を出す
   if (!isMounted) {
-    return <div className="text-center p-12">読み込み中...</div>;
+    return <LoadingSpinner message="読み込み中..." size="md" />;
   }
 
   // カートが空ならホームページにリダイレクト

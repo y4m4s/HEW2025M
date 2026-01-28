@@ -5,6 +5,7 @@ import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { X, MapPin, Navigation, Search } from 'lucide-react';
 import Button from './Button';
 import toast from 'react-hot-toast';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 const getContainerStyle = () => ({
   width: '100%',
@@ -266,7 +267,7 @@ const MapModal: React.FC<MapModalProps> = ({
               </div>
             ) : (
               <div className="h-[280px] sm:h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
-                <p className="text-sm sm:text-base text-gray-500">マップを読み込み中...</p>
+                <LoadingSpinner message="マップを読み込み中..." size="md" />
               </div>
             )}
           </div>
