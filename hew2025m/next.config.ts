@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'item.rakuten.co.jp' },
       { protocol: 'https', hostname: 'placehold.co' },
       { protocol: 'https', hostname: 'via.placeholder.com' },
-      { protocol: 'https',　hostname: 'openweathermap.org' }
+      { protocol: 'https', hostname: 'openweathermap.org' }
     ],
     localPatterns: [
       { pathname: '/uploads/**' },
