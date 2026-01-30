@@ -3,48 +3,25 @@ import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
 import { requireAuth } from '@/lib/simpleAuth';
 import { ProductPostSchema } from '@/lib/schemas';
-import { adminDb } from '@/lib/firebase-admin';
+import { sanitizeUserInput } from '@/lib/sanitize';
+import { getCachedUserInfoBatch } from '@/lib/userCache';
 
-/* ============================
-   型定義
-============================ */
-type ProductQuery = {
-  category?: string;
-  sellerId?: string;
-  shippingPayer?: string;
-  price?: {
-    $gte?: number;
-    $lte?: number;
-  };
-};
-
-/* ============================
-   商品一覧取得（GET）
-============================ */
+// 商品一覧を取得
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
-<<<<<<< HEAD
-
-    // ページネーション
-    const page = Number(searchParams.get('page') || 1);
-    const limit = Number(searchParams.get('limit') || 12);
-
-    // フィルター
-=======
->>>>>>> cb419159b3721729b5f6473b8d5c1528dd246d6f
     const category = searchParams.get('category');
     const sellerId = searchParams.get('sellerId');
+    const status = searchParams.get('status');
     const shippingPayer = searchParams.get('shippingPayer');
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
     const sortBy = searchParams.get('sortBy');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '12');
 
-<<<<<<< HEAD
-    const query: ProductQuery = {};
-=======
     let query: any = {};
     if (category) {
       query.category = category;
@@ -55,69 +32,63 @@ export async function GET(request: NextRequest) {
     if (status) {
       query.status = status;
     }
->>>>>>> cb419159b3721729b5f6473b8d5c1528dd246d6f
 
-    if (category) query.category = category;
-    if (sellerId) query.sellerId = sellerId;
-    if (shippingPayer) query.shippingPayer = shippingPayer;
+    // ソート条件の構築
+    let sortOptions: any = { createdAt: -1 }; // デフォルトは新着順
+    if (sortBy === 'price-low') {
+      sortOptions = { price: 1 };
+    } else if (sortBy === 'price-high') {
+      sortOptions = { price: -1 };
+    } else if (sortBy === 'popular') {
+      sortOptions = { createdAt: -1 };
+    }
+    if (shippingPayer) {
+      query.shippingPayer = shippingPayer;
+    }
 
     // 価格帯フィルター
     if (minPrice || maxPrice) {
       query.price = {};
-      if (minPrice) query.price.$gte = Number(minPrice);
-      if (maxPrice) query.price.$lte = Number(maxPrice);
+      if (minPrice) {
+        query.price.$gte = parseInt(minPrice);
+      }
+      if (maxPrice) {
+        query.price.$lte = parseInt(maxPrice);
+      }
     }
 
-    // ソート条件
-    const sortOptions: Record<string, 1 | -1> =
-      sortBy === 'price-low'
-        ? { price: 1 }
-        : sortBy === 'price-high'
-        ? { price: -1 }
-        : { createdAt: -1 };
-
+    // 総数を取得
     const total = await Product.countDocuments(query);
 
+    // データベースクエリを実行
     const skip = (page - 1) * limit;
     const products = await Product.find(query)
       .sort(sortOptions)
       .skip(skip)
       .limit(limit);
 
-    // 各商品の出品者情報をFirestoreから取得
-    const productsWithSellerInfo = await Promise.all(
-      products.map(async (product) => {
-        const productObj = product.toObject();
+    // 出品者IDのユニークなリストを作成
+    const sellerIds = [...new Set(products.map(p => p.sellerId))] as string[];
 
-        if (productObj.sellerId) {
-          try {
-            // sellerIdが'user-XXX'形式の場合は'XXX'に変換
-            const firebaseUserId = productObj.sellerId.startsWith('user-')
-              ? productObj.sellerId.replace('user-', '')
-              : productObj.sellerId;
+    // キャッシュ付きバッチ取得で出品者情報を取得
+    // - キャッシュヒット時: メモリから即座に返却（~1ms）
+    // - キャッシュミス時: Firestoreから取得してキャッシュに保存
+    const sellerInfoMap = await getCachedUserInfoBatch(sellerIds);
 
-            const userDoc = await adminDb.collection('users').doc(firebaseUserId).get();
+    // 商品情報に出品者情報を追加
+    const productsWithSellerInfo = products.map((product) => {
+      const productObj = product.toObject();
+      const sellerInfo = sellerInfoMap.get(product.sellerId) || {
+        displayName: '出品者',
+        photoURL: null,
+      };
 
-            if (userDoc.exists) {
-              const userData = userDoc.data();
-              return {
-                ...productObj,
-                sellerName: userData?.displayName || userData?.username || '出品者未設定',
-                sellerPhotoURL: userData?.photoURL || null,
-              };
-            }
-          } catch (error) {
-            console.error(`Failed to fetch seller info for ${productObj.sellerId}:`, error);
-          }
-        }
-
-        return {
-          ...productObj,
-          sellerName: '出品者未設定',
-          sellerPhotoURL: null,
-        };
-      })
-    );
+      return {
+        ...productObj,
+        sellerName: sellerInfo.displayName,
+        sellerPhotoURL: sellerInfo.photoURL,
+      };
+    });
 
     return NextResponse.json({
       success: true,
@@ -130,7 +101,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Get products error:', error);
+    console.error(`Get products error for URL: ${request.url}`, error);
     return NextResponse.json(
       { error: '商品の取得に失敗しました' },
       { status: 500 }
@@ -138,15 +109,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/* ============================
-   商品新規作成（POST）
-============================ */
+// 新規商品を作成
 export async function POST(request: NextRequest) {
   try {
     // 認証チェック
     const userIdOrError = await requireAuth(request);
     if (userIdOrError instanceof Response) {
-      return userIdOrError;
+      return userIdOrError; // 401エラーを返す
     }
     const userId = userIdOrError as string;
 
@@ -154,21 +123,21 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    // バリデーション
-    const validationResult = ProductPostSchema.safeParse(body);
+    // 入力サニタイゼーション（XSS/インジェクション対策）
+    const sanitizedBody = sanitizeUserInput(body);
+
+    // Zodでバリデーション
+    const validationResult = ProductPostSchema.safeParse(sanitizedBody);
     if (!validationResult.success) {
       return NextResponse.json(
-        {
-          error: '入力データが無効です',
-          details: validationResult.error.flatten(),
-        },
+        { error: '入力データが無効です', details: validationResult.error.flatten() },
         { status: 400 }
       );
     }
 
     const { sellerId, ...productData } = validationResult.data;
 
-    // 出品者チェック
+    // 認証されたユーザーIDとsellerIdが一致するか確認
     if (sellerId !== `user-${userId}`) {
       return NextResponse.json(
         { error: '不正なリクエストです' },
@@ -176,6 +145,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 商品を作成
     const product = await Product.create({
       ...productData,
       sellerId,
@@ -191,6 +161,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
+    // POSTリクエストではボディの内容もログに出力すると役立つ場合がある（個人情報に注意）
     console.error('Create product error:', error);
     return NextResponse.json(
       { error: '商品の出品に失敗しました' },

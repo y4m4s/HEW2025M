@@ -4,8 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
 import { useAuth } from '@/lib/useAuth';
-import { Calendar, CreditCard, ShoppingBag, Fish } from 'lucide-react';
-import Link from 'next/link';
+import { Calendar, CreditCard, Fish } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
@@ -73,7 +72,7 @@ export default function PurchaseHistory({ onCountChange }: PurchaseHistoryProps)
         })) as Order[];
 
         setOrders(ordersData);
-        
+
         // 親コンポーネントに件数を通知
         if (onCountChange) {
           onCountChange(ordersData.length);
@@ -98,18 +97,15 @@ export default function PurchaseHistory({ onCountChange }: PurchaseHistoryProps)
 
   if (orders.length === 0) {
     return (
-      <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-100">
-        <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500 font-medium">購入履歴はありません</p>
-        <Link href="/" className="text-blue-500 text-sm hover:underline mt-2 inline-block">
-          買い物をはじめる
-        </Link>
+      <div className="p-6 text-center">
+        <Fish size={64} className="mx-auto text-gray-300 mb-4" />
+        <p className="text-gray-500">購入履歴はありません</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-8">
+    <div className="space-y-6 p-6">
       <div className="grid gap-4">
         {orders.map((order) => (
           <div key={order.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -125,16 +121,15 @@ export default function PurchaseHistory({ onCountChange }: PurchaseHistoryProps)
                 <span className="text-sm font-medium text-gray-500">
                   合計: <span className="text-gray-900 text-base">¥{order.totalAmount.toLocaleString()}</span>
                 </span>
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  order.orderStatus === 'confirmed' || order.orderStatus === 'delivered' ? 'bg-green-100 text-green-700' :
+                <span className={`text-xs px-2 py-1 rounded-full ${order.orderStatus === 'confirmed' || order.orderStatus === 'delivered' ? 'bg-green-100 text-green-700' :
                   order.orderStatus === 'shipped' ? 'bg-blue-100 text-blue-700' :
-                  'bg-yellow-100 text-yellow-700'
-                }`}>
+                    'bg-yellow-100 text-yellow-700'
+                  }`}>
                   {order.orderStatus === 'confirmed' ? '確認済み' :
-                   order.orderStatus === 'shipped' ? '発送済み' :
-                   order.orderStatus === 'delivered' ? '配達完了' :
-                   order.orderStatus === 'cancelled' ? 'キャンセル' :
-                   order.orderStatus}
+                    order.orderStatus === 'shipped' ? '発送済み' :
+                      order.orderStatus === 'delivered' ? '配達完了' :
+                        order.orderStatus === 'cancelled' ? 'キャンセル' :
+                          order.orderStatus}
                 </span>
               </div>
             </div>

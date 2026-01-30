@@ -196,6 +196,7 @@ export default function SearchPage() {
           imageUrl: product.images?.[0],
           status: product.status,
           sellerPhotoURL: product.sellerPhotoURL,
+          sellerId: product.sellerId,
         };
       });
 

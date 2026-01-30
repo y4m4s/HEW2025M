@@ -1,14 +1,18 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { User, Send, Search, Menu, X, Plus } from 'lucide-react';
-import Image from 'next/image';
+import toast from 'react-hot-toast';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/useAuth';
-import toast from 'react-hot-toast';
+import { uploadFileToFirebase } from '@/lib/firebaseUtils';
+
 import ImageModal from '@/components/ImageModal';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import Button from '@/components/Button';
+
 import {
   collection,
   addDoc,
@@ -453,22 +457,13 @@ export default function MessagePage() {
       // 画像をアップロード（画像が選択されている場合）
       let imageUrl: string | undefined;
       if (selectedImage) {
-        const formData = new FormData();
-        formData.append('file', selectedImage);
-        formData.append('senderId', MY_USER_ID);
-        formData.append('chatRoomId', chatRoomId);
-
-        const uploadResponse = await fetch('/api/upload-message-image', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!uploadResponse.ok) {
+        try {
+          // Firebase Storageに保存
+          imageUrl = await uploadFileToFirebase(selectedImage, 'messages');
+        } catch (error) {
+          console.error('画像アップロードエラー:', error);
           throw new Error('画像のアップロードに失敗しました');
         }
-
-        const uploadData = await uploadResponse.json();
-        imageUrl = uploadData.imageUrl;
       }
 
       // 正しいサブコレクションへの参照
@@ -564,11 +559,11 @@ export default function MessagePage() {
   }
 
   return (
-    <div className="flex h-[85vh] bg-gray-50 relative">
+    <div className="flex h-[85vh] bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50 relative">
       {/* モバイル用: オーバーレイ (サイドバーが開いている時に背景をクリックで閉じる) */}
       {(showSidebar || showProfileSidebar) && (
         <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-20"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-20 backdrop-blur-sm"
           onClick={() => {
             setShowSidebar(false);
             setShowProfileSidebar(false);
@@ -579,32 +574,38 @@ export default function MessagePage() {
       {/* --- 1. サイドバー (会話リスト) --- */}
       {/* デスクトップ: 常に表示、モバイル: showSidebarがtrueの時のみ表示 */}
       <div className={`
-        w-full lg:w-80 flex-shrink-0 bg-white shadow-lg border-r border-gray-200 flex flex-col h-full
+        w-full lg:w-80 flex-shrink-0 bg-white shadow-xl border-r border-gray-100 flex flex-col h-full
         lg:relative lg:translate-x-0
         fixed inset-y-0 left-0 z-30 transform transition-transform duration-300
         ${showSidebar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="h-16 p-4 border-b border-gray-200 flex-shrink-0 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-800">メッセージ履歴</h1>
+        <div className="h-16 p-4 border-b border-gray-100 bg-gradient-to-r from-[#2FA3E3] to-[#1d88c9] flex-shrink-0 flex items-center justify-between shadow-sm">
+          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            メッセージ
+          </h1>
           {/* モバイル用: 閉じるボタン */}
-          <button
+          <Button
             onClick={() => setShowSidebar(false)}
-            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            variant="ghost"
+            size="sm"
+            className="lg:hidden !p-2 hover:!bg-white/20 !text-white"
+            icon={<X size={20} />}
           >
-            <X size={20} className="text-gray-600" />
-          </button>
+            <span className="sr-only">閉じる</span>
+          </Button>
         </div>
 
         {/* --- 検索バー --- */}
-        <div className="p-4 border-b border-gray-200 flex-shrink-0">
+        <div className="p-4 border-b border-gray-100 flex-shrink-0 bg-gradient-to-b from-gray-50 to-white">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#2FA3E3]" size={18} />
             <input
               type="text"
               placeholder="ユーザーを検索..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full p-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/50"
+              className="w-full p-3 pl-10 pr-4 border-2 border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]/30 focus:border-[#2FA3E3] transition-all duration-300 text-sm placeholder:text-gray-400 shadow-sm hover:shadow-md"
             />
           </div>
         </div>
@@ -618,33 +619,33 @@ export default function MessagePage() {
             conversationList.map((convo) => (
               <div
                 key={convo.id}
-                className={`flex items-center p-4 cursor-pointer border-l-4 border-b border-gray-200 transition-colors duration-150 relative ${selectedUser?.id === convo.id
-                  ? 'bg-blue-50 border-l-blue-500'
-                  : 'border-l-transparent hover:bg-gray-100'
+                className={`flex items-center p-4 cursor-pointer border-l-4 transition-all duration-200 relative group ${selectedUser?.id === convo.id
+                  ? 'bg-gradient-to-r from-blue-50 to-blue-50/50 border-l-[#2FA3E3] shadow-sm'
+                  : 'border-l-transparent hover:bg-gradient-to-r hover:from-gray-50 hover:to-white hover:border-l-gray-300 hover:shadow-sm'
                   }`}
                 onClick={() => handleSelectUser(convo)}
               >
                 {/* アバター画像 */}
-                <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0 overflow-hidden relative">
+                <div className="w-12 h-12 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0 overflow-hidden relative ring-2 ring-white shadow-md group-hover:ring-[#2FA3E3]/30 transition-all duration-200">
                   {convo.photoURL ? (
                     <Image
                       src={convo.photoURL}
                       alt={convo.name}
                       fill
                       className="object-cover"
-                      sizes="40px"
+                      sizes="48px"
                     />
                   ) : (
-                    <User size={20} className="text-gray-600" />
+                    <User size={22} className="text-gray-600" />
                   )}
                 </div>
                 <div className="overflow-hidden flex-1">
-                  <h3 className="text-md font-semibold text-gray-900">{convo.name}</h3>
-                  <p className="text-sm text-gray-500 truncate">{convo.preview}</p>
+                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#2FA3E3] transition-colors duration-200">{convo.name}</h3>
+                  <p className="text-xs text-gray-500 truncate mt-0.5">{convo.preview}</p>
                 </div>
                 {/* 未読バッジ */}
                 {convo.unreadCount && convo.unreadCount > 0 ? (
-                  <div className="bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 ml-2">
+                  <div className="bg-gradient-to-br from-red-500 to-red-600 text-white text-xs font-bold rounded-full min-w-[22px] h-[22px] flex items-center justify-center px-2 ml-2 shadow-lg shadow-red-500/30 animate-pulse">
                     {convo.unreadCount > 99 ? '99+' : convo.unreadCount}
                   </div>
                 ) : null}
@@ -659,47 +660,60 @@ export default function MessagePage() {
         {selectedUser ? (
           <>
             {/* チャットヘッダー */}
-            <div className="h-16 p-4 flex items-center bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
+            <div className="h-16 p-4 flex items-center bg-white border-b border-gray-100 shadow-md flex-shrink-0 relative overflow-hidden">
+              {/* 背景装飾 */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#2FA3E3]/5 to-transparent"></div>
+
               {/* モバイル用: サイドバー開閉ボタン */}
-              <button
+              <Button
                 onClick={() => setShowSidebar(!showSidebar)}
-                className="lg:hidden mr-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                variant="ghost"
+                size="sm"
+                className="lg:hidden !mr-3 !p-2 hover:!bg-gray-100 !text-gray-700 z-10 hover:!scale-105"
+                icon={<Menu size={20} />}
               >
-                <Menu size={20} className="text-gray-600" />
-              </button>
+                <span className="sr-only">メニュー</span>
+              </Button>
 
               {/* アバター画像 */}
-              <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center mr-4 flex-shrink-0 overflow-hidden relative">
+              <div className="w-11 h-11 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0 overflow-hidden relative ring-2 ring-white shadow-lg z-10">
                 {selectedUser.photoURL ? (
                   <Image
                     src={selectedUser.photoURL}
                     alt={selectedUser.name}
                     fill
                     className="object-cover"
-                    sizes="40px"
+                    sizes="44px"
                   />
                 ) : (
-                  <User size={20} className="text-gray-600" />
+                  <User size={22} className="text-gray-600" />
                 )}
               </div>
-              <div className="flex-1">
+              <div className="flex-1 z-10">
                 <h3 className="text-lg font-bold text-gray-900">{selectedUser.name}</h3>
+                <p className="text-xs text-gray-500">@{selectedUser.username || 'unknown'}</p>
               </div>
 
               {/* モバイル用: プロフィールサイドバー開閉ボタン */}
-              <button
+              <Button
                 onClick={() => setShowProfileSidebar(!showProfileSidebar)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                variant="ghost"
+                size="sm"
+                className="lg:hidden !p-2 hover:!bg-gray-100 !text-gray-700 z-10 hover:!scale-105"
+                icon={<User size={20} />}
               >
-                <User size={20} className="text-gray-600" />
-              </button>
+                <span className="sr-only">プロフィール</span>
+              </Button>
             </div>
 
             {/* メッセージ表示エリア */}
             <div
               ref={messagesContainerRef}
-              className="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50 min-h-0 relative"
-              style={{ overflowAnchor: 'none' }}
+              className="flex-1 p-6 overflow-y-auto space-y-4 bg-gradient-to-b from-gray-50/50 to-blue-50/20 min-h-0 relative"
+              style={{
+                overflowAnchor: 'none',
+                backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(47, 163, 227, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(47, 163, 227, 0.03) 0%, transparent 50%)'
+              }}
             >
               {/* ローディングオーバーレイ */}
               {!isMessagesReady && (
@@ -718,11 +732,11 @@ export default function MessagePage() {
                   const isMe = msg.senderId === user.uid;
 
                   return (
-                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className="flex flex-col max-w-[70%] md:max-w-[60%] lg:max-w-md">
-                        <div className={`rounded-lg shadow-sm break-words overflow-hidden ${isMe
-                          ? 'bg-[#2FA3E3] text-white'
-                          : 'bg-white text-gray-800 border border-gray-200'
+                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
+                      <div className="flex flex-col max-w-[75%] md:max-w-[65%] lg:max-w-lg">
+                        <div className={`rounded-2xl shadow-lg break-words overflow-hidden transform transition-all duration-200 hover:scale-[1.02] ${isMe
+                          ? 'bg-gradient-to-br from-[#2FA3E3] to-[#1d88c9] text-white shadow-[#2FA3E3]/20'
+                          : 'bg-white text-gray-800 border border-gray-100 shadow-gray-200/50'
                           }`}>
                           {msg.imageUrl && (
                             <div className={msg.content ? "p-2 pb-0" : "p-2"}>
@@ -731,17 +745,17 @@ export default function MessagePage() {
                                 alt="送信画像"
                                 width={300}
                                 height={300}
-                                className="rounded-lg object-cover max-w-full h-auto cursor-pointer"
+                                className="rounded-xl object-cover max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
                                 unoptimized
                                 onClick={() => handleImageClick(msg.imageUrl!)}
                               />
                             </div>
                           )}
                           {msg.content && (
-                            <p className="text-sm whitespace-pre-wrap px-4 py-3">{msg.content}</p>
+                            <p className="text-sm whitespace-pre-wrap px-4 py-3 leading-relaxed">{msg.content}</p>
                           )}
                         </div>
-                        <span className={`m-2 text-xs mt-1 text-gray-400 ${isMe ? 'text-right' : 'text-left'}`}>
+                        <span className={`mx-2 text-xs mt-1.5 text-gray-400 font-medium ${isMe ? 'text-right' : 'text-left'}`}>
                           {msg.timestamp}
                         </span>
                       </div>
@@ -754,37 +768,43 @@ export default function MessagePage() {
             </div>
 
             {/* 入力エリア */}
-            <div className="p-4 bg-white border-t border-gray-200 flex-shrink-0">
+            <div className="p-4 bg-white border-t border-gray-100 flex-shrink-0 shadow-2xl shadow-gray-200/50">
               <div className="flex justify-center">
-                <div className="w-full flex flex-col gap-2">
+                <div className="w-full flex flex-col gap-3">
                   {/* 画像プレビュー */}
                   {imagePreview && (
-                    <div className="relative inline-block">
+                    <div className="relative inline-block animate-fadeIn">
                       <Image
                         src={imagePreview}
                         alt="添付画像"
                         width={200}
                         height={200}
-                        className="rounded-lg border border-gray-300 object-cover"
+                        className="rounded-xl border-2 border-[#2FA3E3]/30 object-cover shadow-lg"
                       />
-                      <button
+                      <Button
                         onClick={handleRemoveImage}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute -top-2 -right-2 !bg-gradient-to-br !from-red-500 !to-red-600 !text-white !rounded-full !p-1.5 hover:!scale-110 !shadow-lg shadow-red-500/30 !min-w-0 !w-auto !h-auto"
+                        icon={<X size={16} />}
                       >
-                        <X size={16} />
-                      </button>
+                        <span className="sr-only">削除</span>
+                      </Button>
                     </div>
                   )}
 
-                  <div className="flex gap-3 w-full">
+                  <div className="flex gap-2 w-full items-end">
                     {/* 画像添付ボタン */}
-                    <button
+                    <Button
                       onClick={() => fileInputRef.current?.click()}
-                      className="bg-gray-100 text-gray-600 p-3 m-auto rounded-lg hover:bg-gray-200 flex items-center justify-center transition-colors self-end flex-shrink-0"
-                      title="画像を添付"
+                      variant="ghost"
+                      size="sm"
+                      className="!bg-gradient-to-br !from-gray-100 !to-gray-200 !text-gray-700 !p-3.5 !rounded-xl hover:!from-[#2FA3E3] hover:!to-[#1d88c9] hover:!text-white transition-all duration-300 flex-shrink-0 shadow-sm hover:shadow-md hover:!scale-105 group !min-w-0 !w-auto"
+                      icon={<Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />}
+                      type="button"
                     >
-                      <Plus size={20} />
-                    </button>
+                      <span className="sr-only">画像を添付</span>
+                    </Button>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -793,57 +813,66 @@ export default function MessagePage() {
                       className="hidden"
                     />
 
-                    <textarea
-                      placeholder="メッセージを入力..."
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      rows={2}
-                      className={`flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 resize-none transition-all duration-300 ${inputValue.length > 500
-                        ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
-                        : 'border-gray-300 focus:ring-[#2FA3E3]/50'
-                        }`}
-                    />
-                    <div className='flex-col m-auto'>
-                      <button
-                        onClick={handleSendMessage}
-                        disabled={(!inputValue.trim() && !selectedImage) || inputValue.length > 500}
-                        className="bg-[#2FA3E3] text-white p-3 m-auto rounded-lg hover:bg-[#1d7bb8] disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center transition-colors self-end flex-shrink-0"
-                      >
-                        <Send size={20} />
-                      </button>
-
-                      <div className={`text-right text-sm ${inputValue.length > 500 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <textarea
+                        placeholder="メッセージを入力..."
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
+                        rows={2}
+                        className={`w-full p-3.5 border-2 rounded-xl focus:outline-none focus:ring-2 resize-none transition-all duration-300 shadow-sm hover:shadow-md ${inputValue.length > 500
+                          ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
+                          : 'border-gray-200 focus:ring-[#2FA3E3]/30 focus:border-[#2FA3E3]'
+                          }`}
+                      />
+                      <div className={`text-right text-xs font-medium ${inputValue.length > 500 ? 'text-red-600' : 'text-gray-400'}`}>
                         {inputValue.length}/500文字
                         {inputValue.length > 500 && (
-                          <>
-                            <br />
-                            <span className="ml-2">({inputValue.length - 500}文字超過)</span>
-                          </>
+                          <span className="ml-1">({inputValue.length - 500}文字超過)</span>
                         )}
                       </div>
                     </div>
+
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={(!inputValue.trim() && !selectedImage) || inputValue.length > 500}
+                      variant="primary"
+                      size="sm"
+                      className="!p-3.5 !rounded-xl hover:!shadow-lg hover:!scale-105 disabled:!from-gray-300 disabled:!to-gray-400 flex-shrink-0 !shadow-md shadow-[#2FA3E3]/30 disabled:!shadow-none group !min-w-0 !w-auto"
+                      icon={<Send size={20} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />}
+                      type="button"
+                    >
+                      <span className="sr-only">送信</span>
+                    </Button>
                   </div>
                 </div>
               </div>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 p-6">
+          <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50/20 to-gray-50 p-6">
             {/* モバイル用: サイドバーを開くボタン */}
-            <button
+            <Button
               onClick={() => setShowSidebar(true)}
-              className="lg:hidden mb-4 bg-[#2FA3E3] text-white px-6 py-3 rounded-lg hover:bg-[#1d7bb8] flex items-center gap-2 transition-colors"
+              variant="primary"
+              size="md"
+              className="lg:hidden mb-6 !px-8 !py-3.5 !rounded-xl hover:!shadow-xl hover:!scale-105 !shadow-lg shadow-[#2FA3E3]/30 !font-semibold"
+              icon={<Menu size={20} />}
             >
-              <Menu size={20} />
               会話リストを開く
-            </button>
-            <p className="text-gray-500 text-center">ユーザーを選択してチャットを開始してください。</p>
+            </Button>
+            <div className="text-center space-y-3">
+              <div className="w-20 h-20 bg-gradient-to-br from-[#2FA3E3]/20 to-[#1d88c9]/20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Send size={36} className="text-[#2FA3E3]" />
+              </div>
+              <p className="text-gray-600 text-lg font-medium">メッセージを始めましょう</p>
+              <p className="text-gray-400 text-sm max-w-md">ユーザーを選択してチャットを開始してください</p>
+            </div>
           </div>
         )}
       </div>
@@ -851,62 +880,72 @@ export default function MessagePage() {
       {/* --- 3. プロフィールサイドバー --- */}
       {/* デスクトップ: 常に表示、モバイル: showProfileSidebarがtrueの時のみ表示 */}
       <div className={`
-        w-80 flex-shrink-0 bg-white flex flex-col h-full
+        w-80 flex-shrink-0 bg-white flex flex-col h-full shadow-xl
         lg:relative lg:translate-x-0
         fixed inset-y-0 right-0 z-30 transform transition-transform duration-300
         ${showProfileSidebar ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
       `}>
         {selectedUser ? (
           <>
-            <div className="h-16 p-4 border-b border-gray-200 flex items-center justify-between bg-[#2FA3E3] flex-shrink-0">
+            <div className="h-16 p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-[#2FA3E3] to-[#1d88c9] flex-shrink-0 shadow-md">
               {/* モバイル用: 閉じるボタン */}
-              <button
+              <Button
                 onClick={() => setShowProfileSidebar(false)}
-                className="lg:hidden p-2 hover:bg-[#165a8a] rounded-lg transition-colors"
+                variant="ghost"
+                size="sm"
+                className="lg:hidden !p-2 hover:!bg-white/20 !text-white"
+                icon={<X size={20} />}
               >
-                <X size={20} className="text-white" />
-              </button>
-              <h2 className="text-xl font-bold text-white flex-1 text-center">ユーザー情報</h2>
+                <span className="sr-only">閉じる</span>
+              </Button>
+              <h2 className="text-xl font-bold text-white flex-1 text-center">プロフィール</h2>
               {/* 閉じるボタンとのバランスを取るための空div */}
               <div className="w-9 lg:hidden"></div>
             </div>
-            <div className="flex-1 p-6 flex flex-col items-center">
+            <div className="flex-1 p-6 flex flex-col items-center bg-gradient-to-b from-blue-50/30 to-white overflow-y-auto">
               {/* アバター画像 */}
-              <div className="w-24 h-24 bg-gray-300 rounded-full flex items-center justify-center mb-4 overflow-hidden relative">
-                {selectedUser.photoURL ? (
-                  <Image
-                    src={selectedUser.photoURL}
-                    alt={selectedUser.name}
-                    fill
-                    className="object-cover"
-                    sizes="96px"
-                  />
-                ) : (
-                  <User size={60} className="text-gray-600" />
-                )}
+              <div className="relative mb-3 group">
+                <div className="w-28 h-28 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center overflow-hidden relative ring-4 ring-white shadow-2xl shadow-gray-300/50 group-hover:ring-[#2FA3E3]/30 transition-all duration-300">
+                  {selectedUser.photoURL ? (
+                    <Image
+                      src={selectedUser.photoURL}
+                      alt={selectedUser.name}
+                      fill
+                      className="object-cover"
+                      sizes="112px"
+                    />
+                  ) : (
+                    <User size={64} className="text-gray-600" />
+                  )}
+                </div>
               </div>
 
               {/* ユーザー名情報 */}
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">{selectedUser.name}</h3>
-              <p className="text-gray-500 text-sm mb-4">@{selectedUser.username || 'unknown'}</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-1 text-center">{selectedUser.name}</h3>
+              <p className="text-[#2FA3E3] text-sm font-semibold mb-3">@{selectedUser.username || 'unknown'}</p>
 
               {/* 自己紹介 */}
-              <div className="w-full mb-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">自己紹介</h4>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap break-words">
+              <div className="w-full mb-6 bg-gradient-to-br from-white to-blue-50/30 rounded-xl p-3 border border-gray-100 shadow-md">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-1 h-5 bg-gradient-to-b from-[#2FA3E3] to-[#1d88c9] rounded-full"></div>
+                  <h4 className="text-sm font-bold text-gray-800">自己紹介</h4>
+                </div>
+                <p className="text-sm text-gray-600 whitespace-pre-wrap break-words leading-relaxed">
                   {selectedUser.bio || 'まだ自己紹介が設定されていません。'}
                 </p>
               </div>
 
               {/* プロフィールを見るボタン */}
               <div className="w-full">
-                <button
+                <Button
                   onClick={() => router.push(`/profile/${selectedUser.id}`)}
-                  className="w-full bg-[#2FA3E3] text-white px-6 py-3 rounded-lg hover:bg-[#1d7bb8] flex items-center justify-center gap-2 transition-colors"
+                  variant="primary"
+                  size="md"
+                  className="w-full !px-6 !py-3.5 !rounded-xl hover:!shadow-xl hover:!scale-105 !font-semibold !shadow-lg shadow-[#2FA3E3]/30"
+                  icon={<User size={18} />}
                 >
-                  <User size={16} />
                   プロフィールを見る
-                </button>
+                </Button>
               </div>
             </div>
           </>

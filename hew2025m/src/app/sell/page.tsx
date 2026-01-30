@@ -19,6 +19,7 @@ import { ProductFormSchema } from '@/lib/schemas';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ImageModal from '@/components/ImageModal';
 import { z } from 'zod';
+import { uploadFileToFirebase } from '@/lib/firebaseUtils';
 
 // カテゴリの定義（表示名とDB保存用の値のマッピング）
 const CATEGORIES = [
@@ -106,8 +107,8 @@ export default function SellPage() {
 
   const handlePriceSuggest = () => {
     if (!titleValue) {
-        toast.error('価格を提案するには、まず商品名を入力してください。');
-        return;
+      toast.error('価格を提案するには、まず商品名を入力してください。');
+      return;
     }
     setIsAdvisorOpen(true);
   }
@@ -173,24 +174,19 @@ export default function SellPage() {
 
       if (selectedFiles.length > 0) {
         setUploadProgress('画像をアップロード中...');
-        const formData = new FormData();
-        selectedFiles.forEach((file) => {
-          formData.append('files', file);
-        });
-        formData.append('sellerId', sellerId);
-        formData.append('timestamp', timestamp);
 
-        const uploadResponse = await fetch('/api/upload-product', {
-          method: 'POST',
-          body: formData,
-        });
+        try {
+          const uploadPromises = selectedFiles.map(async (file, index) => {
+            // プログレス表示の更新
+            setUploadProgress(`画像をアップロード中 (${index + 1}/${selectedFiles.length})...`);
+            return uploadFileToFirebase(file, 'products');
+          });
 
-        if (!uploadResponse.ok) {
-          throw new Error('ファイルのアップロードに失敗しました');
+          uploadedImages = await Promise.all(uploadPromises);
+        } catch (error) {
+          console.error("Upload failed", error);
+          throw new Error("画像のアップロードに失敗しました");
         }
-
-        const uploadData = await uploadResponse.json();
-        uploadedImages = uploadData.imageUrls;
       }
 
       setUploadProgress('商品を出品中...');
@@ -354,9 +350,8 @@ export default function SellPage() {
                 <input
                   {...register('title')}
                   type="text"
-                  className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 text-sm sm:text-base ${
-                    errors.title ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
-                  }`}
+                  className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 text-sm sm:text-base ${errors.title ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20' : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
+                    }`}
                   placeholder="商品名を入力してください"
                   aria-invalid={errors.title ? "true" : "false"}
                   disabled={isSubmitting}
@@ -387,11 +382,10 @@ export default function SellPage() {
                         const value = e.target.value.replace(/[^0-9]/g, '');
                         setValue('price', value === '' ? undefined : Number(value), { shouldValidate: true });
                       }}
-                      className={`w-full p-3 sm:p-4 pl-7 sm:pl-8 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 text-sm sm:text-base ${
-                        errors.price
-                          ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
-                          : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
-                      }`}
+                      className={`w-full p-3 sm:p-4 pl-7 sm:pl-8 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 text-sm sm:text-base ${errors.price
+                        ? 'border-red-500 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
+                        : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
+                        }`}
                       placeholder="0"
                       aria-invalid={errors.price ? "true" : "false"}
                       disabled={isSubmitting}
@@ -400,13 +394,13 @@ export default function SellPage() {
                   {errors.price && <p className="text-red-600 text-sm mt-2" role="alert">{errors.price.message}</p>}
                   <div className="mt-3 text-right">
                     <button
-                        type="button"
-                        onClick={handlePriceSuggest}
-                        disabled={!titleValue || isSubmitting}
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                      type="button"
+                      onClick={handlePriceSuggest}
+                      disabled={!titleValue || isSubmitting}
+                      className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
                     >
-                        <WandSparkles size={16} />
-                        AIで価格相場をチェック
+                      <WandSparkles size={16} />
+                      AIで価格相場をチェック
                     </button>
                   </div>
                 </div>
@@ -420,6 +414,7 @@ export default function SellPage() {
                     render={({ field }) => (
                       <CustomSelect
                         {...field}
+                        value={field.value as string}
                         options={CATEGORIES}
                         placeholder="選択してください"
                         disabled={isSubmitting}
@@ -438,6 +433,7 @@ export default function SellPage() {
                     render={({ field }) => (
                       <CustomSelect
                         {...field}
+                        value={field.value as string}
                         options={CONDITIONS}
                         placeholder="選択してください"
                         disabled={isSubmitting}
@@ -456,11 +452,10 @@ export default function SellPage() {
                 <textarea
                   {...register('description')}
                   rows={6}
-                  className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none text-sm sm:text-base ${
-                    (descriptionValue?.length || 0) > 300
-                      ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
-                      : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
-                  }`}
+                  className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none text-sm sm:text-base ${(descriptionValue?.length || 0) > 300
+                    ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
+                    : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
+                    }`}
                   placeholder="商品の詳細、使用感、注意事項などを記載してください"
                   aria-invalid={errors.description ? "true" : "false"}
                   disabled={isSubmitting}
@@ -486,6 +481,7 @@ export default function SellPage() {
                     render={({ field }) => (
                       <CustomSelect
                         {...field}
+                        value={field.value as string}
                         options={SHIPPING_PAYERS}
                         placeholder="選択してください"
                         disabled={isSubmitting}
@@ -504,6 +500,7 @@ export default function SellPage() {
                     render={({ field }) => (
                       <CustomSelect
                         {...field}
+                        value={field.value as string}
                         options={SHIPPING_DAYS}
                         placeholder="選択してください"
                         disabled={isSubmitting}

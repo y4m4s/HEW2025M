@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Loader } from 'lucide-react';
 
 interface ImageModalProps {
   images: string[];
@@ -18,6 +18,7 @@ export default function ImageModal({
   onClose,
 }: ImageModalProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleClose = () => {
     onClose(currentIndex);
@@ -26,6 +27,11 @@ export default function ImageModal({
   useEffect(() => {
     setCurrentIndex(initialIndex);
   }, [initialIndex]);
+
+  // 画像が変わったらローディング状態をリセット
+  useEffect(() => {
+    setIsLoading(true);
+  }, [currentIndex]);
 
   // ESCキーでモーダルを閉じる
   useEffect(() => {
@@ -90,12 +96,18 @@ export default function ImageModal({
         {/* 画像表示エリア */}
         <div className="relative flex-1 flex items-center justify-center">
           <div className="relative w-full h-full flex items-center justify-center">
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <Loader className="w-12 h-12 text-white animate-spin" />
+              </div>
+            )}
             <Image
               src={images[currentIndex]}
               alt={`画像 ${currentIndex + 1}`}
               width={1200}
               height={900}
-              className="max-w-full max-h-[80vh] object-contain"
+              className={`max-w-full max-h-[80vh] object-contain transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+              onLoad={() => setIsLoading(false)}
             />
 
             {/* ナビゲーションボタン（複数画像がある場合のみ表示） */}
@@ -127,9 +139,8 @@ export default function ImageModal({
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`w-3 h-3 rounded-full transition-colors ${
-                  currentIndex === index ? 'bg-white' : 'bg-gray-500'
-                }`}
+                className={`w-3 h-3 rounded-full transition-colors ${currentIndex === index ? 'bg-white' : 'bg-gray-500'
+                  }`}
                 aria-label={`画像 ${index + 1} に移動`}
               />
             ))}

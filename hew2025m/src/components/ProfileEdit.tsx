@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import toast from "react-hot-toast";
+import { uploadFileToFirebase } from "@/lib/firebaseUtils";
 
 interface UserProfile {
   displayName: string;
@@ -96,27 +97,8 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile, onSaveSuc
       // 画像がアップロードされている場合
       if (selectedFile) {
         try {
-          const formData = new FormData();
-          formData.append("file", selectedFile);
-          formData.append("userId", user.uid);
-
-          const uploadResponse = await Promise.race([
-            fetch("/api/upload-avatar", {
-              method: "POST",
-              body: formData,
-            }),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error("画像アップロードがタイムアウトしました")), 30000)
-            ),
-          ]);
-
-          if (!uploadResponse.ok) {
-            const errorData = await uploadResponse.json();
-            throw new Error(errorData.error || "画像のアップロードに失敗しました");
-          }
-
-          const uploadData = await uploadResponse.json();
-          photoURL = `${uploadData.imageUrl}?t=${Date.now()}`;
+          // Firebase Storageにアップロード
+          photoURL = await uploadFileToFirebase(selectedFile, 'avatars');
         } catch (uploadError) {
           console.error("画像アップロードエラー:", uploadError);
           toast.error("画像のアップロードに失敗しました");
@@ -231,8 +213,8 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile, onSaveSuc
             value={editProfile.displayName}
             onChange={(e) => setEditProfile({ ...editProfile, displayName: e.target.value })}
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${editProfile.displayName.length > 15
-                ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                : 'border-gray-300 focus:ring-[#2FA3E3]'
+              ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+              : 'border-gray-300 focus:ring-[#2FA3E3]'
               }`}
             placeholder="表示名を入力"
           />
@@ -268,8 +250,8 @@ export default function ProfileEdit({ isOpen, onClose, currentProfile, onSaveSuc
             value={editProfile.bio}
             onChange={(e) => setEditProfile({ ...editProfile, bio: e.target.value })}
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 resize-none transition-colors ${editProfile.bio.length > 140
-                ? "border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500"
-                : "border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]"
+              ? "border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500"
+              : "border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]"
               }`}
             rows={4}
             placeholder="自己紹介を140字以内で入力してください。"
