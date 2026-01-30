@@ -3,6 +3,8 @@ import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
 import { requireAuth } from '@/lib/simpleAuth';
 import { ProductPostSchema } from '@/lib/schemas';
+import { sanitizeUserInput } from '@/lib/sanitize';
+import { getCachedUserInfoBatch } from '@/lib/userCache';
 
 // 商品一覧を取得
 export async function GET(request: NextRequest) {
@@ -65,13 +67,26 @@ export async function GET(request: NextRequest) {
       .skip(skip)
       .limit(limit);
 
-    // 各商品の出品者情報を取得せずに返す（エラー回避のため）
+    // 出品者IDのユニークなリストを作成
+    const sellerIds = [...new Set(products.map(p => p.sellerId))] as string[];
+
+    // キャッシュ付きバッチ取得で出品者情報を取得
+    // - キャッシュヒット時: メモリから即座に返却（~1ms）
+    // - キャッシュミス時: Firestoreから取得してキャッシュに保存
+    const sellerInfoMap = await getCachedUserInfoBatch(sellerIds);
+
+    // 商品情報に出品者情報を追加
     const productsWithSellerInfo = products.map((product) => {
       const productObj = product.toObject();
+      const sellerInfo = sellerInfoMap.get(product.sellerId) || {
+        displayName: '出品者',
+        photoURL: null,
+      };
+
       return {
         ...productObj,
-        sellerName: '出品者',
-        sellerPhotoURL: null,
+        sellerName: sellerInfo.displayName,
+        sellerPhotoURL: sellerInfo.photoURL,
       };
     });
 
@@ -108,8 +123,11 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
+    // 入力サニタイゼーション（XSS/インジェクション対策）
+    const sanitizedBody = sanitizeUserInput(body);
+
     // Zodでバリデーション
-    const validationResult = ProductPostSchema.safeParse(body);
+    const validationResult = ProductPostSchema.safeParse(sanitizedBody);
     if (!validationResult.success) {
       return NextResponse.json(
         { error: '入力データが無効です', details: validationResult.error.flatten() },
