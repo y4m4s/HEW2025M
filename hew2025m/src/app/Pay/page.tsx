@@ -2,9 +2,8 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCartStore } from '@/components/useCartStore';
-import Button from '@/components/Button';
-import { CartProduct } from '@/components/CartProductCard';
+import { useCartStore } from '@/stores/useCartStore';
+import { Button, type CartProduct } from '@/components';
 import Image from 'next/image';
 import { CreditCard, Loader2, Home, Fish } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';

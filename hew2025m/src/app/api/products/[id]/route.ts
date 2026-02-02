@@ -9,9 +9,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await dbConnect();
-
     const { id } = await params;
+    await dbConnect();
     const product = await Product.findById(id);
 
     if (!product) {
@@ -43,7 +42,7 @@ export async function PATCH(
     // 認証チェック
     const userIdOrError = await requireAuth(request);
     if (userIdOrError instanceof Response) {
-      return userIdOrError; // 401エラーを返す
+      return userIdOrError;
     }
     const userId = userIdOrError as string;
 
@@ -100,7 +99,7 @@ export async function DELETE(
     // 認証チェック
     const userIdOrError = await requireAuth(request);
     if (userIdOrError instanceof Response) {
-      return userIdOrError; // 401エラーを返す
+      return userIdOrError;
     }
     const userId = userIdOrError as string;
 

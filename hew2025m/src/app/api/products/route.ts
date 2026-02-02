@@ -20,9 +20,9 @@ export async function GET(request: NextRequest) {
     const maxPrice = searchParams.get('maxPrice');
     const sortBy = searchParams.get('sortBy');
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '12');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '12'), 50); // 最大50件に制限
 
-    let query: any = {};
+    const query: Record<string, unknown> = {};
     if (category) {
       query.category = category;
     }
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ソート条件の構築
-    let sortOptions: any = { createdAt: -1 }; // デフォルトは新着順
+    let sortOptions: Record<string, 1 | -1> = { createdAt: -1 }; // デフォルトは新着順
     if (sortBy === 'price-low') {
       sortOptions = { price: 1 };
     } else if (sortBy === 'price-high') {
@@ -48,24 +48,27 @@ export async function GET(request: NextRequest) {
 
     // 価格帯フィルター
     if (minPrice || maxPrice) {
-      query.price = {};
+      const priceQuery: { $gte?: number; $lte?: number } = {};
       if (minPrice) {
-        query.price.$gte = parseInt(minPrice);
+        priceQuery.$gte = parseInt(minPrice);
       }
       if (maxPrice) {
-        query.price.$lte = parseInt(maxPrice);
+        priceQuery.$lte = parseInt(maxPrice);
       }
+      query.price = priceQuery;
     }
-
-    // 総数を取得
-    const total = await Product.countDocuments(query);
 
     // データベースクエリを実行
     const skip = (page - 1) * limit;
-    const products = await Product.find(query)
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(limit);
+
+    // Promise.allで並列実行（Waterfall解消）
+    const [total, products] = await Promise.all([
+      Product.countDocuments(query),
+      Product.find(query)
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(limit)
+    ]);
 
     // 出品者IDのユニークなリストを作成
     const sellerIds = [...new Set(products.map(p => p.sellerId))] as string[];
@@ -90,6 +93,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // キャッシュヘッダー付きでレスポンスを返す
     return NextResponse.json({
       success: true,
       products: productsWithSellerInfo,
@@ -98,6 +102,10 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         hasMore: skip + products.length < total,
+      },
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
       },
     });
   } catch (error) {

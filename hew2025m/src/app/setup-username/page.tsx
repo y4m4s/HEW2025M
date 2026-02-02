@@ -7,12 +7,13 @@ import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
 
-import { useProfile } from "@/contexts/ProfileContext";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import { useProfileStore } from "@/stores/useProfileStore";
+import { LoadingSpinner } from "@/components";
 
 export default function SetupUsernamePage() {
   const { user, loading: authLoading } = useAuth();
-  const { profile, loading: profileLoading } = useProfile();
+  const profile = useProfileStore((state) => state.profile);
+  const profileLoading = useProfileStore((state) => state.loading);
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -26,7 +27,7 @@ export default function SetupUsernamePage() {
     }
   }, [user, authLoading, router]);
 
-  // ProfileContextを使って既存ユーザーかチェック
+  // ProfileStoreを使って既存ユーザーかチェック
   useEffect(() => {
     if (!user || profileLoading) return;
 
@@ -146,8 +147,8 @@ export default function SetupUsernamePage() {
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className={`w-full px-4 py-3 rounded-xl bg-gray-50 border text-gray-900 focus:bg-white focus:outline-none focus:ring-4 transition-all duration-200 ${displayName.length > 15
-                      ? 'border-red-500 ring-red-500/10'
-                      : 'border-gray-200 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/10'
+                    ? 'border-red-500 ring-red-500/10'
+                    : 'border-gray-200 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/10'
                     }`}
                   placeholder="表示名を入力"
                   required
@@ -169,8 +170,8 @@ export default function SetupUsernamePage() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value.toLowerCase())}
                     className={`w-full pl-8 pr-4 py-3 rounded-xl bg-gray-50 border text-gray-900 focus:bg-white focus:outline-none focus:ring-4 transition-all duration-200 ${username.length > 15
-                        ? 'border-red-500 ring-red-500/10'
-                        : 'border-gray-200 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/10'
+                      ? 'border-red-500 ring-red-500/10'
+                      : 'border-gray-200 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/10'
                       }`}
                     placeholder="username"
                     required

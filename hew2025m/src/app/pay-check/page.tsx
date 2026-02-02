@@ -11,10 +11,8 @@ import { useAuth } from '@/lib/useAuth';
 import { PaymentElement, Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 
-import Button from '@/components/Button';
-import { useCartStore } from '@/components/useCartStore';
-import { CartProduct } from '@/components/CartProductCard';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import { Button, type CartProduct, LoadingSpinner } from '@/components';
+import { useCartStore } from '@/stores/useCartStore';
 
 const stripePublicKey = process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
@@ -429,7 +427,7 @@ export default function PayCheck() {
       const subtotal = calculateSubtotal();
       const totalAmount = subtotal + shippingFee;
 
-      fetch("/api/create-payment-intent", {
+      fetch("/api/payment/create-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

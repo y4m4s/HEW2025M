@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { CheckCircle } from 'lucide-react';
-import Button from '@/components/Button';
+import { Button } from '@/components';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/useAuth';
 

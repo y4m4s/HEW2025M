@@ -53,9 +53,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ keyword });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("OpenAI APIエラー:", error);
-    
+
     // エラーメッセージ（日本語）
     const errorMessage = error instanceof Error ? error.message : 'AIモデルの呼び出しに失敗しました。';
     return NextResponse.json({

@@ -8,11 +8,7 @@ import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
-import PostCard, { Post } from '@/components/PostCard';
-import Button from '@/components/Button';
-import RecommendedUsers from '@/components/RecommendedUsers';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import LoginRequiredModal from '@/components/LoginRequiredModal';
+import { PostCard, Button, RecommendedUsers, LoadingSpinner, LoginRequiredModal, type Post } from '@/components';
 
 
 
@@ -137,8 +133,8 @@ export default function CommunityPage() {
         setPopularPost(sortedByLikes[0]);
       }
 
-      // 最新の投稿: 最新2件
-      setLatestPosts(formattedPosts.slice(0, 2));
+      // 最新の投稿: 最新4件
+      setLatestPosts(formattedPosts.slice(0, 4));
     } catch (err) {
       console.error('投稿取得エラー:', err);
       setError(err instanceof Error ? err.message : '投稿の取得に失敗しました');

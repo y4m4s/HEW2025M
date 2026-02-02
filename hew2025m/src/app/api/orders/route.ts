@@ -129,8 +129,6 @@ export async function POST(request: Request) {
 
     try {
       await Promise.all(items.map(async (item) => {
-        console.log(`Processing product: ${item.productId}, sellerId: ${item.sellerId}`);
-
         // MongoDBで商品ステータスをアトミックに更新（条件付き更新）
         // statusが'available'の場合のみ'sold'に更新
         const result = await Product.findOneAndUpdate(
@@ -148,7 +146,6 @@ export async function POST(request: Request) {
         }
 
         updatedProducts.push(item.productId);
-        console.log(`Product ${item.productId} status updated to sold`);
 
         // 出品者に通知を送信
         if (item.sellerId) {
@@ -156,8 +153,6 @@ export async function POST(request: Request) {
           const firebaseUserId = item.sellerId.startsWith('user-')
             ? item.sellerId.replace('user-', '')
             : item.sellerId;
-
-          console.log(`Sending notification to Firebase user: ${firebaseUserId}`);
 
           const notificationData = {
             iconType: 'sales',
@@ -178,8 +173,6 @@ export async function POST(request: Request) {
             .doc(firebaseUserId)
             .collection('notifications')
             .add(notificationData);
-
-          console.log(`Notification sent to user: ${firebaseUserId}`);
         } else {
           console.warn(`No sellerId for product: ${item.productId}`);
         }
@@ -190,18 +183,15 @@ export async function POST(request: Request) {
 
       try {
         await docRef.delete();
-        console.log(`Order ${docRef.id} rolled back successfully`);
       } catch (rollbackError) {
         console.error('Failed to rollback order:', rollbackError);
       }
 
       // 既に更新された商品を元に戻す（ベストエフォート）
       if (updatedProducts.length > 0) {
-        console.log(`Attempting to revert ${updatedProducts.length} products...`);
         await Promise.all(updatedProducts.map(async (productId) => {
           try {
             await Product.findByIdAndUpdate(productId, { status: 'available' });
-            console.log(`Product ${productId} reverted to available`);
           } catch (revertError) {
             console.error(`Failed to revert product ${productId}:`, revertError);
           }

@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -8,16 +9,32 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { decodeHtmlEntities } from '@/lib/sanitize';
 
-import Button from '@/components/Button';
-import Comment from '@/components/Comment';
-import ImageModal from '@/components/ImageModal';
-import CancelModal from '@/components/CancelModal';
-import LoginRequiredModal from '@/components/LoginRequiredModal';
-import ProductCard from '@/components/ProductCard';
-import SmartRakuten from '@/components/SmartRakuten';
-import UserInfoCard from '@/components/UserInfoCard';
-import { useCartStore } from '@/components/useCartStore';
+import { Button, ProductCard, UserInfoCard } from '@/components';
+import { useCartStore } from '@/stores/useCartStore';
+
+// 動的import - モーダルとコメントは必要時のみロード
+const Comment = dynamic(() => import('@/components').then(mod => mod.Comment), {
+  loading: () => <div className="h-40 animate-pulse bg-gray-100 rounded-lg" />
+});
+
+const ImageModal = dynamic(() => import('@/components').then(mod => mod.ImageModal), {
+  ssr: false
+});
+
+const CancelModal = dynamic(() => import('@/components').then(mod => mod.CancelModal), {
+  ssr: false
+});
+
+const LoginRequiredModal = dynamic(() => import('@/components').then(mod => mod.LoginRequiredModal), {
+  ssr: false
+});
+
+const SmartRakuten = dynamic(() => import('@/components').then(mod => mod.SmartRakuten), {
+  ssr: false,
+  loading: () => <div className="h-20 animate-pulse bg-gray-100 rounded-lg mt-6" />
+});
 
 interface ProductDetail {
   _id: string;
@@ -179,7 +196,6 @@ export default function SellDetailPage() {
           bio: data.bio || '',
         });
       } else {
-        console.log('出品者プロフィールが見つかりません - 商品データのsellerNameを使用');
         // プロフィールが見つからない場合は商品データのsellerNameを使用
         setSellerProfile({
           uid: actualUid,
@@ -278,6 +294,7 @@ export default function SellDetailPage() {
       if (isBookmarked) {
         await deleteDoc(bookmarkRef);
         setIsBookmarked(false);
+        toast.success('ブックマークを解除しました');
       } else {
         await setDoc(bookmarkRef, {
           productId: product._id,
@@ -287,6 +304,7 @@ export default function SellDetailPage() {
           createdAt: new Date().toISOString(),
         });
         setIsBookmarked(true);
+        toast.success('ブックマークに追加しました');
       }
     } catch (error) {
       console.error(error);
@@ -441,13 +459,13 @@ export default function SellDetailPage() {
                       style={{ transform: `translateX(-${currentSlide * 100}%)` }}
                     >
                       {product.images.map((src, index) => (
-                        <div key={index} className="w-full flex-shrink-0">
+                        <div key={index} className="w-full flex-shrink-0 relative" style={{ aspectRatio: '4/3' }}>
                           <Image
-                            src={src}
+                            src={decodeHtmlEntities(src)}
                             alt={`商品画像${index + 1}`}
-                            width={800}
-                            height={600}
-                            className="w-full h-60 sm:h-72 md:h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 600px"
+                            className="object-contain cursor-pointer hover:opacity-90 transition-opacity"
                             onClick={() => handleImageClick(index)}
                           />
                         </div>
@@ -551,13 +569,13 @@ export default function SellDetailPage() {
                     <Button
                       variant="ghost"
                       size="md"
-                      className={`flex-1 ${isBookmarked
-                        ? 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
+                      className={`flex-1 transition-all ${isBookmarked
+                        ? 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8] animate-heartbeat'
                         : 'bg-white text-[#2FA3E3] hover:bg-blue-50'
                         }`}
                       onClick={handleBookmark}
                       disabled={bookmarkLoading}
-                      icon={<Bookmark size={18} fill={isBookmarked ? 'white' : 'none'} />}
+                      icon={<Bookmark size={18} fill={isBookmarked ? 'white' : 'none'} className="transition-all" />}
                     >
                       {bookmarkLoading ? '処理中...' : isBookmarked ? 'ブックマーク済み' : 'ブックマーク'}
                     </Button>
@@ -565,7 +583,7 @@ export default function SellDetailPage() {
                       onClick={handleCartToggle}
                       variant={isInCart ? "ghost" : "primary"}
                       size="md"
-                      className={`flex-1 ${isInCart ? 'bg-red-50 text-red-600 hover:bg-red-100' : ''}`}
+                      className={`flex-1 transition-all ${isInCart ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'animate-scale-in'}`}
                       disabled={!isInCart && product.status !== 'available'}
                     >
                       {isInCart ? 'カートから削除する' : product.status === 'available' ? 'カートに追加' : '購入できません'}
@@ -612,7 +630,7 @@ export default function SellDetailPage() {
       {/* 画像モーダル */}
       {hasImages && (
         <ImageModal
-          images={product.images}
+          images={product.images.map(decodeHtmlEntities)}
           initialIndex={modalImageIndex}
           isOpen={isModalOpen}
           onClose={handleCloseModal}

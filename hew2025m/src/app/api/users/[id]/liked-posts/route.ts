@@ -46,7 +46,8 @@ export async function GET(
           }
         } catch (error) {
           // permission-deniedエラーは静かに処理（ログアウト時など）
-          if ((error as any)?.code !== 'permission-denied') {
+          const firebaseError = error as { code?: string };
+          if (firebaseError?.code !== 'permission-denied') {
             console.error(`Failed to fetch user ${authorId}:`, error);
           }
         }

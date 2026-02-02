@@ -17,11 +17,12 @@ export type ActivityItem = {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
-    const userId = params.id;
+    const { id } = await params;
+    const userId = id;
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });

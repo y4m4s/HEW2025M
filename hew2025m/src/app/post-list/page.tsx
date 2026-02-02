@@ -1,17 +1,21 @@
 'use client';
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Fish, Plus, Search, Filter, X } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { useAuth } from "@/lib/useAuth";
 import { doc, getDoc } from 'firebase/firestore';
+import { useDebounce } from '@/hooks/useDebounce';
+import { SEARCH_DEBOUNCE_DELAY } from '@/lib/imageOptimization';
 
-import LoginRequiredModal from "@/components/LoginRequiredModal";
-import LoadingSpinner from '@/components/LoadingSpinner';
-import PostCard, { Post } from '@/components/PostCard';
-import Button from '@/components/Button';
-import CustomSelect from '@/components/CustomSelect';
+import LoginRequiredModal from '@/components/user/LoginRequiredModal';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import SkeletonCard from '@/components/ui/SkeletonCard';
+import PostCard from '@/components/posts/PostCard';
+import type { Post } from '@/components/posts/PostCard';
+import Button from '@/components/ui/Button';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 export default function PostList() {
   const { user } = useAuth();
@@ -24,6 +28,7 @@ export default function PostList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
+  const debouncedKeyword = useDebounce(keyword, SEARCH_DEBOUNCE_DELAY);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -64,7 +69,10 @@ export default function PostList() {
     return profiles;
   };
 
-  const fetchPosts = useCallback(async (pageNum: number, resetPosts = false) => {
+  // fetchPostsをuseRefで保持（依存配列の循環参照を回避）
+  const fetchPostsRef = useRef<(pageNum: number, resetPosts?: boolean) => Promise<void>>(() => Promise.resolve());
+
+  fetchPostsRef.current = async (pageNum: number, resetPosts = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -73,8 +81,8 @@ export default function PostList() {
       if (activeFilter !== 'all') {
         params.append('tag', activeFilter);
       }
-      if (keyword) {
-        params.append('keyword', keyword);
+      if (debouncedKeyword) {
+        params.append('keyword', debouncedKeyword);
       }
       params.append('page', pageNum.toString());
       params.append('limit', '12');
@@ -148,14 +156,14 @@ export default function PostList() {
     } finally {
       setLoading(false);
     }
-  }, [activeFilter, keyword]);
+  };
 
   // フィルター変更時にリセット
   useEffect(() => {
     setPosts([]);
     setHasMore(true);
-    fetchPosts(1, true);
-  }, [activeFilter, keyword, fetchPosts]);
+    fetchPostsRef.current?.(1, true);
+  }, [activeFilter, debouncedKeyword]);
 
   // Intersection Observerの設定
   useEffect(() => {
@@ -166,7 +174,7 @@ export default function PostList() {
     observerRef.current = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loading) {
-          fetchPosts(currentPage, false);
+          fetchPostsRef.current?.(currentPage, false);
         }
       },
       { threshold: 0.1 }
@@ -181,7 +189,7 @@ export default function PostList() {
         observerRef.current.disconnect();
       }
     };
-  }, [loading, hasMore, fetchPosts, posts.length]);
+  }, [loading, hasMore, posts.length]);
 
   // 日付をフォーマット
   const formatDate = (dateString: string): string => {
@@ -285,13 +293,13 @@ export default function PostList() {
               </div>
 
               {loading && posts.length === 0 ? (
-                <div className="flex justify-center items-center py-20">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2FA3E3]"></div>
+                <div className="space-y-6">
+                  <SkeletonCard variant="post" count={6} />
                 </div>
               ) : error ? (
                 <div className="text-center py-20">
                   <p className="text-red-600 mb-4">{error}</p>
-                  <Button onClick={() => fetchPosts(1, true)} variant="primary" size="md">
+                  <Button onClick={() => fetchPostsRef.current?.(1, true)} variant="primary" size="md">
                     再読み込み
                   </Button>
                 </div>
@@ -303,10 +311,8 @@ export default function PostList() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {posts.map((post) => (
-                    <div key={post.id} className="h-48 sm:h-56">
-                      <PostCard post={post} />
-                    </div>
+                  {posts.map((post, index) => (
+                    <PostCard key={post.id} post={post} priority={index < 3} />
                   ))}
 
                   {/* 無限スクロール用のローディングインジケーター */}

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { Upload, MapPin, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
@@ -11,19 +11,25 @@ import { PostFormSchema } from '@/lib/schemas';
 import { z } from 'zod';
 import { useAuth } from '@/lib/useAuth';
 
-import Button from '@/components/Button';
-import MapModal, { LocationData } from '@/components/MapModal';
-import { useProfile } from '@/contexts/ProfileContext';
-import ImageModal from '@/components/ImageModal';
+import { Button, MapModal, type LocationData, ImageModal } from '@/components';
+import { useProfileStore } from '@/stores/useProfileStore';
 import { uploadFileToFirebase } from '@/lib/firebaseUtils';
 
 type PostFormData = z.infer<typeof PostFormSchema>;
 
 export default function Post() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#2FA3E3]"></div></div>}>
+      <PostContent />
+    </Suspense>
+  );
+}
+
+function PostContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
-  const { profile } = useProfile();
+  const profile = useProfileStore((state) => state.profile);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [address, setAddress] = useState('');

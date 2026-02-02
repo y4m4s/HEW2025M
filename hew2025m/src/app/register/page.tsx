@@ -1,7 +1,6 @@
 "use client";
 import Link from 'next/link';
-import Button from "@/components/Button";
-import LoadingScreen from "@/components/LoadingScreen";
+import { Button, LoadingScreen } from "@/components";
 import { auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, signInWithPopup, TwitterAuthProvider, OAuthProvider, GoogleAuthProvider, fetchSignInMethodsForEmail, AuthProvider } from "firebase/auth";
 import { useState, useEffect } from "react";
@@ -53,7 +52,20 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+      // IDトークンを取得してセッションCookieを作成
+      const idToken = await userCredential.user.getIdToken();
+      const response = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error('セッションの作成に失敗しました');
+      }
+
       showSuccessAndRedirect("アカウント作成に成功しました！ユーザーIDを設定してください", "/setup-username");
     } catch (error: unknown) {
       let errorMessage = "登録エラーが発生しました";
@@ -99,7 +111,20 @@ export default function RegisterPage() {
     }
 
     try {
-      await signInWithPopup(auth, provider);
+      const userCredential = await signInWithPopup(auth, provider);
+
+      // IDトークンを取得してセッションCookieを作成
+      const idToken = await userCredential.user.getIdToken();
+      const response = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error('セッションの作成に失敗しました');
+      }
+
       showSuccessAndRedirect(`${providerDisplayName}でのログインに成功しました！`, "/setup-username");
     } catch (error: unknown) {
       let errorMessage = `${providerDisplayName}でのログイン中にエラーが発生しました。`;

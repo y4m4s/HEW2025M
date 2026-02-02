@@ -1,12 +1,32 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import ClientProviders from "@/components/ClientProviders";
+import { Header, Footer, ClientProviders } from "@/components";
 
 export const metadata: Metadata = {
-  title: "ツリマチ - 釣り人のためのマーケットプレイス",
+  title: {
+    default: "ツリマチ - 釣り人のためのマーケットプレイス",
+    template: "%s | ツリマチ",
+  },
   description: "釣り用品の売買から釣り情報のシェア、マッチングまで。釣り人の集まる街「ツリマチ」で、もっと釣りを楽しもう。",
+  keywords: ["釣り", "フィッシング", "マーケットプレイス", "釣り用品", "中古釣具", "釣り情報"],
+  authors: [{ name: "ツリマチ" }],
+  creator: "ツリマチ",
+  openGraph: {
+    type: "website",
+    locale: "ja_JP",
+    siteName: "ツリマチ",
+    title: "ツリマチ - 釣り人のためのマーケットプレイス",
+    description: "釣り用品の売買から釣り情報のシェア、マッチングまで。釣り人の集まる街「ツリマチ」で、もっと釣りを楽しもう。",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ツリマチ - 釣り人のためのマーケットプレイス",
+    description: "釣り用品の売買から釣り情報のシェア、マッチングまで。釣り人の集まる街「ツリマチ」で、もっと釣りを楽しもう。",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -16,9 +36,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <head>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-      </head>
       <body>
         <ClientProviders>
           <Header />

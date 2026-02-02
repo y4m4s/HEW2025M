@@ -4,10 +4,25 @@ import Comment from '@/models/Comment';
 import Product from '@/models/Product';
 
 
+// コメントの型定義
+interface CommentDocument {
+  _id: { toString(): string };
+  parentId?: string;
+  userId: string;
+  userName: string;
+  userPhotoURL?: string;
+  content: string;
+  createdAt: Date;
+}
+
+interface CommentWithReplies extends CommentDocument {
+  replies: CommentWithReplies[];
+}
+
 // コメントを階層構造に変換するヘルパー関数
-function organizeComments(comments: any[]) {
-  const commentMap = new Map();
-  const rootComments: any[] = [];
+function organizeComments(comments: CommentDocument[]): CommentWithReplies[] {
+  const commentMap = new Map<string, CommentWithReplies>();
+  const rootComments: CommentWithReplies[] = [];
 
   // まずすべてのコメントをマップに格納
   comments.forEach((comment) => {
@@ -17,6 +32,8 @@ function organizeComments(comments: any[]) {
   // 親子関係を構築
   comments.forEach((comment) => {
     const commentWithReplies = commentMap.get(comment._id.toString());
+    if (!commentWithReplies) return;
+
     if (comment.parentId) {
       const parent = commentMap.get(comment.parentId);
       if (parent) {

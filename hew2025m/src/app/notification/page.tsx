@@ -5,10 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { Megaphone, MessageSquare, Trash2, Heart, Star, ShoppingCart, UserPlus, Mail, Bell, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import CustomSelect from '@/components/CustomSelect';
-import Button from '@/components/Button';
-import UserHoverCard from '@/components/UserHoverCard';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import { CustomSelect, Button, UserHoverCard, LoadingSpinner } from '@/components';
 import {
   collection,
   query,
@@ -124,7 +121,6 @@ export default function NotificationPage() {
               batch.update(docRef, { isUnread: false });
             });
             await batch.commit();
-            console.log('Marked notifications as read on cleanup');
           } catch (error) {
             console.error('Error marking notifications as read:', error);
           }
