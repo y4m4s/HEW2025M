@@ -4,6 +4,7 @@ import PostLike from '@/models/PostLike';
 import Post from '@/models/Post';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { extractUid } from '@/lib/utils';
 
 // ユーザーがいいねした投稿一覧を取得
 export async function GET(
@@ -36,7 +37,8 @@ export async function GET(
     await Promise.all(
       authorIds.map(async (authorId) => {
         try {
-          const userDoc = await getDoc(doc(db, 'users', authorId));
+          const uid = extractUid(authorId);
+          const userDoc = await getDoc(doc(db, 'users', uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
             authorProfiles.set(authorId, {
@@ -46,7 +48,8 @@ export async function GET(
           }
         } catch (error) {
           // permission-deniedエラーは静かに処理（ログアウト時など）
-          if ((error as any)?.code !== 'permission-denied') {
+          const firebaseError = error as { code?: string };
+          if (firebaseError?.code !== 'permission-denied') {
             console.error(`Failed to fetch user ${authorId}:`, error);
           }
         }

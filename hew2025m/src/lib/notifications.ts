@@ -91,8 +91,6 @@ export async function createRatingNotification(
       collection(db, 'users', ratedUserId, 'notifications'),
       notificationData
     );
-
-    console.log('評価通知を作成しました');
   } catch (error) {
     console.error('評価通知の作成に失敗しました:', error);
   }
@@ -121,7 +119,7 @@ export async function createCommentNotification(
     const notificationData = {
       iconType: 'comment',
       iconBgColor: 'bg-purple-500',
-      title: `${commenterName}さんがコメントしました`,
+      title: `${commenterName}さんがあなたの商品にコメントしました`,
       description: `${productTitle} - ${commentContent.substring(0, 50)}${commentContent.length > 50 ? '...' : ''}`,
       timestamp: Timestamp.now(),
       tag: 'コメント',
@@ -136,8 +134,6 @@ export async function createCommentNotification(
       collection(db, 'users', productOwnerId, 'notifications'),
       notificationData
     );
-
-    console.log('商品コメント通知を作成しました');
   } catch (error) {
     console.error('商品コメント通知の作成に失敗しました:', error);
   }
@@ -166,7 +162,7 @@ export async function createPostCommentNotification(
     const notificationData = {
       iconType: 'comment',
       iconBgColor: 'bg-purple-500',
-      title: `${commenterName}さんがコメントしました`,
+      title: `${commenterName}さんがあなたの投稿にコメントしました`,
       description: `${postTitle} - ${commentContent.substring(0, 50)}${commentContent.length > 50 ? '...' : ''}`,
       timestamp: Timestamp.now(),
       tag: 'コメント',
@@ -181,8 +177,6 @@ export async function createPostCommentNotification(
       collection(db, 'users', postOwnerId, 'notifications'),
       notificationData
     );
-
-    console.log('投稿コメント通知を作成しました');
   } catch (error) {
     console.error('投稿コメント通知の作成に失敗しました:', error);
   }
@@ -230,8 +224,6 @@ export async function createReplyNotification(
       collection(db, 'users', parentCommentUserId, 'notifications'),
       notificationData
     );
-
-    console.log('返信通知を作成しました');
   } catch (error) {
     console.error('返信通知の作成に失敗しました:', error);
   }
@@ -288,8 +280,6 @@ export async function createPostLikeNotification(
       collection(db, 'users', postAuthorId, 'notifications'),
       notificationData
     );
-
-    console.log('いいね通知を作成しました');
   } catch (error) {
     console.error('いいね通知の作成に失敗しました:', error);
   }
@@ -328,8 +318,6 @@ export async function deletePostLikeNotification(
     });
 
     await batch.commit();
-
-    console.log('いいね通知を削除しました');
   } catch (error) {
     console.error('いいね通知の削除に失敗しました:', error);
   }

@@ -101,7 +101,6 @@ export async function POST(request: Request) {
     // レベル1: 最初の3単語 + 「中古」 (理想的)
     if (items.length === 0 && words.length >= 1) {
         const query1 = `${words.slice(0, 3).join(' ')} 中古`;
-        console.log(`Attempt 1: ${query1}`);
         const data = await searchRakuten(RAKUTEN_APP_ID, query1);
         if (data?.Items?.length > 0) {
             items = data.Items;
@@ -112,7 +111,6 @@ export async function POST(request: Request) {
     // レベル2: 最初の2単語 + 「中古」 (少し緩和)
     if (items.length === 0 && words.length >= 2) {
         const query2 = `${words.slice(0, 2).join(' ')} 中古`;
-        console.log(`Attempt 2: ${query2}`);
         const data = await searchRakuten(RAKUTEN_APP_ID, query2);
         if (data?.Items?.length > 0) {
             items = data.Items;
@@ -123,7 +121,6 @@ export async function POST(request: Request) {
     // レベル3: 最初の2単語のみ (中古を諦めて新品も含める - データ表示優先)
     if (items.length === 0 && words.length >= 1) {
         const query3 = words.slice(0, 2).join(' ');
-        console.log(`Attempt 3 (New items included): ${query3}`);
         const data = await searchRakuten(RAKUTEN_APP_ID, query3);
         if (data?.Items?.length > 0) {
             items = data.Items;
@@ -134,7 +131,6 @@ export async function POST(request: Request) {
     // レベル4: 最終手段 - 最初の1単語のみ (何でもいいから出す)
     if (items.length === 0 && words.length >= 1) {
         const query4 = words[0];
-        console.log(`Attempt 4 (Last resort): ${query4}`);
         const data = await searchRakuten(RAKUTEN_APP_ID, query4);
         if (data?.Items?.length > 0) {
             items = data.Items;

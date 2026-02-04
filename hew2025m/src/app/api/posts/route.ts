@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
 import { requireAuth } from '@/lib/simpleAuth';
+import { getCachedUserInfoBatch, getCachedUserInfo } from '@/lib/userCache';
+import { ensureUserIdPrefix } from '@/lib/utils';
+
+// 正規表現の特殊文字をエスケープ（RegExpインジェクション対策）
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // 投稿一覧を取得 (GET handler)
 export async function GET(request: NextRequest) {
@@ -13,23 +20,26 @@ export async function GET(request: NextRequest) {
     const keyword = searchParams.get('keyword');
     const tag = searchParams.get('tag');
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '12');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '12'), 50); // 最大50件に制限
 
-    let query: any = {};
+    const query: Record<string, unknown> = {};
 
     if (category) {
       query.category = category;
     }
     if (authorId) {
-      query.authorId = authorId;
+      const normalizedAuthorId = ensureUserIdPrefix(authorId);
+      query.authorId = { $in: [authorId, normalizedAuthorId] };
     }
     if (tag) {
       query.tags = tag;
     }
 
     // キーワード検索: title, content, tags, addressを対象に検索
+    // RegExpインジェクション対策: 特殊文字をエスケープ
     if (keyword) {
-      const keywordRegex = new RegExp(keyword, 'i'); // 大文字小文字を区別しない
+      const escapedKeyword = escapeRegExp(keyword);
+      const keywordRegex = new RegExp(escapedKeyword, 'i');
       query.$or = [
         { title: keywordRegex },
         { content: keywordRegex },
@@ -38,30 +48,52 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // 総数を取得
-    const total = await Post.countDocuments(query);
-
     // ページネーションを適用
     const skip = (page - 1) * limit;
-    const posts = await Post.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
 
-    // タグごとの投稿数を集計（すべてのタグ）
-    const tagCounts: Record<string, number> = {};
+    // タグごとの投稿数を集計（N+1問題解決: aggregationで一括取得）
     const allTags = ['釣行記', '情報共有', '質問', 'レビュー', '雑談', '初心者向け', 'トラブル相談', '釣果報告'];
 
-    await Promise.all(
-      allTags.map(async (tagName) => {
-        const count = await Post.countDocuments({ tags: tagName });
-        tagCounts[tagName] = count;
-      })
-    );
+    // Promise.allで並列実行（Waterfall解消）
+    const [total, posts, tagCountsResult] = await Promise.all([
+      Post.countDocuments(query),
+      Post.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Post.aggregate([
+        { $unwind: '$tags' },
+        { $match: { tags: { $in: allTags } } },
+        { $group: { _id: '$tags', count: { $sum: 1 } } },
+      ])
+    ]);
+
+    const authorIds = [...new Set(posts.map((p) => (p as any).authorId).filter(Boolean))] as string[];
+    const authorInfoMap = await getCachedUserInfoBatch(authorIds);
+
+    const postsWithAuthorInfo = posts.map((post: any) => {
+      const postObj = typeof post.toObject === 'function' ? post.toObject() : post;
+      const authorInfo = authorInfoMap.get(postObj.authorId) || {
+        displayName: postObj.authorName || 'ユーザー',
+        photoURL: '',
+      };
+
+      return {
+        ...postObj,
+        authorDisplayName: authorInfo.displayName,
+        authorPhotoURL: authorInfo.photoURL,
+      };
+    });
+
+    const tagCounts: Record<string, number> = {};
+    allTags.forEach((tagName) => {
+      const found = tagCountsResult.find((r) => r._id === tagName);
+      tagCounts[tagName] = found ? found.count : 0;
+    });
 
     return NextResponse.json({
       success: true,
-      posts,
+      posts: postsWithAuthorInfo,
       pagination: {
         total,
         page,
@@ -94,8 +126,8 @@ export async function POST(request: NextRequest) {
     const { title, content, category, media, authorId, authorName, tags, address, location } = body;
 
     // 認証されたユーザーIDとauthorIdが一致するか確認
-    const actualUserId = userId.startsWith('user-') ? userId : `user-${userId}`;
-    if (authorId !== actualUserId && authorId !== userId) {
+    const normalizedAuthorId = ensureUserIdPrefix(userId);
+    if (authorId && authorId !== normalizedAuthorId && authorId !== userId) {
       return NextResponse.json(
         { error: '不正なリクエストです' },
         { status: 403 }
@@ -103,7 +135,7 @@ export async function POST(request: NextRequest) {
     }
 
     // バリデーション
-    if (!title || !content || !authorId || !authorName) {
+    if (!title || !content) {
       return NextResponse.json(
         { error: '必須項目が入力されていません' },
         { status: 400 }
@@ -117,13 +149,28 @@ export async function POST(request: NextRequest) {
     }
 
     // 投稿データを作成
-    const postData: any = {
+    const cachedUser = await getCachedUserInfo(userId);
+    const safeAuthorName = cachedUser?.displayName || authorName || 'ユーザー';
+
+    const postData: {
+      title: string;
+      content: string;
+      category: string;
+      media: Array<{ url: string; order: number }>;
+      authorId: string;
+      authorName: string;
+      tags: string[];
+      likes: number;
+      comments: unknown[];
+      address?: string;
+      location?: { lat: number; lng: number };
+    } = {
       title,
       content,
       category: category || '一般',
       media: media || [],
-      authorId,
-      authorName,
+      authorId: normalizedAuthorId,
+      authorName: safeAuthorName,
       tags: tags || [],
       likes: 0,
       comments: [],

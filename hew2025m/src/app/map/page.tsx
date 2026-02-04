@@ -1,9 +1,7 @@
 'use client';
-import Map, { MapRef } from "@/components/Map";
+import dynamic from 'next/dynamic';
+import { decodeHtmlEntities } from '@/lib/sanitize';
 import { useState, useRef, useEffect } from 'react';
-import Button from '@/components/Button';
-import WeatherWidget from '@/components/WeatherWidget'; // 天気ウィジェットをインポート
-import TideWidget from '@/components/TideWidget'; // 潮汐ウィジェットをインポート
 import { MapPin, Navigation, ExternalLink, User, Fish, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -11,22 +9,39 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
-import LoginRequiredModal from '@/components/LoginRequiredModal';
 
-interface SelectedPost {
-  _id: string;
-  title: string;
-  content: string;
-  authorId: string;
-  authorName: string;
-  address?: string;
-  location?: {
-    lat: number;
-    lng: number;
-  };
-  media?: Array<{ url: string; order: number }>;
-  createdAt: string;
-}
+// 直接インポート（軽量コンポーネント）
+import Button from '@/components/ui/Button';
+import LoginRequiredModal from '@/components/user/LoginRequiredModal';
+
+// 動的インポート（重いコンポーネント - Google Maps API等）
+const Map = dynamic(() => import('@/components/map/Map'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full flex items-center justify-center bg-gray-100">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
+        <p className="text-gray-500 text-sm">マップを読み込み中...</p>
+      </div>
+    </div>
+  )
+});
+
+const WeatherWidget = dynamic(() => import('@/components/map/WeatherWidget'), {
+  ssr: false,
+  loading: () => <div className="h-24 animate-pulse bg-gray-100 rounded-lg" />
+});
+
+const TideWidget = dynamic(() => import('@/components/map/TideWidget'), {
+  ssr: false,
+  loading: () => <div className="h-16 animate-pulse bg-gray-100 rounded-lg" />
+});
+
+// MapRefとMapPostの型をインポート
+import type { MapRef, MapPost } from '@/components/map/Map';
+
+// SelectedPostはMapPostを拡張して、ページ内で必要なプロパティを必須化
+type SelectedPost = MapPost;
 
 interface AuthorProfile {
   displayName: string;
@@ -120,7 +135,7 @@ export default function MapPage() {
 
       setIsLoadingAuthor(true);
       try {
-        const userId = selectedPost.authorId.replace('user-', '');
+        const userId = (selectedPost.authorId || '').replace('user-', '');
         const userDoc = await getDoc(doc(db, 'users', userId));
 
         if (userDoc.exists()) {
@@ -291,13 +306,13 @@ export default function MapPage() {
                     </div>
                   ) : authorProfile ? (
                     <Link
-                      href={`/profile/${selectedPost.authorId.replace('user-', '')}`}
+                      href={`/profile/${(selectedPost.authorId || '').replace('user-', '')}`}
                       className="flex items-center gap-2.5 sm:gap-3 py-2.5 sm:py-3 border-y border-gray-100 group/author hover:bg-blue-50 transition-colors"
                     >
                       <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center group-hover/author:scale-110 transition-transform flex-shrink-0">
                         {authorProfile.photoURL ? (
                           <Image
-                            src={authorProfile.photoURL}
+                            src={decodeHtmlEntities(authorProfile.photoURL)}
                             alt={authorProfile.displayName}
                             width={40}
                             height={40}
@@ -332,7 +347,7 @@ export default function MapPage() {
                       </div>
                       <div className="space-y-0.5 sm:space-y-1">
                         <span className="text-gray-500 text-[10px] sm:text-xs block">投稿日</span>
-                        <span className="font-medium text-gray-900 block">{new Date(selectedPost.createdAt).toLocaleDateString('ja-JP')}</span>
+                        <span className="font-medium text-gray-900 block">{selectedPost.createdAt ? new Date(selectedPost.createdAt).toLocaleDateString('ja-JP') : '日付未設定'}</span>
                       </div>
                     </div>
                   </div>
@@ -368,7 +383,7 @@ export default function MapPage() {
 
             <div className="relative overflow-hidden rounded-b-lg">
               <div className="h-64 sm:h-80 md:h-96">
-                <Map ref={mapRef} onMarkerClick={handleMarkerClick} onMapClick={handleMapClick} />
+                <Map ref={mapRef} onMarkerClick={handleMarkerClick} onMapClick={handleMapClick} posts={allPosts} />
               </div>
             </div>
           </section>

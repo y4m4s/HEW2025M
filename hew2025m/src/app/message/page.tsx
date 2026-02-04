@@ -1,17 +1,16 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
+import { decodeHtmlEntities } from '@/lib/sanitize';
 import Image from 'next/image';
-import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, Suspense } from 'react';
 import { User, Send, Search, Menu, X, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/useAuth';
 import { uploadFileToFirebase } from '@/lib/firebaseUtils';
 
-import ImageModal from '@/components/ImageModal';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import Button from '@/components/Button';
+import { ImageModal, LoadingSpinner, Button } from '@/components';
 
 import {
   collection,
@@ -66,6 +65,14 @@ const getChatRoomId = (userId1: string, userId2: string) => {
 };
 
 export default function MessagePage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#2FA3E3]"></div></div>}>
+      <MessagePageContent />
+    </Suspense>
+  );
+}
+
+function MessagePageContent() {
   const { user, loading: authLoading } = useAuth(); // ログイン状態を取得
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -559,7 +566,9 @@ export default function MessagePage() {
   }
 
   return (
-    <div className="flex h-[85vh] bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50 relative">
+    <div className="bg-gray-50 min-h-screen py-4">
+      <div className="container mx-auto max-w-7xl px-4 h-[85vh]">
+        <div className="flex h-full bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50 relative rounded-xl shadow-lg overflow-hidden">
       {/* モバイル用: オーバーレイ (サイドバーが開いている時に背景をクリックで閉じる) */}
       {(showSidebar || showProfileSidebar) && (
         <div
@@ -629,7 +638,7 @@ export default function MessagePage() {
                 <div className="w-12 h-12 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0 overflow-hidden relative ring-2 ring-white shadow-md group-hover:ring-[#2FA3E3]/30 transition-all duration-200">
                   {convo.photoURL ? (
                     <Image
-                      src={convo.photoURL}
+                      src={decodeHtmlEntities(convo.photoURL)}
                       alt={convo.name}
                       fill
                       className="object-cover"
@@ -679,7 +688,7 @@ export default function MessagePage() {
               <div className="w-11 h-11 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0 overflow-hidden relative ring-2 ring-white shadow-lg z-10">
                 {selectedUser.photoURL ? (
                   <Image
-                    src={selectedUser.photoURL}
+                    src={decodeHtmlEntities(selectedUser.photoURL)}
                     alt={selectedUser.name}
                     fill
                     className="object-cover"
@@ -741,7 +750,7 @@ export default function MessagePage() {
                           {msg.imageUrl && (
                             <div className={msg.content ? "p-2 pb-0" : "p-2"}>
                               <Image
-                                src={msg.imageUrl}
+                                src={decodeHtmlEntities(msg.imageUrl)}
                                 alt="送信画像"
                                 width={300}
                                 height={300}
@@ -775,7 +784,7 @@ export default function MessagePage() {
                   {imagePreview && (
                     <div className="relative inline-block animate-fadeIn">
                       <Image
-                        src={imagePreview}
+                        src={decodeHtmlEntities(imagePreview || "")}
                         alt="添付画像"
                         width={200}
                         height={200}
@@ -902,13 +911,13 @@ export default function MessagePage() {
               {/* 閉じるボタンとのバランスを取るための空div */}
               <div className="w-9 lg:hidden"></div>
             </div>
-            <div className="flex-1 p-6 flex flex-col items-center bg-gradient-to-b from-blue-50/30 to-white overflow-y-auto">
+            <div className="flex-1 px-6 py-4 flex flex-col items-center bg-gradient-to-b from-blue-50/30 to-white overflow-y-auto">
               {/* アバター画像 */}
               <div className="relative mb-3 group">
-                <div className="w-28 h-28 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center overflow-hidden relative ring-4 ring-white shadow-2xl shadow-gray-300/50 group-hover:ring-[#2FA3E3]/30 transition-all duration-300">
+                <div className="w-28 h-28 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center overflow-hidden relative ring-4 ring-white shadow-2xl shadow-gray-300/50">
                   {selectedUser.photoURL ? (
                     <Image
-                      src={selectedUser.photoURL}
+                      src={decodeHtmlEntities(selectedUser.photoURL)}
                       alt={selectedUser.name}
                       fill
                       className="object-cover"
@@ -925,7 +934,7 @@ export default function MessagePage() {
               <p className="text-[#2FA3E3] text-sm font-semibold mb-3">@{selectedUser.username || 'unknown'}</p>
 
               {/* 自己紹介 */}
-              <div className="w-full mb-6 bg-gradient-to-br from-white to-blue-50/30 rounded-xl p-3 border border-gray-100 shadow-md">
+              <div className="w-full mb-4 bg-gradient-to-br from-white to-blue-50/30 rounded-xl p-3 border border-gray-100 shadow-md">
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-1 h-5 bg-gradient-to-b from-[#2FA3E3] to-[#1d88c9] rounded-full"></div>
                   <h4 className="text-sm font-bold text-gray-800">自己紹介</h4>
@@ -958,6 +967,8 @@ export default function MessagePage() {
         isOpen={isImageModalOpen}
         onClose={() => setIsImageModalOpen(false)}
       />
+        </div>
+      </div>
     </div>
   );
 }

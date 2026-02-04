@@ -9,10 +9,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/useAuth';
 
-import { useCartStore } from '@/components/useCartStore';
-import Button from '@/components/Button';
-import CartProductCard, { CartProduct } from '@/components/CartProductCard';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import { useCartStore } from '@/stores/useCartStore';
+import { Button, CartProductCard, type CartProduct, LoadingSpinner } from '@/components';
 
 
 export default function CartPage() {

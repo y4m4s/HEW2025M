@@ -4,18 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { Fish, MapPin, Heart, MessageCircle, Calendar, ArrowLeft, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
-import Button from '@/components/Button';
-import Comment from '@/components/Comment';
-import ImageModal from '@/components/ImageModal';
-import CancelModal from '@/components/CancelModal';
-import LoginRequiredModal from '@/components/LoginRequiredModal';
-import UserInfoCard from '@/components/UserInfoCard';
-import LikedUsersModal from '@/components/LikedUsersModal';
+import { Button, Comment, ImageModal, CancelModal, LoginRequiredModal, UserInfoCard, LikedUsersModal } from '@/components';
 import { createPostLikeNotification, deletePostLikeNotification } from '@/lib/notifications';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import { decodeHtmlEntities } from '@/lib/sanitize';
 
 interface PostDetail {
   _id: string;
@@ -162,10 +157,18 @@ export default function PostDetailPage() {
 
     setLikeLoading(true);
     try {
+      const token = await user.getIdToken();
+      if (!token) {
+        throw new Error('認証トークンの取得に失敗しました');
+      }
+
       if (isLiked) {
         // いいねを削除
-        const response = await fetch(`/api/posts/${params.id}/likes?userId=${user.uid}`, {
+        const response = await fetch(`/api/posts/${params.id}/likes`, {
           method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
         });
         if (!response.ok) throw new Error('いいねの削除に失敗しました');
         setIsLiked(false);
@@ -182,7 +185,10 @@ export default function PostDetailPage() {
         // いいねを追加
         const response = await fetch(`/api/posts/${params.id}/likes`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
           body: JSON.stringify({
             userId: user.uid,
             userName: user.displayName || user.email?.split('@')[0] || '名無しユーザー',
@@ -413,16 +419,18 @@ export default function PostDetailPage() {
                   {post.media.map((item, index) => (
                     <div key={index} className="w-full flex-shrink-0">
                       {item.mimeType.startsWith('image/') ? (
-                        <Image
-                          src={item.url}
-                          alt={`投稿画像${index + 1}`}
-                          width={800}
-                          height={600}
-                          className="w-full h-64 sm:h-80 md:h-96 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => handleImageClick(index)}
-                        />
+                        <div className="relative w-full" style={{ aspectRatio: '4/3' }}>
+                          <Image
+                            src={decodeHtmlEntities(item.url)}
+                            alt={`投稿画像${index + 1}`}
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 90vw, 800px"
+                            className="object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => handleImageClick(index)}
+                          />
+                        </div>
                       ) : (
-                        <div className="w-full h-64 sm:h-80 md:h-96 flex items-center justify-center">
+                        <div className="w-full flex items-center justify-center bg-gray-100" style={{ aspectRatio: '4/3' }}>
                           <Fish size={48} className="text-gray-400 md:w-16 md:h-16" />
                         </div>
                       )}
@@ -530,6 +538,9 @@ export default function PostDetailPage() {
           userProfile={authorProfile}
           loading={authorProfileLoading}
           fallbackName={post.authorName}
+          showRating={true}
+          showActions={true}
+          isOwnProfile={isOwnPost}
         />
 
         {/* コメントセクション */}
@@ -547,7 +558,7 @@ export default function PostDetailPage() {
       {/* 画像モーダル */}
       {post.media && post.media.length > 0 && (
         <ImageModal
-          images={post.media.filter(item => item.mimeType.startsWith('image/')).map(item => item.url)}
+          images={post.media.filter(item => item.mimeType.startsWith('image/')).map(item => decodeHtmlEntities(item.url))}
           initialIndex={modalImageIndex}
           isOpen={isModalOpen}
           onClose={handleCloseModal}
@@ -589,15 +600,17 @@ export default function PostDetailPage() {
             </div>
             <h3 className="text-xl font-bold text-gray-800 mb-3 line-clamp-2">{post.title}</h3>
             {post.media && post.media.length > 0 && post.media[0].mimeType.startsWith('image/') ? (
-              <Image
-                src={post.media[0].url}
-                alt={post.title}
-                width={400}
-                height={300}
-                className="w-full h-48 object-cover rounded-lg mb-3"
-              />
+              <div className="relative w-full mb-3" style={{ aspectRatio: '4/3' }}>
+                <Image
+                  src={decodeHtmlEntities(post.media[0].url)}
+                  alt={post.title}
+                  fill
+                  sizes="400px"
+                  className="object-contain rounded-lg"
+                />
+              </div>
             ) : (
-              <div className="w-full h-48 bg-gray-200 rounded-lg flex flex-col items-center justify-center mb-3">
+              <div className="w-full bg-gray-200 rounded-lg flex flex-col items-center justify-center mb-3" style={{ aspectRatio: '4/3' }}>
                 <Fish size={64} className="text-gray-400 mb-3" />
                 <p className="text-gray-500 text-sm">画像がありません</p>
               </div>

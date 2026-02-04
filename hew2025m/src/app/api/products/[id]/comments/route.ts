@@ -2,12 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Comment from '@/models/Comment';
 import Product from '@/models/Product';
+import { requireAuth } from '@/lib/simpleAuth';
+import { getCachedUserInfo } from '@/lib/userCache';
 
+
+// コメントの型定義
+interface CommentDocument {
+  _id: { toString(): string };
+  parentId?: string;
+  userId: string;
+  userName: string;
+  userPhotoURL?: string;
+  content: string;
+  createdAt: Date;
+}
+
+interface CommentWithReplies extends CommentDocument {
+  replies: CommentWithReplies[];
+}
 
 // コメントを階層構造に変換するヘルパー関数
-function organizeComments(comments: any[]) {
-  const commentMap = new Map();
-  const rootComments: any[] = [];
+function organizeComments(comments: CommentDocument[]): CommentWithReplies[] {
+  const commentMap = new Map<string, CommentWithReplies>();
+  const rootComments: CommentWithReplies[] = [];
 
   // まずすべてのコメントをマップに格納
   comments.forEach((comment) => {
@@ -17,6 +34,8 @@ function organizeComments(comments: any[]) {
   // 親子関係を構築
   comments.forEach((comment) => {
     const commentWithReplies = commentMap.get(comment._id.toString());
+    if (!commentWithReplies) return;
+
     if (comment.parentId) {
       const parent = commentMap.get(comment.parentId);
       if (parent) {
@@ -76,6 +95,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userIdOrError = await requireAuth(request);
+    if (userIdOrError instanceof Response) {
+      return userIdOrError;
+    }
+    const userId = userIdOrError as string;
+
     await dbConnect();
 
     const { id } = await params;
@@ -90,10 +115,10 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { userId, userName, userPhotoURL, content, parentId } = body;
+    const { userName, userPhotoURL, content, parentId } = body;
 
     // バリデーション
-    if (!userId || !userName || !content) {
+    if (!userId || !content) {
       return NextResponse.json(
         { error: '必須項目が不足しています' },
         { status: 400 }
@@ -127,11 +152,22 @@ export async function POST(
     }
 
     // コメントを作成
+    if (parentId && parentComment && parentComment.productId !== id) {
+      return NextResponse.json(
+        { error: 'Invalid parent comment' },
+        { status: 400 }
+      );
+    }
+
+    const cachedUser = await getCachedUserInfo(userId);
+    const safeUserName = cachedUser?.displayName || userName || 'ユーザー';
+    const safeUserPhotoURL = cachedUser?.photoURL || userPhotoURL || '';
+
     const comment = await Comment.create({
       productId: id,
       userId,
-      userName,
-      userPhotoURL: userPhotoURL || '',
+      userName: safeUserName,
+      userPhotoURL: safeUserPhotoURL,
       content: content.trim(),
       parentId: parentId || undefined,
     });

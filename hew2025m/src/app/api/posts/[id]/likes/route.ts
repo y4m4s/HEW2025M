@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import PostLike from '@/models/PostLike';
 import Post from '@/models/Post';
+import { requireAuth } from '@/lib/simpleAuth';
+import { getCachedUserInfo } from '@/lib/userCache';
 
-
-// 投稿のいいね一覧を取得
+// いいね一覧取得
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -14,7 +15,6 @@ export async function GET(
 
     const { id } = await params;
 
-    // 投稿が存在するか確認
     const post = await Post.findById(id);
     if (!post) {
       return NextResponse.json(
@@ -23,7 +23,6 @@ export async function GET(
       );
     }
 
-    // いいねを取得（新しい順）
     const likes = await PostLike.find({ postId: id })
       .sort({ createdAt: -1 })
       .lean();
@@ -42,17 +41,22 @@ export async function GET(
   }
 }
 
-// いいねを追加
+// いいね追加
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userIdOrError = await requireAuth(request);
+    if (userIdOrError instanceof Response) {
+      return userIdOrError;
+    }
+    const userId = userIdOrError as string;
+
     await dbConnect();
 
     const { id } = await params;
 
-    // 投稿が存在するか確認
     const post = await Post.findById(id);
     if (!post) {
       return NextResponse.json(
@@ -62,17 +66,15 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { userId, userName, userPhotoURL } = body;
+    const { userName, userPhotoURL } = body;
 
-    // バリデーション
-    if (!userId || !userName) {
+    if (!userId) {
       return NextResponse.json(
-        { error: '必須項目が不足しています' },
+        { error: 'ユーザーIDが必要です' },
         { status: 400 }
       );
     }
 
-    // 既にいいねしているかチェック
     const existingLike = await PostLike.findOne({ postId: id, userId });
     if (existingLike) {
       return NextResponse.json(
@@ -81,18 +83,18 @@ export async function POST(
       );
     }
 
-    // いいねを作成
+    const cachedUser = await getCachedUserInfo(userId);
+    const safeUserName = cachedUser?.displayName || userName || 'ユーザー';
+    const safeUserPhotoURL = cachedUser?.photoURL || userPhotoURL || '';
+
     const like = await PostLike.create({
       postId: id,
       userId,
-      userName,
-      userPhotoURL: userPhotoURL || '',
+      userName: safeUserName,
+      userPhotoURL: safeUserPhotoURL,
     });
 
-    // 投稿のlikesカウントを更新
     await Post.findByIdAndUpdate(id, { $inc: { likes: 1 } });
-
-
 
     return NextResponse.json(
       {
@@ -110,26 +112,22 @@ export async function POST(
   }
 }
 
-// いいねを削除
+// いいね削除
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userIdOrError = await requireAuth(request);
+    if (userIdOrError instanceof Response) {
+      return userIdOrError;
+    }
+    const userId = userIdOrError as string;
+
     await dbConnect();
 
     const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'ユーザーIDが必要です' },
-        { status: 400 }
-      );
-    }
-
-    // 投稿が存在するか確認
     const post = await Post.findById(id);
     if (!post) {
       return NextResponse.json(
@@ -138,9 +136,7 @@ export async function DELETE(
       );
     }
 
-    // いいねを削除
     const deletedLike = await PostLike.findOneAndDelete({ postId: id, userId });
-
     if (!deletedLike) {
       return NextResponse.json(
         { error: 'いいねが見つかりませんでした' },
@@ -148,14 +144,11 @@ export async function DELETE(
       );
     }
 
-    // 投稿のlikesカウントを更新（0未満にならないように）
     const updatedPost = await Post.findById(id);
     if (updatedPost && updatedPost.likes > 0) {
       updatedPost.likes -= 1;
       await updatedPost.save();
     }
-
-
 
     return NextResponse.json({
       success: true,

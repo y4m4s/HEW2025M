@@ -1,6 +1,7 @@
 "use client";
 import Link from 'next/link';
-import Button from "@/components/Button";
+import { Eye, EyeOff } from 'lucide-react';
+import { Button, LoadingSpinner, FormField } from "@/components";
 import { auth } from "@/lib/firebase";
 import {
   signInWithEmailAndPassword,
@@ -13,7 +14,6 @@ import {
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
-import LoadingSpinner from "@/components/LoadingSpinner";
 
 // 通知トーストコンポーネント
 function NotificationToast({ message, isError }: { message: string, isError?: boolean }) {
@@ -37,7 +37,10 @@ export default function LoginPage() {
   const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [touched, setTouched] = useState({ email: false, password: false });
+  const [errors, setErrors] = useState({ email: '', password: '' });
   const [notification, setNotification] = useState<{ message: string, isError?: boolean } | null>(null);
   const router = useRouter();
 
@@ -58,7 +61,21 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+      // IDトークンを取得してセッションCookieを作成
+      const idToken = await userCredential.user.getIdToken();
+
+      const response = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error('セッションの作成に失敗しました');
+      }
+
       showNotification("ログインに成功しました！");
       setTimeout(() => router.push("/"), 1800); // Redireciona para a página principal
     } catch (error: unknown) {
@@ -115,7 +132,20 @@ export default function LoginPage() {
     }
 
     try {
-      await signInWithPopup(auth, provider);
+      const userCredential = await signInWithPopup(auth, provider);
+
+      // IDトークンを取得してセッションCookieを作成
+      const idToken = await userCredential.user.getIdToken();
+      const response = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error('セッションの作成に失敗しました');
+      }
+
       showNotification(`${providerDisplayName}でのログインに成功しました！`);
       setTimeout(() => router.push("/"), 1800);
     } catch (error: unknown) {
@@ -205,29 +235,64 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-4">
                 {/* メールアドレス */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">メールアドレス</label>
-                  <input
-                    type="email"
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 focus:bg-white focus:border-[#2FA3E3] focus:ring-4 focus:ring-[#2FA3E3]/10 transition-all duration-200 outline-none"
-                    placeholder="name@example.com"
-                    required
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                  />
-                </div>
+                <FormField
+                  type="email"
+                  label="メールアドレス"
+                  placeholder="name@example.com"
+                  required
+                  value={email}
+                  onChange={e => {
+                    setEmail(e.target.value);
+                    if (touched.email && !e.target.value) {
+                      setErrors(prev => ({ ...prev, email: 'メールアドレスを入力してください' }));
+                    } else {
+                      setErrors(prev => ({ ...prev, email: '' }));
+                    }
+                  }}
+                  onBlur={() => {
+                    setTouched(prev => ({ ...prev, email: true }));
+                    if (!email) {
+                      setErrors(prev => ({ ...prev, email: 'メールアドレスを入力してください' }));
+                    }
+                  }}
+                  error={errors.email}
+                  touched={touched.email}
+                />
 
                 {/* パスワード */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">パスワード</label>
-                  <input
-                    type="password"
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 focus:bg-white focus:border-[#2FA3E3] focus:ring-4 focus:ring-[#2FA3E3]/10 transition-all duration-200 outline-none"
+                <div className="relative">
+                  <FormField
+                    type={showPassword ? 'text' : 'password'}
+                    label="パスワード"
                     placeholder="パスワードを入力"
                     required
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
+                    onChange={e => {
+                      setPassword(e.target.value);
+                      if (touched.password && !e.target.value) {
+                        setErrors(prev => ({ ...prev, password: 'パスワードを入力してください' }));
+                      } else {
+                        setErrors(prev => ({ ...prev, password: '' }));
+                      }
+                    }}
+                    onBlur={() => {
+                      setTouched(prev => ({ ...prev, password: true }));
+                      if (!password) {
+                        setErrors(prev => ({ ...prev, password: 'パスワードを入力してください' }));
+                      }
+                    }}
+                    error={errors.password}
+                    touched={touched.password}
+                    className="pr-12"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-[42px] text-gray-500 hover:text-gray-700 transition-colors"
+                    aria-label={showPassword ? 'パスワードを隠す' : 'パスワードを表示'}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
                 </div>
               </div>
 

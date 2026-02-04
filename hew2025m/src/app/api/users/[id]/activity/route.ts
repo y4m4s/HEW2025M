@@ -7,6 +7,7 @@ import Product from '@/models/Product';
 import { IPost } from '@/models/Post';
 import { IProduct } from '@/models/Product';
 import { IComment } from '@/models/Comment';
+import { ensureUserIdPrefix } from '@/lib/utils';
 
 // Tipo unificado para atividade
 export type ActivityItem = {
@@ -17,18 +18,22 @@ export type ActivityItem = {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
-    const userId = params.id;
+    const { id } = await params;
+    const userId = id;
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
     // 1. Buscar todos os posts do usuário
-    const userPosts: IPost[] = await Post.find({ userId }).sort({ createdAt: -1 }).lean();
+    const normalizedAuthorId = ensureUserIdPrefix(userId);
+    const userPosts: IPost[] = await Post.find({
+      authorId: { $in: [userId, normalizedAuthorId] }
+    }).sort({ createdAt: -1 }).lean();
     const postActivities: ActivityItem[] = userPosts.map(post => ({
       type: 'post',
       date: post.createdAt,

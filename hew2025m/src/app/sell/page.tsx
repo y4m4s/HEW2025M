@@ -7,17 +7,13 @@ import { Camera, Fish, X, WandSparkles, Puzzle } from 'lucide-react';
 import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from 'react-icons/gi';
 import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
 import { SiHelix } from 'react-icons/si';
-import Button from '@/components/Button';
+import { Button, PriceAdvisorModal, CustomSelect, LoadingSpinner, ImageModal } from '@/components';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
-import { useProfile } from '@/contexts/ProfileContext';
+import { useProfileStore } from '@/stores/useProfileStore';
 import toast from 'react-hot-toast';
-import PriceAdvisorModal from '@/components/PriceAdvisorModal';
 import { zodResolver } from '@hookform/resolvers/zod';
-import CustomSelect from '@/components/CustomSelect';
 import { ProductFormSchema } from '@/lib/schemas';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import ImageModal from '@/components/ImageModal';
 import { z } from 'zod';
 import { uploadFileToFirebase } from '@/lib/firebaseUtils';
 
@@ -61,7 +57,8 @@ export default function SellPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, loading: authLoading } = useAuth();
-  const { profile, loading: profileLoading } = useProfile();
+  const profile = useProfileStore((state) => state.profile);
+  const profileLoading = useProfileStore((state) => state.loading);
 
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
@@ -166,7 +163,6 @@ export default function SellPage() {
     setUploadProgress('出品を準備中...');
 
     try {
-      const timestamp = new Date().toISOString();
       const sellerId = `user-${user.uid}`;
       const sellerName = profile.displayName || user.displayName || '名無しユーザー';
 
@@ -232,8 +228,7 @@ export default function SellPage() {
       try {
         await productResponse.json();
       } catch {
-        // レスポンスが空でもエラーにしない
-        console.log('Response body is empty or invalid JSON, but request was successful');
+        // レスポンスが空でもエラーにしない（成功時は無視）
       }
 
       setUploadProgress('');

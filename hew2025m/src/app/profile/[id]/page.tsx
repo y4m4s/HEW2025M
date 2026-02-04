@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { decodeHtmlEntities } from '@/lib/sanitize';
 import { useRouter, useParams } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { User, LogOut, Home } from "lucide-react";
@@ -11,20 +12,22 @@ import { auth, db } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, deleteDoc, Timestamp } from "firebase/firestore";
 
-import ProfileEdit from "@/components/ProfileEdit";
-import ProfSelling from "@/components/ProfSelling";
-import ProfHistory from "@/components/ProfHistory";
-import ProfBookmark from "@/components/ProfBookmark";
-import ProfLikedPosts from "@/components/ProfLikedPosts";
-import ProfPost from "@/components/ProfPost";
-import RecentlyViewed from "@/components/RecentlyViewed";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import LoadingScreen from "@/components/LoadingScreen";
-import UserRating from "@/components/UserRating";
-import FollowListModal from "@/components/FollowListModal";
-import LogoutModal from "@/components/LogoutModal";
-import LoginRequiredModal from "@/components/LoginRequiredModal";
-import PurchaseHistory from '@/components/PurchaseHistory';
+import {
+  ProfileEdit,
+  ProfSelling,
+  ProfHistory,
+  ProfBookmark,
+  ProfLikedPosts,
+  ProfPost,
+  RecentlyViewed,
+  LoadingSpinner,
+  LoadingScreen,
+  UserRating,
+  FollowListModal,
+  LogoutModal,
+  LoginRequiredModal,
+  PurchaseHistory
+} from "@/components";
 
 type TabType = "selling" | "history" | "purchases" | "bookmarks" | "likedPosts" | "posts";
 
@@ -214,7 +217,15 @@ export default function UserProfilePage() {
   const handleLogoutConfirm = async () => {
     try {
       setIsLoggingOut(true);
+
+      // サーバー側のセッションCookieを削除
+      await fetch('/api/auth/session', {
+        method: 'DELETE',
+      });
+
+      // Firebase Authからログアウト
       await signOut(auth);
+
       setShowLogoutModal(false);
       toast.success('ログアウトしました');
       router.push('/');
@@ -284,7 +295,7 @@ export default function UserProfilePage() {
                 <div className="w-24 h-24 bg-gray-300 rounded-full mx-auto mb-4 overflow-hidden flex items-center justify-center">
                   {targetProfile.photoURL ? (
                     <Image
-                      src={targetProfile.photoURL}
+                      src={decodeHtmlEntities(targetProfile.photoURL)}
                       alt="プロフィール画像"
                       width={96}
                       height={96}
@@ -338,7 +349,7 @@ export default function UserProfilePage() {
                       </button>
                       <button
                         className="w-full bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
-                        onClick={() => router.push(`/profile/${userId}/address`)}
+                        onClick={() => router.push('/settings/address')}
                       >
                         <Home size={18} />
                         お届け先住所を登録する
