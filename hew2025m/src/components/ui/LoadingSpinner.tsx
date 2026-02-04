@@ -1,25 +1,43 @@
-import React from 'react';
+import { Loader2 } from 'lucide-react';
 
 interface LoadingSpinnerProps {
   message?: string;
+  subMessage?: string;
   size?: 'sm' | 'md' | 'lg';
   fullScreen?: boolean;
+  overlay?: boolean;
 }
 
 export default function LoadingSpinner({
   message,
+  subMessage,
   size = 'md',
-  fullScreen = false
+  fullScreen = false,
+  overlay = false
 }: LoadingSpinnerProps) {
   const sizeClasses = {
-    sm: 'h-6 w-6 sm:h-8 sm:w-8 border-b-2',
-    md: 'h-10 w-10 sm:h-12 sm:w-12 border-b-2',
-    lg: 'h-16 w-16 border-b-4',
+    sm: 'h-6 w-6 sm:h-8 sm:w-8',
+    md: 'h-10 w-10 sm:h-12 sm:w-12',
+    lg: 'h-16 w-16',
   };
 
   const spinner = (
-    <div className={`animate-spin rounded-full ${sizeClasses[size]} border-[#2FA3E3]`}></div>
+    <Loader2 className={`${sizeClasses[size]} text-[#2FA3E3] animate-spin`} />
   );
+
+  if (overlay) {
+    return (
+      <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
+        {spinner}
+        {message && (
+          <p className="text-xl font-bold text-gray-800 mb-2 mt-4">{message}</p>
+        )}
+        {subMessage && (
+          <p className="text-sm text-gray-600">{subMessage}</p>
+        )}
+      </div>
+    );
+  }
 
   if (fullScreen) {
     return (
@@ -29,6 +47,9 @@ export default function LoadingSpinner({
           <p className="mt-4 text-gray-600 font-medium text-sm sm:text-base">
             {message}
           </p>
+        )}
+        {subMessage && (
+          <p className="mt-2 text-xs sm:text-sm text-gray-500">{subMessage}</p>
         )}
       </div>
     );

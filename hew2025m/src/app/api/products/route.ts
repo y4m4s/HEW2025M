@@ -4,7 +4,8 @@ import Product from '@/models/Product';
 import { requireAuth } from '@/lib/simpleAuth';
 import { ProductPostSchema } from '@/lib/schemas';
 import { sanitizeUserInput } from '@/lib/sanitize';
-import { getCachedUserInfoBatch } from '@/lib/userCache';
+import { getCachedUserInfoBatch, getCachedUserInfo } from '@/lib/userCache';
+import { ensureUserIdPrefix } from '@/lib/utils';
 
 // 商品一覧を取得
 export async function GET(request: NextRequest) {
@@ -27,7 +28,8 @@ export async function GET(request: NextRequest) {
       query.category = category;
     }
     if (sellerId) {
-      query.sellerId = sellerId;
+      const normalizedSellerId = ensureUserIdPrefix(sellerId);
+      query.sellerId = { $in: [sellerId, normalizedSellerId] };
     }
     if (status) {
       query.status = status;
@@ -143,10 +145,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { sellerId, ...productData } = validationResult.data;
+    const { sellerId, sellerName, ...productData } = validationResult.data;
 
     // 認証されたユーザーIDとsellerIdが一致するか確認
-    if (sellerId !== `user-${userId}`) {
+    const normalizedSellerId = ensureUserIdPrefix(userId);
+    if (sellerId !== normalizedSellerId && sellerId !== userId) {
       return NextResponse.json(
         { error: '不正なリクエストです' },
         { status: 403 }
@@ -154,9 +157,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 商品を作成
+    const cachedUser = await getCachedUserInfo(userId);
+    const safeSellerName = cachedUser?.displayName || sellerName || 'ユーザー';
+
     const product = await Product.create({
       ...productData,
-      sellerId,
+      sellerId: normalizedSellerId,
+      sellerName: safeSellerName,
       status: 'available',
     });
 

@@ -126,7 +126,7 @@ export default function ProfSelling({ onCountChange, userId }: ProfSellingProps)
         {paginatedProducts.map((product) => (
           <div
             key={product._id}
-            className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition cursor-pointer"
+            className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-1"
             onClick={() => router.push(`/product-detail/${product._id}`)}
           >
             <div className="h-36 bg-gray-200 flex items-center justify-center overflow-hidden">

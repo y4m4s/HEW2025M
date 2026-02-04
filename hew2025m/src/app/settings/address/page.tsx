@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -19,8 +19,6 @@ interface Address {
 const AddressPage = () => {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const params = useParams();
-  const userId = params.id as string;
 
   const [address, setAddress] = useState<Address>({
     postalCode: '',
@@ -38,16 +36,11 @@ const AddressPage = () => {
       router.push('/login');
       return;
     }
-    if (user.uid !== userId) {
-      toast.error('権限がありません');
-      router.push(`/profile/${user.uid}`);
-      return;
-    }
 
     const fetchAddress = async () => {
       setLoading(true);
       try {
-        const addressDocRef = doc(db, 'users', userId, 'private', 'address');
+        const addressDocRef = doc(db, 'users', user.uid, 'private', 'address');
         const addressDoc = await getDoc(addressDocRef);
         if (addressDoc.exists()) {
           setAddress(addressDoc.data() as Address);
@@ -61,7 +54,7 @@ const AddressPage = () => {
     };
 
     fetchAddress();
-  }, [user, authLoading, userId, router]);
+  }, [user, authLoading, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -74,10 +67,10 @@ const AddressPage = () => {
 
     setSaving(true);
     try {
-      const addressDocRef = doc(db, 'users', userId, 'private', 'address');
+      const addressDocRef = doc(db, 'users', user.uid, 'private', 'address');
       await setDoc(addressDocRef, address, { merge: true });
       toast.success('住所を保存しました');
-      router.push(`/profile/${userId}`);
+      router.push(`/profile/${user.uid}`);
     } catch (error) {
       console.error("住所の保存に失敗しました:", error);
       toast.error('住所の保存に失敗しました。');
@@ -86,7 +79,7 @@ const AddressPage = () => {
     }
   };
 
-    const handleFindAddress = async () => {
+  const handleFindAddress = async () => {
     if (!address.postalCode) {
       toast.error('郵便番号を入力してください');
       return;

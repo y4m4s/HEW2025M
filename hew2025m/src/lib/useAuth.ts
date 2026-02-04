@@ -29,6 +29,8 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const sessionCreatedRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -46,18 +48,43 @@ export function useAuth() {
 
         // セッションCookieをまだ作成していない場合は作成
         if (!sessionCreatedRef.current) {
-          await createSessionCookie(currentUser);
-          sessionCreatedRef.current = true;
+          const created = await createSessionCookie(currentUser);
+          if (created) {
+            sessionCreatedRef.current = true;
+            retryCountRef.current = 0;
+          } else if (retryCountRef.current < 2) {
+            retryCountRef.current += 1;
+            if (retryTimeoutRef.current) {
+              clearTimeout(retryTimeoutRef.current);
+            }
+            retryTimeoutRef.current = setTimeout(async () => {
+              if (!auth.currentUser || auth.currentUser.uid !== currentUser.uid) return;
+              const retryCreated = await createSessionCookie(currentUser);
+              if (retryCreated) {
+                sessionCreatedRef.current = true;
+                retryCountRef.current = 0;
+              }
+            }, 1500);
+          }
         }
       } else {
         unsubscribeFromProfile();
         sessionCreatedRef.current = false;
+        retryCountRef.current = 0;
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+          retryTimeoutRef.current = null;
+        }
       }
     });
 
     return () => {
       unsubscribe();
       unsubscribeFromProfile();
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
     };
   }, []);
 

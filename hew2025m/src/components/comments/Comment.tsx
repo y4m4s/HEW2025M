@@ -94,10 +94,16 @@ export default function Comment({ productId, postId, itemOwnerId, itemTitle, onC
         parentId: parentId || undefined,
       };
 
+      const token = await user.getIdToken();
+      if (!token) {
+        throw new Error('認証トークンの取得に失敗しました');
+      }
+
       const response = await fetch(`/api/${apiBasePath}/${targetId}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(commentData),
       });
@@ -187,10 +193,18 @@ export default function Comment({ productId, postId, itemOwnerId, itemTitle, onC
     }
 
     try {
+      const token = await user.getIdToken();
+      if (!token) {
+        throw new Error('認証トークンの取得に失敗しました');
+      }
+
       const response = await fetch(
-        `/api/${apiBasePath}/${targetId}/comments/${commentId}?userId=${user.uid}`,
+        `/api/${apiBasePath}/${targetId}/comments/${commentId}`,
         {
           method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
         }
       );
 

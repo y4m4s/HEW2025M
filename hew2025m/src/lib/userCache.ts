@@ -17,7 +17,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5分
 /**
  * 単一ユーザー情報を取得（キャッシュ付き）
  */
-async function getCachedUserInfo(userId: string): Promise<UserInfo | null> {
+export async function getCachedUserInfo(userId: string): Promise<UserInfo | null> {
   // user-プレフィックスを削除
   const actualUid = userId.startsWith('user-') ? userId.replace('user-', '') : userId;
 

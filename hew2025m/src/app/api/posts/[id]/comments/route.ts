@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Comment from '@/models/Comment';
 import Post from '@/models/Post';
+import { requireAuth } from '@/lib/simpleAuth';
+import { getCachedUserInfo } from '@/lib/userCache';
 
 
 // コメントの型定義
@@ -93,6 +95,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userIdOrError = await requireAuth(request);
+    if (userIdOrError instanceof Response) {
+      return userIdOrError;
+    }
+    const userId = userIdOrError as string;
+
     await dbConnect();
 
     const { id } = await params;
@@ -107,10 +115,10 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { userId, userName, userPhotoURL, content, parentId } = body;
+    const { userName, userPhotoURL, content, parentId } = body;
 
     // バリデーション
-    if (!userId || !userName || !content) {
+    if (!userId || !content) {
       return NextResponse.json(
         { error: '必須項目が不足しています' },
         { status: 400 }
@@ -144,11 +152,22 @@ export async function POST(
     }
 
     // コメントを作成（productIdフィールドに投稿IDを保存）
+    if (parentId && parentComment && parentComment.productId !== id) {
+      return NextResponse.json(
+        { error: 'Invalid parent comment' },
+        { status: 400 }
+      );
+    }
+
+    const cachedUser = await getCachedUserInfo(userId);
+    const safeUserName = cachedUser?.displayName || userName || 'ユーザー';
+    const safeUserPhotoURL = cachedUser?.photoURL || userPhotoURL || '';
+
     const comment = await Comment.create({
       productId: id, // 投稿IDを保存（モデル名はproductIdだが、汎用的に使用）
       userId,
-      userName,
-      userPhotoURL: userPhotoURL || '',
+      userName: safeUserName,
+      userPhotoURL: safeUserPhotoURL,
       content: content.trim(),
       parentId: parentId || undefined,
     });

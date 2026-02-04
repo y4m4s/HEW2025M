@@ -33,8 +33,7 @@ export default function ProfPost({ onCountChange, userId }: ProfPostProps) {
       }
 
       try {
-        const authorId = `user-${userId}`;
-        const response = await fetch(`/api/posts?authorId=${authorId}`);
+        const response = await fetch(`/api/posts?authorId=${encodeURIComponent(userId)}`);
 
         if (!response.ok) {
           throw new Error("投稿の取得に失敗しました");
@@ -53,16 +52,25 @@ export default function ProfPost({ onCountChange, userId }: ProfPostProps) {
           likes?: number;
           comments?: unknown[];
           media?: Array<{ url: string; order: number }>;
+          authorId?: string;
+          authorName?: string;
+          authorDisplayName?: string;
+          authorPhotoURL?: string;
           author?: { displayName?: string; uid?: string; photoURL?: string };
         }) => {
+          const authorDisplayName =
+            post.authorDisplayName || post.author?.displayName || post.authorName || '不明なユーザー';
+          const authorPhotoURL = post.authorPhotoURL || post.author?.photoURL;
+          const authorIdValue = post.authorId || post.author?.uid || userId;
+
           return {
             id: post._id,
             title: post.title,
             excerpt: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
             location: post.address || '場所未設定',
-            author: post.author?.displayName || '不明なユーザー',
-            authorId: post.author?.uid || userId,
-            authorPhotoURL: post.author?.photoURL,
+            author: authorDisplayName,
+            authorId: authorIdValue,
+            authorPhotoURL,
             date: formatDate(post.createdAt),
             likes: post.likes || 0,
             comments: post.comments?.length || 0,

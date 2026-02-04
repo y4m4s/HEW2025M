@@ -177,3 +177,10 @@ export function formatTimestamp(timestamp: { toDate?: () => Date } | string | Da
 export function extractUid(userId: string): string {
   return userId.startsWith('user-') ? userId.replace('user-', '') : userId;
 }
+
+/**
+ * user-プレフィックスを付与して正規化
+ */
+export function ensureUserIdPrefix(userId: string): string {
+  return userId.startsWith('user-') ? userId : `user-${userId}`;
+}

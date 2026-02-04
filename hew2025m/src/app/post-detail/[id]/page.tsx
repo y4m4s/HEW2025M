@@ -157,10 +157,18 @@ export default function PostDetailPage() {
 
     setLikeLoading(true);
     try {
+      const token = await user.getIdToken();
+      if (!token) {
+        throw new Error('認証トークンの取得に失敗しました');
+      }
+
       if (isLiked) {
         // いいねを削除
-        const response = await fetch(`/api/posts/${params.id}/likes?userId=${user.uid}`, {
+        const response = await fetch(`/api/posts/${params.id}/likes`, {
           method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
         });
         if (!response.ok) throw new Error('いいねの削除に失敗しました');
         setIsLiked(false);
@@ -177,7 +185,10 @@ export default function PostDetailPage() {
         // いいねを追加
         const response = await fetch(`/api/posts/${params.id}/likes`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
           body: JSON.stringify({
             userId: user.uid,
             userName: user.displayName || user.email?.split('@')[0] || '名無しユーザー',

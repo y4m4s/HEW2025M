@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Comment from '@/models/Comment';
+import { requireAuth } from '@/lib/simpleAuth';
 
 // コメントを削除
 export async function DELETE(
@@ -8,22 +9,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
   try {
+    const userIdOrError = await requireAuth(request);
+    if (userIdOrError instanceof Response) {
+      return userIdOrError;
+    }
+    const userId = userIdOrError as string;
+
     await dbConnect();
 
     const { commentId } = await params;
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'ユーザーIDが必要です' },
-        { status: 400 }
-      );
-    }
-
-    // コメントを取得
     const comment = await Comment.findById(commentId);
-
     if (!comment) {
       return NextResponse.json(
         { error: 'コメントが見つかりませんでした' },
@@ -31,15 +27,13 @@ export async function DELETE(
       );
     }
 
-    // 自分のコメントかチェック
     if (comment.userId !== userId) {
       return NextResponse.json(
-        { error: '他人のコメントは削除できません' },
+        { error: '権限がありません' },
         { status: 403 }
       );
     }
 
-    // コメントを削除
     await Comment.findByIdAndDelete(commentId);
 
     return NextResponse.json({

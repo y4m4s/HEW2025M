@@ -1,21 +1,16 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { Lock, CreditCard, Smartphone, Loader2 } from 'lucide-react';
+import { Lock, CreditCard, Smartphone } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/lib/useAuth';
 
-import { PaymentElement, Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
-
 import { Button, type CartProduct, LoadingSpinner } from '@/components';
 import { useCartStore } from '@/stores/useCartStore';
-
-const stripePublicKey = process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
+import { calculateShippingFee } from '@/lib/shipping';
 
 // アイコンコンポーネント
 const ApplePayIcon = () => (
@@ -65,9 +60,10 @@ interface PayCheckFormProps {
   products: (CartProduct & { cartItemId: string; shippingPayer?: string; sellerId?: string; sellerPhotoURL?: string })[];
   shippingAddress: Address;
   shippingFee: number;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
-function PayCheckForm({ products, shippingAddress, shippingFee }: PayCheckFormProps) {
+function PayCheckForm({ products, shippingAddress, shippingFee, onLoadingChange }: PayCheckFormProps) {
   const router = useRouter();
   const { user } = useAuth();
   const items = useCartStore((state) => state.items);
@@ -75,7 +71,13 @@ function PayCheckForm({ products, shippingAddress, shippingFee }: PayCheckFormPr
 
   const [selectedMethod, setSelectedMethod] = useState<string>('card');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('購入処理中...');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // ローディング状態を親に通知
+  useEffect(() => {
+    onLoadingChange?.(isLoading);
+  }, [isLoading, onLoadingChange]);
 
   const calculateSubtotal = () => {
     return products.reduce((acc, product) => {
@@ -193,12 +195,21 @@ function PayCheckForm({ products, shippingAddress, shippingFee }: PayCheckFormPr
       }
 
       await response.json();
-      clearCart();
-      sessionStorage.removeItem('shippingAddress');
 
       // 決済処理をスキップして、直接成功ページに遷移
       toast.success('ご注文ありがとうございます！');
-      router.push('/order-success');
+
+      // カートをクリア
+      clearCart();
+
+      // ローディングメッセージを表示してからリダイレクト
+      setLoadingMessage('注文完了ページに移動中...');
+
+      // 1秒後にリダイレクト（ローディングメッセージを十分に表示するため）
+      setTimeout(() => {
+        sessionStorage.removeItem('shippingAddress');
+        window.location.replace('/order-success');
+      }, 1000);
     } catch (error) {
       console.error('注文保存エラー:', error);
       const errorMsg = error instanceof Error ? error.message : '注文の保存に失敗しました。';
@@ -213,11 +224,11 @@ function PayCheckForm({ products, shippingAddress, shippingFee }: PayCheckFormPr
     <>
       {/* ローディング画面オーバーレイ */}
       {isLoading && (
-        <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
-          <Loader2 className="w-16 h-16 text-[#2FA3E3] animate-spin mb-4" />
-          <p className="text-xl font-bold text-gray-800 mb-2">購入処理中...</p>
-          <p className="text-sm text-gray-600">少々お待ちください</p>
-        </div>
+        <LoadingSpinner
+          message={loadingMessage}
+          size="lg"
+          overlay
+        />
       )}
 
       <form onSubmit={handleSubmit} className="w-full max-w-3xl mx-auto animate-in fade-in duration-500">
@@ -259,22 +270,8 @@ function PayCheckForm({ products, shippingAddress, shippingFee }: PayCheckFormPr
                   </div>
                 </label>
 
-                {/* Stripe決済UI */}
-                {isSelected && method.id === 'card' && (
-                  <div className="px-6 pb-6 pt-0 animate-in slide-in-from-top-2 duration-300">
-                    <div className="p-5 bg-white border border-gray-200 rounded-lg shadow-inner mt-2">
-                      <PaymentElement
-                        id="payment-element"
-                        options={{
-                          layout: "tabs",
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* その他の支払い方法の説明 */}
-                {isSelected && method.id !== 'card' && (
+                {/* 支払い方法の説明 */}
+                {isSelected && (
                   <div className="px-6 pb-6 pt-0 animate-in slide-in-from-top-2 duration-300">
                     <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg">
                       <div className="flex items-center justify-center gap-3 mb-3">
@@ -325,14 +322,13 @@ function PayCheckForm({ products, shippingAddress, shippingFee }: PayCheckFormPr
 
 // Wrapper Principal
 export default function PayCheck() {
-  const [clientSecret, setClientSecret] = useState("");
-  const { user } = useAuth();
   const items = useCartStore((state) => state.items);
   const router = useRouter();
 
   const [products, setProducts] = useState<(CartProduct & { cartItemId: string; shippingPayer?: string; sellerId?: string; sellerPhotoURL?: string })[]>([]);
   const [shippingAddress, setShippingAddress] = useState<Address | null>(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   // 1. 住所と商品情報の取得
   useEffect(() => {
@@ -348,8 +344,8 @@ export default function PayCheck() {
       }
       const address = JSON.parse(addressData);
 
-      // 商品
-      if (items.length === 0) {
+      // 商品（購入処理中はスキップ）
+      if (items.length === 0 && !isPurchasing) {
         router.push('/cart');
         return;
       }
@@ -385,89 +381,29 @@ export default function PayCheck() {
     loadData();
 
     return () => { isSubscribed = false; };
-  }, [items, router]);
+  }, [items, router, isPurchasing]);
 
   // 2. 送料計算ロジック (共通化)
-  const calculateShippingFee = (prefecture: string | undefined) => {
-    if (!prefecture) return 0;
-    const prefectures: { [key: string]: number } = {
-      '北海道': 1200, '沖縄県': 1500,
-      '青森県': 900, '岩手県': 900, '宮城県': 900, '秋田県': 900, '山形県': 900, '福島県': 900,
-      '茨城県': 700, '栃木県': 700, '群馬県': 700, '埼玉県': 700, '千葉県': 700, '東京都': 700, '神奈川県': 700, '山梨県': 700,
-      '新潟県': 800, '長野県': 800, '富山県': 800, '石川県': 800, '福井県': 800,
-      '岐阜県': 600, '静岡県': 600, '愛知県': 500, '三重県': 600,
-      '滋賀県': 700, '京都府': 700, '大阪府': 700, '兵庫県': 700, '奈良県': 700, '和歌山県': 700,
-      '鳥取県': 900, '島根県': 900, '岡山県': 900, '広島県': 900, '山口県': 900,
-      '徳島県': 1000, '香川県': 1000, '愛媛県': 1000, '高知県': 1000,
-      '福岡県': 1100, '佐賀県': 1100, '長崎県': 1100, '熊本県': 1100, '大分県': 1100, '宮崎県': 1100, '鹿児島県': 1100,
-    };
-    return prefectures[prefecture] || 800;
-  };
 
   const shippingFee = useMemo(() => {
     if (!shippingAddress) return 0;
 
     const hasBuyerPaysItem = products.some(p => p.shippingPayer === 'buyer');
-    if (!hasBuyerPaysItem) return 0;
-
-    return calculateShippingFee(shippingAddress.prefecture);
+    return calculateShippingFee(shippingAddress.prefecture, hasBuyerPaysItem);
   }, [products, shippingAddress]);
 
-  // 3. Payment Intent 作成
-  useEffect(() => {
-    if (isDataLoaded && user && products.length > 0 && shippingAddress) {
-
-      const calculateSubtotal = () => {
-        return products.reduce((acc, product) => {
-          const cartItem = items.find(i => i.id === product.cartItemId);
-          const quantity = cartItem ? cartItem.quantity : 1;
-          return acc + (product.price * quantity);
-        }, 0);
-      };
-      const subtotal = calculateSubtotal();
-      const totalAmount = subtotal + shippingFee;
-
-      fetch("/api/payment/create-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items, // Server uses this to verify prices? If server verifies, it overrides our amount.
-          // NOTE: create-payment-intent API usually recalculates price from DB for security.
-          // If the server-side logic doesn't know about 'shippingPayer', it might default to adding shipping.
-          // However, the current client implementation passed 'amount' in the body in the original code.
-          // "amount: items.reduce(...) + 800"
-          // So the server trusts this amount or validation is loose.
-          // I will send the calculated amount.
-          userId: user.uid,
-          amount: totalAmount,
-          paymentMethodTypes: ['card']
-        }),
-      })
-        .then(async (res) => {
-          if (!res.ok) {
-            const txt = await res.text();
-            throw new Error(txt);
-          }
-          return res.json();
-        })
-        .then((data) => {
-          if (data.error) throw new Error(data.error);
-          setClientSecret(data.clientSecret);
-        })
-        .catch(err => console.error("Payment Intent作成エラー:", err));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDataLoaded, user, items, shippingFee]); // Recalculate only when data loaded
-
-  if (!clientSecret || !isDataLoaded || !shippingAddress) {
-    return <LoadingSpinner message="決済システムを読み込み中..." size="lg" fullScreen />;
+  if (!isDataLoaded || !shippingAddress) {
+    return <LoadingSpinner message="商品情報を読み込み中..." size="lg" fullScreen />;
   }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 flex flex-col">
-      <Elements stripe={stripePromise} options={{ clientSecret, locale: 'ja' }}>
-        <PayCheckForm products={products} shippingAddress={shippingAddress} shippingFee={shippingFee} />
-      </Elements>
+      <PayCheckForm
+        products={products}
+        shippingAddress={shippingAddress}
+        shippingFee={shippingFee}
+        onLoadingChange={setIsPurchasing}
+      />
     </div>
   );
 }

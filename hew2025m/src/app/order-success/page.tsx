@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { CheckCircle } from 'lucide-react';
-import { Button } from '@/components';
+import { Button, LoadingSpinner } from '@/components';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/useAuth';
 
@@ -16,9 +16,15 @@ export default function OrderSuccessPage() {
     setIsMounted(true);
   }, []);
 
-  // Prevents flicker
+  // マウント前はローディングスピナーを表示
   if (!isMounted) {
-    return null;
+    return (
+      <LoadingSpinner
+        message="購入処理中..."
+        size="lg"
+        overlay
+      />
+    );
   }
 
   return (
@@ -58,7 +64,7 @@ export default function OrderSuccessPage() {
             size="lg"
             className={user ? "flex-1" : "w-full"}
           >
-            ショッピングを続ける
+            他の商品を見る
           </Button>
         </div>
       </div>

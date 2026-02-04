@@ -83,7 +83,6 @@ export default function UserHoverCard({
                     height={48}
                     quality={90}
                     className="w-full h-full object-cover"
-                    unoptimized
                   />
                 ) : (
                   <UserIcon size={24} />

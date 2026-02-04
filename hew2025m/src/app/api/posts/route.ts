@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
 import { requireAuth } from '@/lib/simpleAuth';
+import { getCachedUserInfoBatch, getCachedUserInfo } from '@/lib/userCache';
+import { ensureUserIdPrefix } from '@/lib/utils';
 
 // 正規表現の特殊文字をエスケープ（RegExpインジェクション対策）
 function escapeRegExp(str: string): string {
@@ -26,7 +28,8 @@ export async function GET(request: NextRequest) {
       query.category = category;
     }
     if (authorId) {
-      query.authorId = authorId;
+      const normalizedAuthorId = ensureUserIdPrefix(authorId);
+      query.authorId = { $in: [authorId, normalizedAuthorId] };
     }
     if (tag) {
       query.tags = tag;
@@ -65,6 +68,23 @@ export async function GET(request: NextRequest) {
       ])
     ]);
 
+    const authorIds = [...new Set(posts.map((p) => (p as any).authorId).filter(Boolean))] as string[];
+    const authorInfoMap = await getCachedUserInfoBatch(authorIds);
+
+    const postsWithAuthorInfo = posts.map((post: any) => {
+      const postObj = typeof post.toObject === 'function' ? post.toObject() : post;
+      const authorInfo = authorInfoMap.get(postObj.authorId) || {
+        displayName: postObj.authorName || 'ユーザー',
+        photoURL: '',
+      };
+
+      return {
+        ...postObj,
+        authorDisplayName: authorInfo.displayName,
+        authorPhotoURL: authorInfo.photoURL,
+      };
+    });
+
     const tagCounts: Record<string, number> = {};
     allTags.forEach((tagName) => {
       const found = tagCountsResult.find((r) => r._id === tagName);
@@ -73,7 +93,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      posts,
+      posts: postsWithAuthorInfo,
       pagination: {
         total,
         page,
@@ -106,8 +126,8 @@ export async function POST(request: NextRequest) {
     const { title, content, category, media, authorId, authorName, tags, address, location } = body;
 
     // 認証されたユーザーIDとauthorIdが一致するか確認
-    const actualUserId = userId.startsWith('user-') ? userId : `user-${userId}`;
-    if (authorId !== actualUserId && authorId !== userId) {
+    const normalizedAuthorId = ensureUserIdPrefix(userId);
+    if (authorId && authorId !== normalizedAuthorId && authorId !== userId) {
       return NextResponse.json(
         { error: '不正なリクエストです' },
         { status: 403 }
@@ -115,7 +135,7 @@ export async function POST(request: NextRequest) {
     }
 
     // バリデーション
-    if (!title || !content || !authorId || !authorName) {
+    if (!title || !content) {
       return NextResponse.json(
         { error: '必須項目が入力されていません' },
         { status: 400 }
@@ -129,6 +149,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 投稿データを作成
+    const cachedUser = await getCachedUserInfo(userId);
+    const safeAuthorName = cachedUser?.displayName || authorName || 'ユーザー';
+
     const postData: {
       title: string;
       content: string;
@@ -146,8 +169,8 @@ export async function POST(request: NextRequest) {
       content,
       category: category || '一般',
       media: media || [],
-      authorId,
-      authorName,
+      authorId: normalizedAuthorId,
+      authorName: safeAuthorName,
       tags: tags || [],
       likes: 0,
       comments: [],

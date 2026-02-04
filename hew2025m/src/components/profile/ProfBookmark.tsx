@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { decodeHtmlEntities } from '@/lib/sanitize';
 import Image from "next/image";
-import { Fish, ChevronLeft, ChevronRight } from "lucide-react";
+import { Fish, ChevronLeft, ChevronRight, User } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Button, LoadingSpinner } from '@/components';
 
@@ -26,6 +26,9 @@ interface Product {
   images: string[];
   createdAt: string;
   status: string;
+  sellerId?: string;
+  sellerName?: string;
+  sellerPhotoURL?: string;
 }
 
 interface ProfBookmarkProps {
@@ -74,6 +77,28 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
               const data = await response.json();
               const product = data.product;
 
+              // 出品者情報を取得
+              let sellerName = '';
+              let sellerPhotoURL = '';
+
+              if (product.sellerId) {
+                try {
+                  // user-プレフィックスを削除してFirebase UIDを取得
+                  const firebaseUserId = product.sellerId.startsWith('user-')
+                    ? product.sellerId.replace('user-', '')
+                    : product.sellerId;
+
+                  const sellerDoc = await getDoc(doc(db, 'users', firebaseUserId));
+                  if (sellerDoc.exists()) {
+                    const sellerData = sellerDoc.data();
+                    sellerName = sellerData?.displayName || '出品者';
+                    sellerPhotoURL = sellerData?.photoURL || '';
+                  }
+                } catch (error) {
+                  console.error(`出品者情報取得エラー (${product.sellerId}):`, error);
+                }
+              }
+
               return {
                 _id: product._id,
                 title: product.title,
@@ -81,6 +106,9 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
                 images: product.images || [bookmark.image],
                 createdAt: product.createdAt,
                 status: product.status || 'available',
+                sellerId: product.sellerId,
+                sellerName: sellerName,
+                sellerPhotoURL: sellerPhotoURL,
               } as Product;
             } catch (error) {
               console.error(`商品 ${bookmark.productId} の取得エラー:`, error);
@@ -110,15 +138,6 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
 
     fetchBookmarks();
   }, [user, onCountChange]);
-
-  // 日付をフォーマットする関数（YYYY/MM/DD形式）
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}/${month}/${day}`;
-  };
 
   if (loading) {
     return (
@@ -171,7 +190,7 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
           return (
             <div
               key={product._id}
-              className={`bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition cursor-pointer ${isSold ? 'opacity-75' : ''
+              className={`bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-1 ${isSold ? 'opacity-75' : ''
                 }`}
               onClick={() => router.push(`/product-detail/${product._id}`)}
             >
@@ -196,13 +215,30 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
                   </div>
                 )}
               </div>
-              <div className="p-3 text-sm">
-                <p className="font-medium truncate">{product.title}</p>
-                <div className="flex items-center justify-between mt-1">
+              <div className="p-3">
+                <p className="text-sm font-medium text-gray-900 line-clamp-2 mb-1 h-10">{product.title}</p>
+                <div className="flex items-center justify-between gap-2">
                   <p className={`text-lg font-bold ${isSold ? 'text-gray-500' : 'text-[#2FA3E3]'}`}>
                     ¥{product.price.toLocaleString()}
                   </p>
-                  <p className="text-xs text-gray-500">{formatDate(product.createdAt)}</p>
+                  <div className="flex items-center gap-1.5">
+                    {product.sellerPhotoURL ? (
+                      <Image
+                        src={decodeHtmlEntities(product.sellerPhotoURL)}
+                        alt={product.sellerName || '出品者'}
+                        width={24}
+                        height={24}
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                        <User size={12} className="text-gray-600" />
+                      </div>
+                    )}
+                    <span className="text-xs text-gray-600 truncate max-w-[80px]">
+                      {product.sellerName || '出品者'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { Fish, MapPin, User, List } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 
 import { PostCard, Button, RecommendedUsers, LoadingSpinner, LoginRequiredModal, type Post } from '@/components';
 
@@ -45,29 +43,6 @@ export default function CommunityPage() {
   }, []);
 
   // Firestoreからユーザー情報を取得
-  const fetchUserProfile = useCallback(async (authorId: string) => {
-    try {
-      const uid = authorId.startsWith('user-') ? authorId.replace('user-', '') : authorId;
-      const userDocRef = doc(db, 'users', uid);
-      const userDocSnap = await getDoc(userDocRef);
-
-      if (userDocSnap.exists()) {
-        const userData = userDocSnap.data();
-        return {
-          photoURL: userData.photoURL || undefined,
-          displayName: userData.displayName || undefined,
-        };
-      }
-      return null;
-    } catch (error) {
-      // permission-deniedエラーの場合は静かに処理（ログアウト時など）
-      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
-        return null;
-      }
-      console.error('ユーザー情報取得エラー:', error);
-      return null;
-    }
-  }, []);
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -82,8 +57,7 @@ export default function CommunityPage() {
       const data = await response.json();
 
       // データベースのデータをPost型に変換（まずauthorPhotoURLなしで）
-      const formattedPosts: Post[] = await Promise.all(
-        data.posts.map(async (post: {
+      const formattedPosts: Post[] = data.posts.map((post: {
           _id: string;
           title: string;
           content: string;
@@ -91,41 +65,31 @@ export default function CommunityPage() {
           address?: string;
           authorId?: string;
           authorName: string;
+          authorDisplayName?: string;
+          authorPhotoURL?: string;
           createdAt: string;
           likes?: number;
           comments?: unknown[];
           category?: string;
           media?: Array<{ url: string; order: number }>;
-        }) => {
-          // Firestoreから最新のユーザー情報を取得
-          let authorPhotoURL: string | undefined;
-          let authorDisplayName: string = post.authorName; // フォールバック
-          if (post.authorId) {
-            const userProfile = await fetchUserProfile(post.authorId);
-            authorPhotoURL = userProfile?.photoURL;
-            authorDisplayName = userProfile?.displayName || post.authorName;
-          }
-
-          return {
-            id: post._id,
-            title: post.title,
-            excerpt: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
-            location: post.address || '場所未設定',
-            author: authorDisplayName,
-            authorId: post.authorId,
-            authorPhotoURL,
-            date: formatDate(post.createdAt),
-            likes: post.likes || 0,
-            comments: post.comments?.length || 0,
-            category: post.category || 'other',
-            isLiked: false,
-            tags: post.tags,
-            imageUrl: post.media && post.media.length > 0
-              ? post.media.sort((a, b) => a.order - b.order)[0].url
-              : undefined
-          };
-        })
-      );
+        }) => ({
+          id: post._id,
+          title: post.title,
+          excerpt: post.content.substring(0, 100) + (post.content.length > 100 ? '...' : ''),
+          location: post.address || '?????',
+          author: post.authorDisplayName || post.authorName,
+          authorId: post.authorId,
+          authorPhotoURL: post.authorPhotoURL,
+          date: formatDate(post.createdAt),
+          likes: post.likes || 0,
+          comments: post.comments?.length || 0,
+          category: post.category || 'other',
+          isLiked: false,
+          tags: post.tags,
+          imageUrl: post.media && post.media.length > 0
+            ? post.media.sort((a, b) => a.order - b.order)[0].url
+            : undefined
+        }));
 
       // 人気の投稿: いいね数が最も多い投稿
       if (formattedPosts.length > 0) {
@@ -141,7 +105,7 @@ export default function CommunityPage() {
     } finally {
       setLoading(false);
     }
-  }, [fetchUserProfile, formatDate]);
+  }, [formatDate]);
 
   useEffect(() => {
     fetchPosts();
@@ -234,7 +198,7 @@ export default function CommunityPage() {
                   </h2>
                 </div>
                 <Link
-                  href="/postList"
+                  href="/post-list"
                   className="text-[#2FA3E3] text-xs sm:text-sm font-semibold hover:text-[#1d7bb8] transition-colors duration-300 flex items-center gap-0.5 sm:gap-1 group"
                 >
                   もっと見る
@@ -255,7 +219,7 @@ export default function CommunityPage() {
                   </div>
                   <div className="text-center mt-6 sm:mt-7 md:mt-8">
                     <Link
-                      href="/postList"
+                      href="/post-list"
                       className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 bg-white text-[#2FA3E3] text-xs sm:text-sm font-semibold rounded-lg shadow-md hover:shadow-lg hover:bg-[#2FA3E3] hover:text-white transition-all duration-300 border-2 border-[#2FA3E3]"
                     >
                       すべての投稿を見る
@@ -331,7 +295,7 @@ export default function CommunityPage() {
               <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4">
                 すべての投稿を一覧で確認できます
               </p>
-              <Button href="/postList" variant="primary" size="md" className="w-full shadow-md hover:shadow-lg transition-shadow text-xs sm:text-sm">
+              <Button href="/post-list" variant="primary" size="md" className="w-full shadow-md hover:shadow-lg transition-shadow text-xs sm:text-sm">
                 投稿一覧を見る
               </Button>
             </div>

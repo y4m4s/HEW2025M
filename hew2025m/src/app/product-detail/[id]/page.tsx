@@ -236,7 +236,11 @@ export default function SellDetailPage() {
 
   const getConditionLabel = (condition: string): string => {
     const map: Record<string, string> = {
-      'new': '新品・未使用', 'good': '目立った傷汚れなし', 'fair': 'やや傷や汚れあり', 'poor': '傷や汚れあり'
+      'new': '新品・未使用',
+      'like-new': '未使用に近い',
+      'good': '目立った傷汚れなし',
+      'fair': 'やや傷や汚れあり',
+      'poor': '傷や汚れあり'
     };
     return map[condition] || condition;
   };
@@ -370,7 +374,7 @@ export default function SellDetailPage() {
       // Firebaseトークンを取得
       const token = await user.getIdToken();
 
-      const response = await fetch(`/api/products/${params.id}?userId=${user.uid}`, {
+      const response = await fetch(`/api/products/${params.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -383,7 +387,7 @@ export default function SellDetailPage() {
 
       toast.success('商品を削除しました');
       setShowDeleteModal(false);
-      router.push('/productList');
+      router.push('/product-list');
     } catch (err) {
       console.error('商品削除エラー:', err);
       toast.error(err instanceof Error ? err.message : '商品の削除に失敗しました');

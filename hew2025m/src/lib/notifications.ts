@@ -119,7 +119,7 @@ export async function createCommentNotification(
     const notificationData = {
       iconType: 'comment',
       iconBgColor: 'bg-purple-500',
-      title: `${commenterName}さんがコメントしました`,
+      title: `${commenterName}さんがあなたの商品にコメントしました`,
       description: `${productTitle} - ${commentContent.substring(0, 50)}${commentContent.length > 50 ? '...' : ''}`,
       timestamp: Timestamp.now(),
       tag: 'コメント',
@@ -162,7 +162,7 @@ export async function createPostCommentNotification(
     const notificationData = {
       iconType: 'comment',
       iconBgColor: 'bg-purple-500',
-      title: `${commenterName}さんがコメントしました`,
+      title: `${commenterName}さんがあなたの投稿にコメントしました`,
       description: `${postTitle} - ${commentContent.substring(0, 50)}${commentContent.length > 50 ? '...' : ''}`,
       timestamp: Timestamp.now(),
       tag: 'コメント',

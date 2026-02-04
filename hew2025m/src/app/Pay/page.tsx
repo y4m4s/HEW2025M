@@ -1,15 +1,18 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCartStore } from '@/stores/useCartStore';
-import { Button, type CartProduct } from '@/components';
+import Link from 'next/link';
 import Image from 'next/image';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { CreditCard, Loader2, Home, Fish } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
+import { calculateShippingFee } from '@/lib/shipping';
 import { doc, getDoc } from 'firebase/firestore';
-import toast from 'react-hot-toast';
+import { decodeHtmlEntities } from '@/lib/sanitize';
+import { useCartStore } from '@/stores/useCartStore';
+import { Button, type CartProduct } from '@/components';
 
 interface Address {
   postalCode: string;
@@ -34,8 +37,9 @@ export default function PayPage() {
   });
   const [isLoadingAddress, setIsLoadingAddress] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
 
-  // 追加: APIから取得する詳細な商品情報
+  // APIから取得する詳細な商品情報
   const [products, setProducts] = useState<(CartProduct & { cartItemId: string; shippingPayer?: string })[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -124,34 +128,21 @@ export default function PayPage() {
         const addressDoc = await getDoc(addressDocRef);
         if (addressDoc.exists()) {
           setAddress(addressDoc.data() as Address);
+          // 住所が設定されている場合は編集モードをオフ
+          setIsEditingAddress(false);
+        } else {
+          // 住所が設定されていない場合は編集モードをオン
+          setIsEditingAddress(true);
         }
       } catch (error) {
         console.error("住所の取得に失敗しました:", error);
+        setIsEditingAddress(true);
       } finally {
         setIsLoadingAddress(false);
       }
     };
     fetchAddress();
   }, [user]);
-
-  const calculateShippingFee = (prefecture: string | undefined) => {
-    if (!prefecture) return 0;
-    const prefectures: { [key: string]: number } = {
-      '北海道': 1200, '沖縄県': 1500,
-      '青森県': 900, '岩手県': 900, '宮城県': 900, '秋田県': 900, '山形県': 900, '福島県': 900,
-      '茨城県': 700, '栃木県': 700, '群馬県': 700, '埼玉県': 700, '千葉県': 700, '東京都': 700, '神奈川県': 700, '山梨県': 700,
-      '新潟県': 800, '長野県': 800, '富山県': 800, '石川県': 800, '福井県': 800,
-      '岐阜県': 600, '静岡県': 600, '愛知県': 500, '三重県': 600,
-      '滋賀県': 700, '京都府': 700, '大阪府': 700, '兵庫県': 700, '奈良県': 700, '和歌山県': 700,
-      '鳥取県': 900, '島根県': 900, '岡山県': 900, '広島県': 900, '山口県': 900,
-      '徳島県': 1000, '香川県': 1000, '愛媛県': 1000, '高知県': 1000,
-      '福岡県': 1100, '佐賀県': 1100, '長崎県': 1100, '熊本県': 1100, '大分県': 1100, '宮崎県': 1100, '鹿児島県': 1100,
-    };
-    if (prefectures[prefecture]) {
-      return prefectures[prefecture];
-    }
-    return 800; // デフォルト
-  };
 
   const calculateSubtotal = useCallback(() => {
     return validProducts.reduce((acc, product) => {
@@ -169,14 +160,13 @@ export default function PayPage() {
     // 購入者負担の商品が含まれているかチェック
     const hasBuyerPaysItem = validProducts.some(product => product.shippingPayer === 'buyer');
 
-    if (!hasBuyerPaysItem) {
-      return 0;
-    }
-
-    return calculateShippingFee(address.prefecture);
+    return calculateShippingFee(address.prefecture, hasBuyerPaysItem);
   }, [subtotalWithQuantity, address.prefecture, validProducts]);
 
   const totalWithQuantity = subtotalWithQuantity + shippingFeeWithQuantity;
+
+  // 住所が設定されているかチェック
+  const hasAddress = address.postalCode && address.prefecture && address.city && address.address1;
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAddress({ ...address, [e.target.name]: e.target.value });
@@ -231,7 +221,7 @@ export default function PayPage() {
                     <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded-md border flex items-center justify-center overflow-hidden">
                       {product.imageUrl ? (
                         <Image
-                          src={product.imageUrl}
+                          src={decodeHtmlEntities(product.imageUrl)}
                           alt={product.name}
                           width={64}
                           height={64}
@@ -275,18 +265,65 @@ export default function PayPage() {
           {/* 右側: 住所入力フォーム */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <form onSubmit={handleProceed} className="space-y-6">
-              <h2 className="text-xl font-bold mb-4 border-b pb-3 flex items-center gap-2">
-                <Home size={24} className="text-[#2FA3E3]" />
-                お届け先住所
-              </h2>
-              {!address.postalCode && (
-                <div className="bg-blue-50 border-l-4 border-[#2FA3E3] p-4 rounded-r-lg">
-                  <p className="text-sm text-gray-700">
-                    <span className="font-semibold">プロフィールページ</span>で住所を事前に登録しておくと、次回からの入力が簡単になります。
-                  </p>
+              <div className="flex items-center justify-between mb-4 border-b pb-3">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Home size={24} className="text-[#2FA3E3]" />
+                  お届け先住所
+                </h2>
+                {hasAddress && !isEditingAddress && (
+                  <Button
+                    type="button"
+                    onClick={() => setIsEditingAddress(true)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    住所を変更する
+                  </Button>
+                )}
+              </div>
+
+              {/* 住所が設定されていて、編集モードでない場合は表示のみ */}
+              {hasAddress && !isEditingAddress ? (
+                <div className="space-y-4">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="space-y-2 text-gray-700">
+                      <p><span className="font-semibold">郵便番号:</span> {address.postalCode}</p>
+                      <p><span className="font-semibold">都道府県:</span> {address.prefecture}</p>
+                      <p><span className="font-semibold">市区町村:</span> {address.city}</p>
+                      <p><span className="font-semibold">番地:</span> {address.address1}</p>
+                      {address.address2 && (
+                        <p><span className="font-semibold">建物名・部屋番号:</span> {address.address2}</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              )}
-              <div className="space-y-4">
+              ) : (
+                <>
+                  {!hasAddress && (
+                    <div className="bg-blue-50 border-l-4 border-[#2FA3E3] p-4 rounded-r-lg">
+                      <p className="text-sm text-gray-700">
+                        <Link
+                          href="/settings/address"
+                          className="font-semibold text-[#2FA3E3] hover:text-[#1d7bb8] underline decoration-2 underline-offset-2 hover:decoration-[#1d7bb8] transition-colors"
+                        >
+                          設定ページ
+                        </Link>で住所を事前に登録しておくことが可能です。
+                      </p>
+                    </div>
+                  )}
+                  {isEditingAddress && hasAddress && (
+                    <div className="flex justify-end mb-2">
+                      <Button
+                        type="button"
+                        onClick={() => setIsEditingAddress(false)}
+                        variant="ghost"
+                        size="sm"
+                      >
+                        キャンセル
+                      </Button>
+                    </div>
+                  )}
+                  <div className="space-y-4">
                 <div>
                   <label className="block font-medium text-sm mb-1">郵便番号</label>
                   <input
@@ -341,10 +378,13 @@ export default function PayPage() {
                     placeholder="例: まるまるビル 101号室"
                   />
                 </div>
-              </div>
+                  </div>
+                </>
+              )}
+
               <Button
                 type="submit"
-                disabled={isSaving}
+                disabled={isSaving || !hasAddress}
                 variant="primary"
                 size="lg"
                 className="w-full"

@@ -110,7 +110,7 @@ export default function CartProductCard({ product }: CartProductCardProps) {
           <div className="w-28 h-28 sm:w-40 sm:h-40 flex-shrink-0 bg-gray-200 flex items-center justify-center">
             {product.imageUrl ? (
               <Image
-                src={product.imageUrl}
+                src={decodeHtmlEntities(product.imageUrl)}
                 alt={product.name}
                 width={160}
                 height={160}
@@ -168,15 +168,13 @@ export default function CartProductCard({ product }: CartProductCardProps) {
                   <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
                     {product.sellerPhotoURL ? (
                       <Image
-                        src={product.sellerPhotoURL}
+                        src={decodeHtmlEntities(product.sellerPhotoURL)}
                         alt={product.sellerName}
                         width={24}
                         height={24}
                         sizes="24px"
                         quality={IMAGE_QUALITY.HIGH}
                         loading="lazy"
-                        placeholder="blur"
-                        blurDataURL={BLUR_DATA_URLS.user}
                         className="w-full h-full object-cover"
                       />
                     ) : (

@@ -71,9 +71,7 @@ export default function PostCard({ post, variant = 'default', priority = false }
                       sizes="20px"
                       quality={IMAGE_QUALITY.HIGH}
                       loading="lazy"
-                      placeholder="blur"
-                      blurDataURL={BLUR_DATA_URLS.user}
-                      className="object-cover"
+                                            className="object-cover"
                     />
                   ) : (
                     <User size={12} className="text-gray-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
@@ -93,7 +91,7 @@ export default function PostCard({ post, variant = 'default', priority = false }
   if (variant === 'grid') {
     return (
       <Link href={`/post-detail/${post.id}`} className="block h-full">
-        <article className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col h-full">
+        <article className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-1 flex flex-col h-full">
           {/* Top: Image */}
           <div className="w-full h-48 bg-gray-100 relative group overflow-hidden">
             {post.imageUrl ? (
@@ -137,9 +135,7 @@ export default function PostCard({ post, variant = 'default', priority = false }
                       sizes="20px"
                       quality={IMAGE_QUALITY.HIGH}
                       loading="lazy"
-                      placeholder="blur"
-                      blurDataURL={BLUR_DATA_URLS.user}
-                      className="object-cover"
+                                            className="object-cover"
                     />
                   ) : (
                     <User size={12} className="text-gray-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />

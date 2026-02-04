@@ -349,7 +349,7 @@ export default function UserProfilePage() {
                       </button>
                       <button
                         className="w-full bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
-                        onClick={() => router.push(`/profile/${userId}/address`)}
+                        onClick={() => router.push('/settings/address')}
                       >
                         <Home size={18} />
                         お届け先住所を登録する

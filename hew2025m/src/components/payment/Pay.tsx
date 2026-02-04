@@ -41,7 +41,7 @@ export default function Pay() {
         <div className="space-y-4">
           {items.map((item) => (
             <div key={item.id} className="flex items-center gap-4">
-              <Image src={item.image || "https://via.placeholder.com/100"} alt={item.title} width={80} height={80} className="w-20 h-20 object-cover rounded-md border" />
+              <Image src={decodeHtmlEntities(item.image || "https://via.placeholder.com/100")} alt={item.title} width={80} height={80} className="w-20 h-20 object-cover rounded-md border" />
               <div className="flex-1">
                 <h3 className="font-semibold">{item.title}</h3>
                 <p className="text-gray-600">数量: {item.quantity}</p>

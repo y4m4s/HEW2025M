@@ -13,7 +13,29 @@ import { useRouter } from 'next/navigation';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { calculateShippingFee } from '@/lib/shipping';
 import toast from 'react-hot-toast';
+
+interface Address {
+  postalCode: string;
+  prefecture: string;
+  city: string;
+  address1: string;
+  address2: string;
+}
+
+type OrderItemPayload = {
+  productId: string;
+  productName: string;
+  productImage: string;
+  price: number;
+  quantity: number;
+  sellerId: string;
+  sellerName: string;
+  sellerPhotoURL?: string;
+  category: string;
+  condition: string;
+};
 
 export default function PayCheck() {
   const stripe = useStripe();
@@ -94,7 +116,7 @@ export default function PayCheck() {
         const buyerName = userDoc.exists() ? userDoc.data().displayName : user.email || 'User';
 
         // Prepare order items from cart
-        const orderItems = await Promise.all(
+        const orderItemsWithMeta = await Promise.all(
           items.map(async (cartItem) => {
             try {
               const response = await fetch(`/api/products/${cartItem.id}`);
@@ -102,7 +124,7 @@ export default function PayCheck() {
               const productData = await response.json();
               const product = productData.product;
 
-              return {
+              const item: OrderItemPayload = {
                 productId: product._id,
                 productName: product.title,
                 productImage: product.images?.[0] || '',
@@ -114,6 +136,11 @@ export default function PayCheck() {
                 category: product.category,
                 condition: product.condition,
               };
+
+              return {
+                item,
+                shippingPayer: product.shippingPayer,
+              };
             } catch (err) {
               console.error(`Error fetching product ${cartItem.id}:`, err);
               return null;
@@ -121,10 +148,55 @@ export default function PayCheck() {
           })
         );
 
-        const validItems = orderItems.filter(item => item !== null);
+        const validItemMeta = orderItemsWithMeta.filter(
+          (item): item is { item: OrderItemPayload; shippingPayer?: string } => item !== null
+        );
+        const validItems = validItemMeta.map((item) => item.item);
+        const hasBuyerPaysItem = validItemMeta.some((item) => item.shippingPayer === 'buyer');
+
         const subtotal = validItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const shippingFee = subtotal > 0 ? 500 : 0;
+
+        let shippingAddress: Address | null = null;
+        if (typeof window !== 'undefined') {
+          try {
+            const storedAddress = sessionStorage.getItem('shippingAddress');
+            if (storedAddress) {
+              shippingAddress = JSON.parse(storedAddress) as Address;
+            }
+          } catch (storageError) {
+            console.warn('Failed to read shipping address from sessionStorage:', storageError);
+          }
+        }
+
+        if (!shippingAddress) {
+          try {
+            const addressDocRef = doc(db, 'users', user.uid, 'private', 'address');
+            const addressDoc = await getDoc(addressDocRef);
+            if (addressDoc.exists()) {
+              shippingAddress = addressDoc.data() as Address;
+            }
+          } catch (addressError) {
+            console.error('Failed to fetch shipping address:', addressError);
+          }
+        }
+
+        if (hasBuyerPaysItem && !shippingAddress?.prefecture) {
+          toast.error('Please enter a shipping address.');
+          setIsLoading(false);
+          return;
+        }
+
+        const shippingFee = calculateShippingFee(shippingAddress?.prefecture, hasBuyerPaysItem);
         const totalAmount = subtotal + shippingFee;
+
+        const shippingAddressPayload = shippingAddress
+          ? {
+              zipCode: shippingAddress.postalCode,
+              prefecture: shippingAddress.prefecture,
+              city: shippingAddress.city,
+              street: `${shippingAddress.address1}${shippingAddress.address2 ? ' ' + shippingAddress.address2 : ''}`,
+            }
+          : undefined;
 
         // Detect payment method
         let detectedPaymentMethod: 'card' | 'paypay' | 'applepay' | 'rakuten' | 'au' = 'card';
@@ -160,6 +232,7 @@ export default function PayCheck() {
             shippingFee,
             paymentMethod: detectedPaymentMethod,
             paymentIntentId: paymentIntent.id,
+            shippingAddress: shippingAddressPayload,
           }),
         });
 

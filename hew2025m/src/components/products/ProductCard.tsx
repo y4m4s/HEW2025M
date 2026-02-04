@@ -93,8 +93,6 @@ export default function ProductCard({ product, variant = 'default', priority = f
                     sizes="24px"
                     quality={IMAGE_QUALITY.HIGH}
                     loading="lazy"
-                    placeholder="blur"
-                    blurDataURL={BLUR_DATA_URLS.user}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -141,36 +139,32 @@ export default function ProductCard({ product, variant = 'default', priority = f
           )}
         </div>
         <div className="p-4">
-          <div className="h-12 mb-2">
-            <h3 className="font-semibold text-gray-800 line-clamp-2">
+          <div className="mb-2">
+            <h3 className="font-semibold text-gray-800 line-clamp-2 min-h-[3rem]">
               {product.name}
             </h3>
           </div>
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xl font-bold text-[#2FA3E3] break-words">
-              {formatPrice(product.price)}
-            </p>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <div className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-                {sellerPhoto ? (
-                  <Image
-                    src={decodeHtmlEntities(sellerPhoto)}
-                    alt={sellerName}
-                    width={20}
-                    height={20}
-                    sizes="20px"
-                    quality={IMAGE_QUALITY.HIGH}
-                    loading="lazy"
-                    placeholder="blur"
-                    blurDataURL={BLUR_DATA_URLS.user}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <User size={10} className="text-gray-600" />
-                )}
-              </div>
-              <span className="truncate">{sellerName}</span>
+          <p className="text-xl font-bold text-[#2FA3E3] mb-2">
+            {formatPrice(product.price)}
+          </p>
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+              {sellerPhoto ? (
+                <Image
+                  src={decodeHtmlEntities(sellerPhoto)}
+                  alt={sellerName}
+                  width={20}
+                  height={20}
+                  sizes="20px"
+                  quality={IMAGE_QUALITY.HIGH}
+                  loading="lazy"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={10} className="text-gray-600" />
+              )}
             </div>
+            <span className="truncate">{sellerName}</span>
           </div>
         </div>
       </div>

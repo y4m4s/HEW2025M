@@ -4,6 +4,5 @@ export { default as ProfBookmark } from './ProfBookmark';
 export { default as ProfHistory } from './ProfHistory';
 export { default as ProfLikedPosts } from './ProfLikedPosts';
 export { default as ProfPost } from './ProfPost';
-export { default as ProfPurchases } from './ProfPurchases';
 export { default as ProfSelling } from './ProfSelling';
 export { default as PurchaseHistory } from './PurchaseHistory';

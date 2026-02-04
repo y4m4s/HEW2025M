@@ -57,6 +57,40 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * セッションCookieの検証API
+ * Middleware(Edge)からの検証用に使用
+ */
+export async function GET() {
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('__session')?.value;
+
+    if (!sessionCookie) {
+      return NextResponse.json(
+        { authenticated: false },
+        { status: 401 }
+      );
+    }
+
+    const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
+
+    return NextResponse.json(
+      {
+        authenticated: true,
+        uid: decoded.uid,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Session verification error:', error);
+    return NextResponse.json(
+      { authenticated: false },
+      { status: 401 }
+    );
+  }
+}
+
+/**
  * セッションCookieを削除するAPIエンドポイント（ログアウト用）
  */
 export async function DELETE() {
