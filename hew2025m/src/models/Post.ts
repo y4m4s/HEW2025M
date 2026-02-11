@@ -19,7 +19,6 @@ export interface ILocation {
 export interface IPost {
   title: string;
   content: string;
-  category: string;
   media: IMediaFile[];
   authorId: string;
   authorName: string;
@@ -41,7 +40,6 @@ const PostSchema = new Schema<IPost>(
   {
     title: { type: String, required: true, trim: true, maxlength: 50 },
     content: { type: String, required: true, trim: true, maxlength: 140 },
-    category: { type: String, required: true },
     media: {
       type: [
         {
@@ -100,7 +98,6 @@ const PostSchema = new Schema<IPost>(
 
 // Indexes
 PostSchema.index({ authorId: 1 });
-PostSchema.index({ category: 1 });
 PostSchema.index({ tags: 1 });
 PostSchema.index({ createdAt: -1 });
 PostSchema.index({ 'media.uniqueId': 1 });

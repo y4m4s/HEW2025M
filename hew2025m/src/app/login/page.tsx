@@ -11,7 +11,7 @@ import {
   OAuthProvider,
   AuthProvider
 } from "firebase/auth";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 
@@ -28,7 +28,7 @@ function NotificationToast({ message, isError }: { message: string, isError?: bo
       ) : (
         <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#14ba53" /><path d="M16 10l-4.5 4.5L8 11.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
       )}
-      <span className="text-lg font-bold drop-shadow-lg" style={{ fontFamily: 'せのびゴシック, sans-serif' }}>{message}</span>
+      <span className="text-lg font-bold drop-shadow-lg">{message}</span>
     </div>
   );
 }
@@ -44,12 +44,8 @@ export default function LoginPage() {
   const [notification, setNotification] = useState<{ message: string, isError?: boolean } | null>(null);
   const router = useRouter();
 
-  // ログイン済みユーザーをホームにリダイレクト
-  useEffect(() => {
-    if (!authLoading && user) {
-      router.push('/');
-    }
-  }, [user, authLoading, router]);
+  // ログイン済みユーザーのリダイレクトはmiddlewareに任せる
+  // middlewareがusername未設定ならsetup-usernameへ、設定済みなら/へリダイレクト
 
   const showNotification = (message: string, isError: boolean = false, duration: number = 2200) => {
     setNotification({ message, isError });
@@ -59,6 +55,33 @@ export default function LoginPage() {
   // ログイン・メール・パスワード
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // バリデーション
+    let hasError = false;
+    const newErrors = { email: '', password: '' };
+
+    if (!email) {
+      newErrors.email = 'メールアドレスを入力してください';
+      hasError = true;
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        newErrors.email = 'メールアドレスの形式が正しくありません';
+        hasError = true;
+      }
+    }
+
+    if (!password) {
+      newErrors.password = 'パスワードを入力してください';
+      hasError = true;
+    }
+
+    if (hasError) {
+      setErrors(newErrors);
+      setTouched({ email: true, password: true });
+      return;
+    }
+
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -192,9 +215,9 @@ export default function LoginPage() {
     return <LoadingSpinner message="読み込み中..." size="lg" fullScreen />;
   }
 
-  // ログイン済みの場合は何も表示しない（リダイレクト中）
+  // ログイン済みの場合もローディング表示（middlewareがリダイレクトするまで）
   if (user) {
-    return null;
+    return <LoadingSpinner message="画面を移動しています..." size="lg" fullScreen />;
   }
 
   return (
@@ -210,14 +233,14 @@ export default function LoginPage() {
 
           <div className="relative z-10 text-center">
             <Link href="/" className="inline-block mb-6 transition-transform hover:scale-105">
-              <h1 className="text-5xl lg:text-6xl font-bold tracking-tight drop-shadow-md" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+              <h1 className="text-5xl lg:text-6xl font-bold tracking-tight drop-shadow-md">
                 ツリマチ
               </h1>
             </Link>
             <div className="h-1 w-16 bg-white/50 mx-auto rounded-full mb-6"></div>
             <p className="text-lg lg:text-xl leading-relaxed font-light opacity-95 tracking-wide">
               おかえりなさい。<br />
-              今日も素敵な釣果を。
+              今日も素敵な釣り人ライフを。
             </p>
           </div>
         </div>
@@ -226,7 +249,7 @@ export default function LoginPage() {
         <div className="w-full lg:w-7/12 p-8 lg:p-16 bg-white flex flex-col justify-center">
           <div className="max-w-md mx-auto w-full">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 tracking-tight mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>ログイン</h2>
+              <h2 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">ログイン</h2>
               <p className="text-sm text-gray-500">
                 アカウント情報を入力してログインしてください
               </p>
@@ -236,10 +259,10 @@ export default function LoginPage() {
               <div className="space-y-4">
                 {/* メールアドレス */}
                 <FormField
-                  type="email"
+                  type="text"
+                  autoComplete="email"
                   label="メールアドレス"
                   placeholder="name@example.com"
-                  required
                   value={email}
                   onChange={e => {
                     setEmail(e.target.value);
@@ -263,9 +286,9 @@ export default function LoginPage() {
                 <div className="relative">
                   <FormField
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
                     label="パスワード"
                     placeholder="パスワードを入力"
-                    required
                     value={password}
                     onChange={e => {
                       setPassword(e.target.value);
@@ -297,9 +320,11 @@ export default function LoginPage() {
               </div>
 
               <div className="pt-2">
-                <button
+                <Button
                   type="submit"
-                  className="w-full py-3.5 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] hover:from-[#2FA3E3] hover:to-[#2FA3E3] text-white rounded-xl text-base font-bold shadow-lg shadow-blue-500/30 transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95 active:shadow-none disabled:opacity-70 disabled:cursor-not-allowed"
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
                   disabled={loading}
                 >
                   {loading ? (
@@ -311,7 +336,7 @@ export default function LoginPage() {
                       認証中...
                     </span>
                   ) : "ログイン"}
-                </button>
+                </Button>
               </div>
 
               {/* SNS Divider */}
@@ -325,32 +350,32 @@ export default function LoginPage() {
               <div className="grid grid-cols-1 gap-3">
                 <button
                   type="button"
-                  className="flex items-center justify-center w-full px-4 py-3 border border-gray-200 bg-white rounded-xl hover:bg-gray-50 transition-colors gap-3"
+                  className="flex items-center justify-center w-full px-4 py-3 border-2 border-gray-200 bg-white rounded-xl hover:border-gray-300 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 gap-3 group disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => handleSocialLogin('google')}
                   disabled={loading}
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3C34.7 32 30 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.4 16.4 18.7 13 24 13c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#FBBC05" d="M24 44c5.6 0 10.4-1.8 13.8-4.8l-6.4-5.3c-1.9 1.3-4.3 2.1-7.4 2.1-5.8 0-10.7-3.9-12.5-9h-7v5.7C7 40.3 14.9 44 24 44z" /><path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3-4.9 5-11.3 5z" /></g></svg>
-                  <span className="text-sm font-semibold text-gray-700">Googleでログイン</span>
+                  <svg className="w-5 h-5 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-[5deg]" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3C34.7 32 30 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.4 16.4 18.7 13 24 13c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#FBBC05" d="M24 44c5.6 0 10.4-1.8 13.8-4.8l-6.4-5.3c-1.9 1.3-4.3 2.1-7.4 2.1-5.8 0-10.7-3.9-12.5-9h-7v5.7C7 40.3 14.9 44 24 44z" /><path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3-4.9 5-11.3 5z" /></g></svg>
+                  <span className="text-sm font-semibold text-gray-700 transition-colors group-hover:text-gray-900">Googleでログイン</span>
                 </button>
 
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    className="flex items-center justify-center w-full px-4 py-3 bg-black text-white border border-black rounded-xl hover:bg-gray-800 transition-colors gap-2"
+                    className="flex items-center justify-center w-full px-4 py-3 bg-black text-white border-2 border-black rounded-xl hover:bg-gray-900 hover:shadow-lg hover:scale-105 transition-all duration-200 gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => handleSocialLogin('twitter')}
                     disabled={loading}
                   >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                    <svg className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
                     <span className="text-sm font-semibold">X (Twitter)</span>
                   </button>
 
                   <button
                     type="button"
-                    className="flex items-center justify-center w-full px-4 py-3 bg-[#6001d2] text-white border border-[#6001d2] rounded-xl hover:bg-[#5001b0] transition-colors gap-2"
+                    className="flex items-center justify-center w-full px-4 py-3 bg-[#6001d2] text-white border-2 border-[#6001d2] rounded-xl hover:bg-[#5001b0] hover:border-[#5001b0] hover:shadow-lg hover:scale-105 transition-all duration-200 gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => handleSocialLogin('yahoo')}
                     disabled={loading}
                   >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.52 18.217l-3.26-5.252-2.36 3.792H8.62l3.697-5.94-3.58-5.756h2.278l2.28 3.66 3.26-5.24h2.278l-4.52 7.26 4.637 7.453h-2.28z" /></svg>
+                    <svg className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.52 18.217l-3.26-5.252-2.36 3.792H8.62l3.697-5.94-3.58-5.756h2.278l2.28 3.66 3.26-5.24h2.278l-4.52 7.26 4.637 7.453h-2.28z" /></svg>
                     <span className="text-sm font-semibold">Yahoo!</span>
                   </button>
                 </div>

@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy, Timestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, Timestamp, doc, getDoc, limit, startAfter, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { useAuth } from '@/lib/useAuth';
-import { Calendar, CreditCard, Fish } from 'lucide-react';
+import { Calendar, CreditCard, Fish, ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
@@ -55,24 +55,86 @@ interface PurchaseHistoryProps {
   onCountChange?: (count: number) => void;
 }
 
+const ITEMS_PER_PAGE = 2; // 1ページあたりの表示件数
+
 export default function PurchaseHistory({ onCountChange }: PurchaseHistoryProps) {
   const { user } = useAuth();
   const router = useRouter();
+  const containerRef = useRef<HTMLDivElement>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [enrichedItems, setEnrichedItems] = useState<Map<string, EnrichedOrderItem>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageSnapshots, setPageSnapshots] = useState<Map<number, QueryDocumentSnapshot<DocumentData>>>(new Map());
 
+  // 総件数を取得
+  useEffect(() => {
+    const fetchTotalCount = async () => {
+      if (!user) return;
+
+      try {
+        const countQuery = query(
+          collection(db, 'orders'),
+          where('buyerId', '==', user.uid)
+        );
+        const countSnapshot = await getDocs(countQuery);
+        const count = countSnapshot.size;
+        setTotalCount(count);
+
+        // 親コンポーネントに件数を通知
+        if (onCountChange) {
+          onCountChange(count);
+        }
+      } catch (error) {
+        console.error('総件数の取得に失敗しました:', error);
+      }
+    };
+
+    fetchTotalCount();
+  }, [user, onCountChange]);
+
+  // ページ変更時に自動スクロール
+  useEffect(() => {
+    if (containerRef.current) {
+      const offsetTop = containerRef.current.getBoundingClientRect().top + window.pageYOffset;
+      window.scrollTo({
+        top: offsetTop - 100,
+        behavior: 'smooth'
+      });
+    }
+  }, [currentPage]);
+
+  // ページごとの注文を取得
   useEffect(() => {
     const fetchOrders = async () => {
       if (!user) return;
 
+      setLoading(true);
       try {
-        // Firestoreから購入履歴を取得 (buyerIdが現在のユーザーIDと一致するもの)
-        const q = query(
-          collection(db, 'orders'),
-          where('buyerId', '==', user.uid),
-          orderBy('createdAt', 'desc')
-        );
+        let q;
+
+        if (currentPage === 1) {
+          // 最初のページ
+          q = query(
+            collection(db, 'orders'),
+            where('buyerId', '==', user.uid),
+            orderBy('createdAt', 'desc'),
+            limit(ITEMS_PER_PAGE)
+          );
+        } else {
+          // 2ページ目以降
+          const pageSnapshot = pageSnapshots.get(currentPage);
+          if (!pageSnapshot) return;
+
+          q = query(
+            collection(db, 'orders'),
+            where('buyerId', '==', user.uid),
+            orderBy('createdAt', 'desc'),
+            startAfter(pageSnapshot),
+            limit(ITEMS_PER_PAGE)
+          );
+        }
 
         const querySnapshot = await getDocs(q);
         const ordersData = querySnapshot.docs.map(docSnap => ({
@@ -82,9 +144,16 @@ export default function PurchaseHistory({ onCountChange }: PurchaseHistoryProps)
 
         setOrders(ordersData);
 
-        // 親コンポーネントに件数を通知
-        if (onCountChange) {
-          onCountChange(ordersData.length);
+        // ページのスナップショットを保存（次ページ用）
+        if (querySnapshot.docs.length > 0) {
+          const last = querySnapshot.docs[querySnapshot.docs.length - 1];
+
+          // 次ページのスナップショットを保存
+          if (!pageSnapshots.has(currentPage + 1)) {
+            const newPageSnapshots = new Map(pageSnapshots);
+            newPageSnapshots.set(currentPage + 1, last);
+            setPageSnapshots(newPageSnapshots);
+          }
         }
 
         // 各注文アイテムの詳細情報を取得（出品者情報と商品画像）
@@ -152,7 +221,7 @@ export default function PurchaseHistory({ onCountChange }: PurchaseHistoryProps)
     };
 
     fetchOrders();
-  }, [user, onCountChange]);
+  }, [user, currentPage, pageSnapshots]);
 
   if (loading) {
     return (
@@ -162,7 +231,7 @@ export default function PurchaseHistory({ onCountChange }: PurchaseHistoryProps)
     );
   }
 
-  if (orders.length === 0) {
+  if (totalCount === 0 && !loading) {
     return (
       <div className="p-6 text-center">
         <Fish size={64} className="mx-auto text-gray-300 mb-4" />
@@ -171,8 +240,22 @@ export default function PurchaseHistory({ onCountChange }: PurchaseHistoryProps)
     );
   }
 
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
   return (
-    <div className="space-y-6 p-6">
+    <div ref={containerRef} className="space-y-6 p-6">
       <div className="grid gap-4">
         {orders.map((order) => (
           <div key={order.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -231,7 +314,7 @@ export default function PurchaseHistory({ onCountChange }: PurchaseHistoryProps)
                         ) : (
                           <div className="flex flex-col items-center justify-center">
                             <Fish size={48} className="text-gray-400 mb-2" />
-                            <p className="text-gray-500 text-sm">画像なし</p>
+                            <p className="text-gray-500 text-sm">画像がありません</p>
                           </div>
                         )}
                       </div>
@@ -279,6 +362,44 @@ export default function PurchaseHistory({ onCountChange }: PurchaseHistoryProps)
           </div>
         ))}
       </div>
+
+      {/* ページネーション */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t pt-4">
+          <div className="text-sm text-gray-600">
+            {totalCount}件中 {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalCount)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalCount)}件を表示
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              className={`flex items-center gap-1 px-4 py-2 rounded-lg border transition-colors ${
+                currentPage === 1
+                  ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <ChevronLeft size={18} />
+              前へ
+            </button>
+            <span className="text-sm text-gray-600 px-4">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className={`flex items-center gap-1 px-4 py-2 rounded-lg border transition-colors ${
+                currentPage === totalPages
+                  ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              次へ
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

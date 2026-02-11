@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { User, Trash2, MessageCircle } from 'lucide-react';
 import { Comment } from '@/types/comment';
@@ -10,8 +10,19 @@ interface CommentItemProps {
   comment: Comment;
   currentUserId?: string;
   onDelete: (commentId: string) => void;
-  onReply?: (parentId: string, content: string) => Promise<void>;
+  onReply?: (parentId: string, content: string) => Promise<boolean>;
   isReply?: boolean;
+  targetCommentId?: string | null;
+}
+
+function containsTargetComment(comment: Comment, targetCommentId: string): boolean {
+  if (comment._id === targetCommentId) {
+    return true;
+  }
+
+  return (comment.replies || []).some((reply) =>
+    containsTargetComment(reply, targetCommentId)
+  );
 }
 
 export default function CommentItem({
@@ -19,11 +30,15 @@ export default function CommentItem({
   currentUserId,
   onDelete,
   onReply,
-  isReply = false
+  isReply = false,
+  targetCommentId,
 }: CommentItemProps) {
   const [imageError, setImageError] = useState(false);
   const [showReplyInput, setShowReplyInput] = useState(false);
-  const [showReplies, setShowReplies] = useState(false);
+  const shouldAutoExpandReplies =
+    !!targetCommentId &&
+    (comment.replies || []).some((reply) => containsTargetComment(reply, targetCommentId));
+  const [showReplies, setShowReplies] = useState(shouldAutoExpandReplies);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // コメントの日時をフォーマット
@@ -54,16 +69,26 @@ export default function CommentItem({
 
   const isOwner = currentUserId && currentUserId === comment.userId;
 
-  const handleReplySubmit = async (content: string) => {
-    if (!onReply) return;
+  useEffect(() => {
+    if (shouldAutoExpandReplies) {
+      setShowReplies(true);
+    }
+  }, [shouldAutoExpandReplies]);
+
+  const handleReplySubmit = async (content: string): Promise<boolean> => {
+    if (!onReply) return false;
 
     setIsSubmitting(true);
     try {
-      await onReply(comment._id, content);
-      setShowReplyInput(false);
-      setShowReplies(true); // 返信後、返信一覧を表示
+      const success = await onReply(comment._id, content);
+      if (success) {
+        setShowReplyInput(false);
+        setShowReplies(true); // 返信後、返信一覧を表示
+      }
+      return success;
     } catch (error) {
       console.error('返信エラー:', error);
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -77,7 +102,7 @@ export default function CommentItem({
       className={`pb-4 last:border-none scroll-mt-4 ${isReply ? 'ml-10 border-l-2 border-gray-200 pl-4' : 'border-b border-gray-200'}`}
     >
       <div className="flex justify-between items-start mb-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 p-2">
           {comment.userPhotoURL && !imageError ? (
             <Image
               src={comment.userPhotoURL}
@@ -114,7 +139,7 @@ export default function CommentItem({
         )}
       </div>
 
-      <p className="text-gray-700 whitespace-pre-wrap ml-10 mb-2">
+      <p className="text-gray-700 whitespace-pre-wrap mx-10 mb-2 break-words-safe">
         {comment.content}
       </p>
 
@@ -165,6 +190,7 @@ export default function CommentItem({
               currentUserId={currentUserId}
               onDelete={onDelete}
               isReply={true}
+              targetCommentId={targetCommentId}
             />
           ))}
         </div>

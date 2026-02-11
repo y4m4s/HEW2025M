@@ -30,7 +30,7 @@ export default function PostList() {
   const [keyword, setKeyword] = useState('');
   const debouncedKeyword = useDebounce(keyword, SEARCH_DEBOUNCE_DELAY);
   const [hasMore, setHasMore] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
+  const [totalPostCount, setTotalPostCount] = useState(0); // 全投稿数（フィルター無し）
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [tagCounts, setTagCounts] = useState<Record<string, number>>({});
 
@@ -110,7 +110,7 @@ export default function PostList() {
         createdAt: string;
         likes?: number;
         comments?: unknown[];
-        category?: string;
+        commentsCount?: number;
         media?: Array<{ url: string; order: number }>;
       }) => {
         const userProfile = post.authorId ? userProfiles[post.authorId] : null;
@@ -127,8 +127,7 @@ export default function PostList() {
           authorPhotoURL,
           date: formatDate(post.createdAt),
           likes: post.likes || 0,
-          comments: post.comments?.length || 0,
-          category: post.category || 'other',
+          comments: post.commentsCount ?? post.comments?.length ?? 0,
           isLiked: false,
           imageUrl: post.media && post.media.length > 0
             ? post.media.sort((a, b) => a.order - b.order)[0].url
@@ -144,7 +143,11 @@ export default function PostList() {
       }
 
       setHasMore(data.pagination.hasMore);
-      setTotalCount(data.pagination.total);
+
+      // 全投稿数を設定（フィルター無し）
+      if (data.pagination.totalPostCount !== undefined) {
+        setTotalPostCount(data.pagination.totalPostCount);
+      }
 
       // タグごとの投稿数を設定
       if (data.tagCounts) {
@@ -284,8 +287,8 @@ export default function PostList() {
                   <Button
                     onClick={handleNewPost}
                     variant="primary"
-                    size="md"
-                    icon={<Plus size={18} />}
+                    size="lg"
+                    icon={<Plus size={20} />}
                   >
                     投稿する
                   </Button>
@@ -337,8 +340,8 @@ export default function PostList() {
                   onClick={handleNewPost}
                   variant="primary"
                   size="lg"
-                  className="w-full shadow-md"
-                  icon={<Plus size={20} />}
+                  className="w-full shadow-lg text-base py-4"
+                  icon={<Plus size={22} />}
                 >
                   新規投稿を作成
                 </Button>
@@ -363,7 +366,7 @@ export default function PostList() {
                       placeholder="キーワードを入力"
                       value={keyword}
                       onChange={(e) => setKeyword(e.target.value)}
-                      className="w-full py-2.5 pl-10 pr-4 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white outline-none transition-all duration-300 focus:border-[#2FA3E3] focus:ring-2 focus:ring-[#2FA3E3]/20"
+                      className="w-full py-2.5 pl-10 pr-4 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white outline-none [transition:background-color_150ms_ease-out,border-color_150ms_ease-out,box-shadow_150ms_ease-out] focus:border-gray-300 focus:shadow-md"
                     />
                   </form>
                 </div>
@@ -384,15 +387,18 @@ export default function PostList() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">タグで探す</label>
                   <div className="flex flex-col space-y-1">
                     {filterTabs.map((tab) => {
-                      // 'all'の場合は全投稿数、それ以外はAPIから取得したタグ別投稿数
+                      // 'all'の場合は全投稿数（フィルター無し）、それ以外はAPIから取得したタグ別投稿数
                       const count = tab.key === 'all'
-                        ? totalCount
+                        ? totalPostCount
                         : tagCounts[tab.key] || 0;
 
                       return (
                         <button
                           key={tab.key}
-                          onClick={() => setActiveFilter(tab.key)}
+                          onClick={() => {
+                            setActiveFilter(tab.key);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
                           className={`flex justify-between items-center w-full px-3 py-2 text-sm rounded-lg transition-all duration-200 group ${activeFilter === tab.key
                             ? 'bg-[#2FA3E3]/10 text-[#2FA3E3] font-bold'
                             : 'text-gray-600 hover:bg-gray-50'

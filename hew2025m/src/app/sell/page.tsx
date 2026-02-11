@@ -3,11 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import Image from 'next/image';
-import { Camera, Fish, X, WandSparkles, Puzzle } from 'lucide-react';
+import { Camera, Fish, X, Puzzle } from 'lucide-react';
 import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from 'react-icons/gi';
 import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
 import { SiHelix } from 'react-icons/si';
-import { Button, PriceAdvisorModal, CustomSelect, LoadingSpinner, ImageModal } from '@/components';
+import { Button, CustomSelect, LoadingSpinner, ImageModal } from '@/components';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { useProfileStore } from '@/stores/useProfileStore';
@@ -63,9 +63,9 @@ export default function SellPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState('');
-  const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [imageError, setImageError] = useState('');
 
   // 認証チェック：未ログインならログインページへリダイレクト
   useEffect(() => {
@@ -97,22 +97,12 @@ export default function SellPage() {
   const titleValue = watch('title');
   const descriptionValue = watch('description');
 
-  const handlePriceSelect = (suggestedPrice: number) => {
-    setValue('price', suggestedPrice, { shouldValidate: true });
-    toast.success(`価格が ¥${suggestedPrice.toLocaleString()} に設定されました`);
-  };
-
-  const handlePriceSuggest = () => {
-    if (!titleValue) {
-      toast.error('価格を提案するには、まず商品名を入力してください。');
-      return;
-    }
-    setIsAdvisorOpen(true);
-  }
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+
+    // 画像エラーをクリア
+    setImageError('');
 
     // 最大4つまでの制限をチェック
     const remainingSlots = 4 - selectedFiles.length;
@@ -155,6 +145,15 @@ export default function SellPage() {
   // 送信フォーム
   const onSubmit = async (data: ProductFormData) => {
     if (isSubmitting) return;
+
+    // 画像が添付されているかチェック
+    if (selectedFiles.length === 0) {
+      setImageError('商品の状態がわかる画像を最低一枚添付してください。');
+      // エラーメッセージの位置までスクロール
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    setImageError('');
 
     if (!user) {
       router.push('/login');
@@ -262,7 +261,7 @@ export default function SellPage() {
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 sm:px-5 py-4 sm:py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-800 mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-800 mb-2">
             商品を出品する
           </h1>
           <p className="text-center text-sm sm:text-base text-gray-600 mb-6 sm:mb-12">
@@ -274,10 +273,17 @@ export default function SellPage() {
               {/* 商品の画像 */}
               <div>
                 <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
-                  商品画像 ({selectedFiles.length}/4)
+                  商品画像 ({selectedFiles.length}/4) <span className="text-red-500">*</span>
                 </label>
+                {imageError && (
+                  <p className="text-red-600 text-sm mb-3 ml-1 font-semibold" role="alert">
+                    {imageError}
+                  </p>
+                )}
                 <div
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 sm:p-8 md:p-12 text-center hover:border-[#2FA3E3] transition-colors duration-300 cursor-pointer"
+                  className={`border-2 border-dashed rounded-lg p-6 sm:p-8 md:p-12 text-center hover:border-[#2FA3E3] transition-colors duration-300 cursor-pointer ${
+                    imageError ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <div className="flex justify-center text-gray-400 mb-3 sm:mb-4">
@@ -351,7 +357,7 @@ export default function SellPage() {
                   aria-invalid={errors.title ? "true" : "false"}
                   disabled={isSubmitting}
                 />
-                {errors.title && <p className="text-red-600 text-sm mt-2" role="alert">{errors.title.message}</p>}
+                {errors.title && <p className="text-red-600 text-sm mt-1.5 ml-1" role="alert">{errors.title.message}</p>}
                 <div className={`text-right text-sm mt-1 ${titleValue.length > 30 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
                   {titleValue.length}/30文字
                   {titleValue.length > 30 && (
@@ -386,18 +392,7 @@ export default function SellPage() {
                       disabled={isSubmitting}
                     />
                   </div>
-                  {errors.price && <p className="text-red-600 text-sm mt-2" role="alert">{errors.price.message}</p>}
-                  <div className="mt-3 text-right">
-                    <button
-                      type="button"
-                      onClick={handlePriceSuggest}
-                      disabled={!titleValue || isSubmitting}
-                      className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <WandSparkles size={16} />
-                      AIで価格相場をチェック
-                    </button>
-                  </div>
+                  {errors.price && <p className="text-red-600 text-sm mt-1.5 ml-1" role="alert">{errors.price.message}</p>}
                 </div>
                 <div>
                   <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
@@ -416,7 +411,7 @@ export default function SellPage() {
                       />
                     )}
                   />
-                  {errors.category && <p className="text-red-600 text-sm mt-2" role="alert">{errors.category.message}</p>}
+                  {errors.category && <p className="text-red-600 text-sm mt-1.5 ml-1" role="alert">{errors.category.message}</p>}
                 </div>
                 <div>
                   <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
@@ -435,7 +430,7 @@ export default function SellPage() {
                       />
                     )}
                   />
-                  {errors.condition && <p className="text-red-600 text-sm mt-2" role="alert">{errors.condition.message}</p>}
+                  {errors.condition && <p className="text-red-600 text-sm mt-1.5 ml-1" role="alert">{errors.condition.message}</p>}
                 </div>
               </div>
 
@@ -455,7 +450,7 @@ export default function SellPage() {
                   aria-invalid={errors.description ? "true" : "false"}
                   disabled={isSubmitting}
                 ></textarea>
-                {errors.description && <p className="text-red-600 text-sm mt-2" role="alert">{errors.description.message}</p>}
+                {errors.description && <p className="text-red-600 text-sm mt-1.5 ml-1" role="alert">{errors.description.message}</p>}
                 <div className={`text-right text-sm mt-1 ${(descriptionValue?.length || 0) > 300 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
                   {descriptionValue?.length || 0}/300文字
                   {(descriptionValue?.length || 0) > 300 && (
@@ -483,7 +478,7 @@ export default function SellPage() {
                       />
                     )}
                   />
-                  {errors.shippingPayer && <p className="text-red-600 text-sm mt-2" role="alert">{errors.shippingPayer.message}</p>}
+                  {errors.shippingPayer && <p className="text-red-600 text-sm mt-1.5 ml-1" role="alert">{errors.shippingPayer.message}</p>}
                 </div>
                 <div>
                   <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
@@ -502,7 +497,7 @@ export default function SellPage() {
                       />
                     )}
                   />
-                  {errors.shippingDays && <p className="text-red-600 text-sm mt-2" role="alert">{errors.shippingDays.message}</p>}
+                  {errors.shippingDays && <p className="text-red-600 text-sm mt-1.5 ml-1" role="alert">{errors.shippingDays.message}</p>}
                 </div>
               </div>
 
@@ -530,13 +525,6 @@ export default function SellPage() {
           </div>
         </div>
       </div>
-
-      <PriceAdvisorModal
-        isOpen={isAdvisorOpen}
-        onClose={() => setIsAdvisorOpen(false)}
-        productName={titleValue}
-        onPriceSelect={handlePriceSelect}
-      />
 
       {/* 画像拡大モーダル */}
       <ImageModal

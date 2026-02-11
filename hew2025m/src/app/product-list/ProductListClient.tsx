@@ -146,7 +146,7 @@ function ProductListContent({
   const [totalCount, setTotalCount] = useState(initialTotal);
 
   // フィルター状態（URLパラメータから初期値を取得）
-  const [category] = useState(() => searchParams.get('category') || '');
+  const [category, setCategory] = useState(() => searchParams.get('category') || '');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [shippingPayer, setShippingPayer] = useState('');
@@ -162,7 +162,12 @@ function ProductListContent({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // フィルターが変更されたときにURLを更新する関数
+  // URLパラメータが変更されたときにstateを同期
+  useEffect(() => {
+    setCategory(searchParams.get('category') || '');
+  }, [searchParams]);
+
+  // フィルターが変更されたときにURLとstateを更新する関数
   // useCallbackは不要（イベントハンドラーとして直接使用するため）
   const handleFilterChange = (filterName: string, value: string) => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
@@ -175,6 +180,11 @@ function ProductListContent({
 
     const search = current.toString();
     const query = search ? `?${search}` : "";
+
+    // stateも更新
+    if (filterName === 'category') {
+      setCategory(value);
+    }
 
     router.replace(`${pathname}${query}`);
   };
@@ -301,7 +311,7 @@ function ProductListContent({
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
               <div className="text-center sm:text-left flex-1">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
                   商品を探す
                 </h1>
                 <p className="text-sm sm:text-base text-gray-600">
@@ -318,8 +328,8 @@ function ProductListContent({
                   }
                 }}
                 variant="primary"
-                size="md"
-                className="shadow-lg hover:shadow-xl transition-shadow text-xs sm:text-sm w-full sm:w-auto"
+                size="lg"
+                className="shadow-lg hover:shadow-xl transition-shadow text-sm sm:text-base w-full sm:w-auto"
               >
                 出品する
               </Button>
@@ -336,7 +346,7 @@ function ProductListContent({
                   placeholder="キーワードで検索"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
-                  className="w-full py-3 sm:py-4 px-4 sm:px-5 pl-11 sm:pl-12 border-2 border-gray-200 rounded-full text-sm sm:text-base outline-none transition-colors duration-300 focus:border-[#2FA3E3] placeholder:text-gray-400"
+                  className="w-full py-3 sm:py-4 px-4 sm:px-5 pl-11 sm:pl-12 border border-gray-200 rounded-xl text-sm sm:text-base outline-none shadow-md focus:shadow-xl [transition:box-shadow_150ms_ease-out] placeholder:text-gray-400"
                 />
               </form>
             </div>

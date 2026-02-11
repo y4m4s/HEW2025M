@@ -11,7 +11,7 @@ import { db } from '@/lib/firebase';
 import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { decodeHtmlEntities } from '@/lib/sanitize';
 
-import { Button, ProductCard, UserInfoCard } from '@/components';
+import { Button, ProductCard, UserInfoCard, RelatedProducts } from '@/components';
 import { useCartStore } from '@/stores/useCartStore';
 
 // 動的import - モーダルとコメントは必要時のみロード
@@ -89,6 +89,19 @@ export default function SellDetailPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginRequiredAction, setLoginRequiredAction] = useState('');
 
+  // 同じカテゴリの商品
+  const [relatedProducts, setRelatedProducts] = useState<Array<{
+    id: string;
+    name: string;
+    price: number;
+    imageUrl?: string;
+    condition?: string;
+    sellerName?: string;
+    sellerPhotoURL?: string;
+    status?: 'available' | 'sold' | 'reserved';
+  }>>([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
+
   useEffect(() => {
     if (params.id) {
       fetchProduct();
@@ -117,10 +130,11 @@ export default function SellDetailPage() {
     }
   }, [product]); // productが読み込まれた後に実行
 
-  // 商品データが取得できたら出品者のプロフィールを取得
+  // 商品データが取得できたら出品者のプロフィールと関連商品を取得
   useEffect(() => {
     if (product && product.sellerId) {
       fetchSellerProfile(product.sellerId);
+      fetchRelatedProducts(product.category, product._id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product]);
@@ -222,6 +236,43 @@ export default function SellDetailPage() {
       });
     } finally {
       setSellerProfileLoading(false);
+    }
+  };
+
+  // 同じカテゴリの商品を取得
+  const fetchRelatedProducts = async (category: string, currentProductId: string) => {
+    try {
+      setRelatedLoading(true);
+
+      // カテゴリが同じで、現在の商品以外、availableの商品を最新順で6件取得
+      const response = await fetch(`/api/products?category=${category}&limit=7&sort=createdAt&order=desc`);
+      if (!response.ok) {
+        throw new Error('関連商品の取得に失敗しました');
+      }
+
+      const data = await response.json();
+
+      // 現在の商品を除外して最大6件に絞る
+      const filtered = (data.products || [])
+        .filter((p: { _id: string; status: string }) => p._id !== currentProductId && p.status === 'available')
+        .slice(0, 6)
+        .map((p: { _id: string; title: string; price: number; images?: string[]; condition: string; sellerName: string; sellerPhotoURL?: string; status: string }) => ({
+          id: p._id,
+          name: p.title,
+          price: p.price,
+          imageUrl: p.images?.[0],
+          condition: getConditionLabel(p.condition),
+          sellerName: p.sellerName,
+          sellerPhotoURL: p.sellerPhotoURL,
+          status: p.status,
+        }));
+
+      setRelatedProducts(filtered);
+    } catch (err) {
+      console.error('関連商品取得エラー:', err);
+      setRelatedProducts([]);
+    } finally {
+      setRelatedLoading(false);
     }
   };
 
@@ -522,7 +573,7 @@ export default function SellDetailPage() {
             <div>
               <h3 className="text-lg md:text-xl font-semibold mb-3">商品詳細</h3>
               <div className="min-h-[120px] max-h-60 overflow-y-auto rounded-lg border border-gray-200 p-3 md:p-4 bg-gray-50/50">
-                <p className="text-sm md:text-base text-gray-700 whitespace-pre-wrap leading-relaxed break-words overflow-wrap-anywhere">
+                <p className="text-sm md:text-base text-gray-700 whitespace-pre-wrap leading-relaxed break-words-safe">
                   {product.description}
                 </p>
               </div>
@@ -606,8 +657,6 @@ export default function SellDetailPage() {
           loading={sellerProfileLoading}
           fallbackName={product.sellerName}
           showRating={true}
-          showActions={true}
-          isOwnProfile={!!(user && (product.sellerId === user.uid || product.sellerId === `user-${user.uid}`))}
         />
 
         {/* コメントセクション */}
@@ -620,7 +669,13 @@ export default function SellDetailPage() {
           />
         </section>
 
-        {/* ✅ AI検索用コンポーネント (カテゴリも渡す) */}
+        {/* 同じカテゴリの商品 */}
+        <RelatedProducts
+          products={relatedProducts}
+          loading={relatedLoading}
+        />
+
+        {/* AI検索用コンポーネント (カテゴリも渡す) */}
         {product && (
           <SmartRakuten
             productName={product.title}

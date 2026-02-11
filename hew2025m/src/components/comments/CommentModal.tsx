@@ -11,7 +11,7 @@ interface CommentModalProps {
   comments: Comment[];
   currentUserId?: string;
   onDeleteComment: (commentId: string) => void;
-  onReply?: (parentId: string, content: string) => Promise<void>;
+  onReply?: (parentId: string, content: string) => Promise<boolean>;
 }
 
 export default function CommentModal({

@@ -19,6 +19,8 @@ export default function SetupUsernamePage() {
   const [displayName, setDisplayName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [checkTimeout, setCheckTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // 認証チェック
   useEffect(() => {
@@ -31,16 +33,76 @@ export default function SetupUsernamePage() {
   useEffect(() => {
     if (!user || profileLoading) return;
 
-    // 既にusernameが設定されている場合はホームへ
-    if (profile.username && profile.username !== user.email?.split("@")[0]) {
-      router.push("/");
-      return;
+    // Firestoreからデータが取得できた場合
+    if (profile.username) {
+      const emailPrefix = user.email?.split("@")[0] || 'user';
+
+      // usernameがメールプレフィックスと異なる = 既に設定済み
+      if (profile.username !== emailPrefix) {
+        router.push("/");
+        return;
+      }
     }
 
     // デフォルト値を設定（user.displayNameはGoogleログイン時のみ）
     setDisplayName(user.displayName || "");
     setUsername("");
   }, [user, profile, profileLoading, router]);
+
+  // ユーザーネームの重複チェック
+  const checkUsernameAvailability = async (username: string) => {
+    if (username.length < 3 || !/^[a-zA-Z0-9_]+$/.test(username)) {
+      setUsernameStatus('idle');
+      return;
+    }
+
+    setUsernameStatus('checking');
+
+    try {
+      const response = await fetch(`/api/auth/check-username?username=${encodeURIComponent(username)}`);
+      const data = await response.json();
+
+      if (data.available) {
+        setUsernameStatus('available');
+      } else {
+        setUsernameStatus('taken');
+      }
+    } catch (error) {
+      console.error('Username check failed:', error);
+      setUsernameStatus('idle');
+    }
+  };
+
+  // ユーザーネーム入力時のデバウンス処理
+  const handleUsernameChange = (value: string) => {
+    const lowercaseValue = value.toLowerCase();
+    setUsername(lowercaseValue);
+    setError("");
+
+    // 前のタイムアウトをクリア
+    if (checkTimeout) {
+      clearTimeout(checkTimeout);
+    }
+
+    // 新しいタイムアウトを設定（500ms後にチェック）
+    if (lowercaseValue.length >= 3) {
+      const timeout = setTimeout(() => {
+        checkUsernameAvailability(lowercaseValue);
+      }, 500);
+      setCheckTimeout(timeout);
+    } else {
+      setUsernameStatus('idle');
+    }
+  };
+
+  // クリーンアップ
+  useEffect(() => {
+    return () => {
+      if (checkTimeout) {
+        clearTimeout(checkTimeout);
+      }
+    };
+  }, [checkTimeout]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,11 +136,17 @@ export default function SetupUsernamePage() {
       return;
     }
 
+    // ユーザーネームが既に使用されているかチェック
+    if (usernameStatus === 'taken') {
+      setError("このユーザーネームは既に使用されています");
+      return;
+    }
+
     setSaving(true);
 
     try {
-      // Firestoreにユーザープロフィールを保存
-      await setDoc(doc(db, "users", user.uid), {
+      // タイムアウト付きで保存処理を実行（10秒）
+      const savePromise = setDoc(doc(db, "users", user.uid), {
         displayName: displayName.trim(),
         username: username,
         email: user.email || "",
@@ -87,11 +155,22 @@ export default function SetupUsernamePage() {
         createdAt: new Date().toISOString(),
       });
 
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('タイムアウト')), 10000)
+      );
+
+      await Promise.race([savePromise, timeoutPromise]);
+
       // ホームへリダイレクト
       router.push("/");
     } catch (error) {
       console.error("ユーザーネーム保存エラー:", error);
-      setError("ユーザーネームの保存に失敗しました");
+
+      if (error instanceof Error && error.message === 'タイムアウト') {
+        setError("保存処理がタイムアウトしました。ネットワーク接続を確認して、もう一度お試しください。");
+      } else {
+        setError("ユーザーネームの保存に失敗しました。もう一度お試しください。");
+      }
       setSaving(false);
     }
   };
@@ -112,7 +191,7 @@ export default function SetupUsernamePage() {
           <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
 
           <div className="relative z-10 text-center">
-            <h1 className="text-5xl lg:text-6xl font-bold tracking-tight drop-shadow-md mb-6" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+            <h1 className="text-5xl lg:text-6xl font-bold tracking-tight drop-shadow-md mb-6">
               ツリマチ
             </h1>
             <div className="h-1 w-16 bg-white/50 mx-auto rounded-full mb-6"></div>
@@ -130,7 +209,7 @@ export default function SetupUsernamePage() {
               <div className="inline-flex items-center justify-center w-16 h-16 bg-[#2FA3E3]/10 rounded-full mb-4 text-[#2FA3E3]">
                 <Fish size={32} />
               </div>
-              <h2 className="text-3xl font-bold text-gray-900 tracking-tight mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>ユーザーネーム設定</h2>
+              <h2 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">ユーザーネーム設定</h2>
               <p className="text-sm text-gray-500">
                 ツリマチで使用する表示名とIDを設定してください
               </p>
@@ -146,14 +225,14 @@ export default function SetupUsernamePage() {
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
+                  onInvalid={(e) => e.preventDefault()}
                   className={`w-full px-4 py-3 rounded-xl bg-gray-50 border text-gray-900 focus:bg-white focus:outline-none focus:ring-4 transition-all duration-200 ${displayName.length > 15
                     ? 'border-red-500 ring-red-500/10'
                     : 'border-gray-200 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/10'
                     }`}
                   placeholder="表示名を入力"
-                  required
                 />
-                <div className={`text-right text-xs mt-1.5 ${displayName.length > 15 ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                <div className={`text-right text-xs mt-1.5 ${displayName.length > 15 ? 'text-red-600 font-semibold' : 'text-gray-400'}`}>
                   {displayName.length}/15
                 </div>
               </div>
@@ -168,22 +247,55 @@ export default function SetupUsernamePage() {
                   <input
                     type="text"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                    className={`w-full pl-8 pr-4 py-3 rounded-xl bg-gray-50 border text-gray-900 focus:bg-white focus:outline-none focus:ring-4 transition-all duration-200 ${username.length > 15
-                      ? 'border-red-500 ring-red-500/10'
-                      : 'border-gray-200 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/10'
-                      }`}
+                    onChange={(e) => handleUsernameChange(e.target.value)}
+                    onInvalid={(e) => e.preventDefault()}
+                    className={`w-full pl-8 pr-12 py-3 rounded-xl bg-gray-50 border text-gray-900 focus:bg-white focus:outline-none focus:ring-4 transition-all duration-200 ${
+                      username.length > 15
+                        ? 'border-red-500 ring-red-500/10'
+                        : usernameStatus === 'taken'
+                        ? 'border-red-500 ring-red-500/10'
+                        : usernameStatus === 'available'
+                        ? 'border-green-500 ring-green-500/10'
+                        : 'border-gray-200 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/10'
+                    }`}
                     placeholder="username"
-                    required
-                    minLength={3}
-                    pattern="[a-zA-Z0-9_]+"
                   />
+                  {/* ステータスアイコン */}
+                  <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                    {usernameStatus === 'checking' && (
+                      <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                    {usernameStatus === 'available' && (
+                      <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                    {usernameStatus === 'taken' && (
+                      <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between items-start mt-1.5">
-                  <p className="text-xs text-gray-400">
-                    半角英数字とアンダーバーのみ
-                  </p>
-                  <div className={`text-right text-xs ${username.length > 15 ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                  <div className="flex-1">
+                    {usernameStatus === 'checking' && username.length >= 3 && (
+                      <p className="text-xs text-blue-600">確認中...</p>
+                    )}
+                    {usernameStatus === 'available' && (
+                      <p className="text-xs text-green-600 font-medium">✓ 利用可能です</p>
+                    )}
+                    {usernameStatus === 'taken' && (
+                      <p className="text-xs text-red-600 font-medium">このユーザーネームは既に使用されています</p>
+                    )}
+                    {usernameStatus === 'idle' && (
+                      <p className="text-xs text-gray-400">半角英数字とアンダーバーのみ</p>
+                    )}
+                  </div>
+                  <div className={`text-right text-xs ${username.length > 15 ? 'text-red-600 font-semibold' : 'text-gray-400'}`}>
                     {username.length}/15
                   </div>
                 </div>

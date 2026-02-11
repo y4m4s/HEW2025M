@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
+import Comment from '@/models/Comment';
 import { requireAuth } from '@/lib/simpleAuth';
 
 // 個別投稿を取得
@@ -68,6 +69,10 @@ export async function DELETE(
       );
     }
 
+    await Comment.deleteMany({
+      productId: id,
+      $or: [{ itemType: 'post' }, { itemType: { $exists: false } }],
+    });
     await Post.findByIdAndDelete(id);
 
     return NextResponse.json({

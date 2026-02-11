@@ -120,7 +120,7 @@ export default function Header() {
         {/* ロゴ */}
         <h1
           className="text-4xl sm:text-5xl lg:text-7xl font-bold text-[#2FA3E3]"
-          style={{ fontFamily: "せのびゴシック, sans-serif" }}
+         
         >
           <Link
             href="/"

@@ -22,12 +22,12 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 md:gap-10 mb-8 sm:mb-10 md:mb-12">
           {/* ロゴとSNS */}
           <div className="col-span-2 md:col-span-2">
-            <Link href="/" className="text-2xl sm:text-3xl font-bold text-[#2FA3E3] no-underline inline-block mb-3 sm:mb-4 md:mb-5" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+            <Link href="/" className="text-2xl sm:text-3xl font-bold text-[#2FA3E3] no-underline inline-block mb-3 sm:mb-4 md:mb-5">
               ツリマチ
             </Link>
             <p className="text-gray-300 leading-6 sm:leading-7 mb-4 sm:mb-6 md:mb-8 text-xs sm:text-sm pr-0 md:pr-10">
               釣り人のためのマーケットプレイス。<br />
-              釣り用品の売買から情報共有まで、釣り人と釣り人をつなぐコミュニティプラットフォームです。
+              売る / 買う / つながる――すべてがここに。
             </p>
             <div className="flex gap-3 sm:gap-4">
               <Link href="#" className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 bg-[#2FA3E3]/20 text-[#2FA3E3] rounded-full text-lg transition-all duration-300 hover:bg-[#2FA3E3] hover:text-white hover:transform hover:-translate-y-1" aria-label="Twitter">
@@ -47,7 +47,7 @@ export default function Footer() {
 
           {/* サービス */}
           <div className="col-span-1">
-              <h3 className="text-white text-base sm:text-lg font-semibold mb-4 sm:mb-5 md:mb-6 border-b-2 border-[#2FA3E3] pb-1.5 sm:pb-2 inline-block" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+              <h3 className="text-white text-base sm:text-lg font-semibold mb-4 sm:mb-5 md:mb-6 border-b-2 border-[#2FA3E3] pb-1.5 sm:pb-2 inline-block">
                 サービス
               </h3>
               <ul className="list-none space-y-2 sm:space-y-3">
@@ -83,7 +83,7 @@ export default function Footer() {
 
           {/* サポート */}
           <div className="col-span-1">
-            <h3 className="text-white text-base sm:text-lg font-semibold mb-4 sm:mb-5 md:mb-6 border-b-2 border-[#2FA3E3] pb-1.5 sm:pb-2 inline-block" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+            <h3 className="text-white text-base sm:text-lg font-semibold mb-4 sm:mb-5 md:mb-6 border-b-2 border-[#2FA3E3] pb-1.5 sm:pb-2 inline-block">
               サポート
             </h3>
             <ul className="list-none space-y-2 sm:space-y-3">

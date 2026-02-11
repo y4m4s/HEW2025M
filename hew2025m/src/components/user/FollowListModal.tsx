@@ -356,7 +356,7 @@ export default function FollowListModal({ isOpen, onClose, userId, type: initial
 
                         {/* Bio */}
                         {userItem.bio && (
-                          <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                          <p className="text-sm text-gray-600 mt-2 line-clamp-2 break-words-safe">
                             {userItem.bio}
                           </p>
                         )}

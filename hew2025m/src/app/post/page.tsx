@@ -255,7 +255,6 @@ function PostContent() {
         body: JSON.stringify({
           title: data.title,
           content: data.content,
-          category: '一般',
           media: uploadedMedia,
           authorId,
           authorName,
@@ -291,7 +290,7 @@ function PostContent() {
     <div className="bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 sm:px-5 py-4 sm:py-6 md:py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-800 mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-800 mb-2">
             投稿を作成する
           </h1>
           <p className="text-center text-sm sm:text-base text-gray-600 mb-6 sm:mb-10 md:mb-12">
@@ -316,7 +315,7 @@ function PostContent() {
                   disabled={isSubmitting}
                   aria-invalid={errors.title ? "true" : "false"}
                 />
-                {errors.title && <p className="text-red-600 text-sm mt-2" role="alert">{errors.title.message}</p>}
+                {errors.title && <p className="text-red-600 text-sm mt-1.5 ml-1" role="alert">{errors.title.message}</p>}
                 <div className={`text-right text-sm mt-1 ${(titleValue?.length || 0) > 30 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
                   {titleValue?.length || 0}/30文字
                   {(titleValue?.length || 0) > 30 && (
@@ -341,7 +340,7 @@ function PostContent() {
                   disabled={isSubmitting}
                   aria-invalid={errors.content ? "true" : "false"}
                 />
-                {errors.content && <p className="text-red-600 text-sm mt-2" role="alert">{errors.content.message}</p>}
+                {errors.content && <p className="text-red-600 text-sm mt-1.5 ml-1" role="alert">{errors.content.message}</p>}
                 <div className={`text-right text-sm mt-1 ${(contentValue?.length || 0) > 140 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
                   {contentValue?.length || 0}/140文字
                   {(contentValue?.length || 0) > 140 && (

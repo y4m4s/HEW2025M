@@ -13,6 +13,7 @@ import { signOut } from "firebase/auth";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, deleteDoc, Timestamp } from "firebase/firestore";
 
 import {
+  Button,
   ProfileEdit,
   ProfSelling,
   ProfHistory,
@@ -307,7 +308,7 @@ export default function UserProfilePage() {
                   )}
                 </div>
 
-                <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "せのびゴシック" }}>
+                <h1 className="text-2xl font-bold mb-2">
                   {targetProfile.displayName || "名無しユーザー"}
                 </h1>
                 <p className="text-gray-600 mb-4">@{targetProfile.username || 'user'}</p>
@@ -341,24 +342,28 @@ export default function UserProfilePage() {
                   {isOwnProfile ? (
                     // 自分のプロフィールの場合: プロフィール編集ボタンとログアウトボタン
                     <>
-                      <button
-                        className="w-full bg-[#2FA3E3] text-white py-3 rounded-lg hover:bg-[#1d7bb8] transition-colors"
+                      <Button
+                        variant="primary"
+                        size="md"
+                        className="w-full"
                         onClick={() => setEditOpen(true)}
                       >
                         プロフィール編集
-                      </button>
-                      <button
-                        className="w-full bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="md"
+                        className="w-full"
+                        icon={<Home size={18} />}
                         onClick={() => router.push('/settings/address')}
                       >
-                        <Home size={18} />
                         お届け先住所を登録する
-                      </button>
+                      </Button>
                       <button
-                        className="w-full border border-red-500 text-red-500 py-3 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+                        className="w-full border-2 border-red-500 text-red-500 py-3 rounded-lg hover:bg-red-50 hover:border-red-600 hover:text-red-600 hover:shadow-md hover:scale-[1.02] transition-all duration-200 transform active:scale-95 flex items-center justify-center gap-2 group"
                         onClick={handleLogoutClick}
                       >
-                        <LogOut size={18} />
+                        <LogOut size={18} className="transition-transform duration-200 group-hover:scale-110" />
                         ログアウト
                       </button>
                     </>
@@ -386,10 +391,10 @@ export default function UserProfilePage() {
               </div>
 
               <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="font-bold mb-2" style={{ fontFamily: "せのびゴシック" }}>
+                <h2 className="font-bold mb-2">
                   自己紹介
                 </h2>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap break-words">
+                <p className="text-sm text-gray-600 whitespace-pre-wrap break-words-safe">
                   {targetProfile.bio || "自己紹介が設定されていません"}
                 </p>
               </div>

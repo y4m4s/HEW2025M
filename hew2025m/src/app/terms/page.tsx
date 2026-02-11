@@ -7,7 +7,7 @@ export default function TermsPage() {
         <div className="bg-white rounded-xl shadow-lg p-8 md:p-12">
           <div className="flex items-center gap-4 mb-8 pb-4 border-b border-gray-200">
             <FileText size={32} className="text-[#2FA3E3]" />
-            <h1 className="text-3xl font-bold text-gray-800" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+            <h1 className="text-3xl font-bold text-gray-800">
               利用規約
             </h1>
           </div>

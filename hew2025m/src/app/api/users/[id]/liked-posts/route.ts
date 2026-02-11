@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import PostLike from '@/models/PostLike';
 import Post from '@/models/Post';
+import Comment from '@/models/Comment';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { extractUid } from '@/lib/utils';
@@ -26,6 +27,22 @@ export async function GET(
 
     // 投稿の詳細情報を取得
     const posts = await Post.find({ _id: { $in: postIds } }).lean();
+
+    // コメント数をCommentコレクションから取得
+    const commentCounts = postIds.length
+      ? await Comment.aggregate([
+          {
+            $match: {
+              productId: { $in: postIds },
+              $or: [{ itemType: 'post' }, { itemType: { $exists: false } }],
+            },
+          },
+          { $group: { _id: '$productId', count: { $sum: 1 } } },
+        ])
+      : [];
+    const commentCountMap = new Map<string, number>(
+      commentCounts.map((row) => [row._id as string, row.count as number])
+    );
 
     // 投稿IDをキーにしたマップを作成
     const postMap = new Map(posts.map((post) => [post._id.toString(), post]));
@@ -88,14 +105,13 @@ export async function GET(
           _id: post._id.toString(),
           title: post.title,
           content: post.content,
-          category: post.category,
           address: post.address,
           authorId: post.authorId,
           authorName: authorProfile.displayName,
           authorPhotoURL: authorProfile.photoURL,
           imageUrl: post.media?.[0]?.url || '',
           likes: post.likes,
-          comments: post.comments,
+          commentsCount: commentCountMap.get(post._id.toString()) || 0,
           createdAt: post.createdAt,
           likedAt: like.createdAt,
           ...fishInfo,

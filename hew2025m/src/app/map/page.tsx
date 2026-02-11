@@ -280,7 +280,7 @@ export default function MapPage() {
                     ) : (
                       <>
                         <Fish size={32} className="text-gray-400 sm:w-10 sm:h-10" />
-                        <span className="text-gray-500 text-xs sm:text-sm ml-2">画像なし</span>
+                        <span className="text-gray-500 text-xs sm:text-sm ml-2">画像がありません</span>
                       </>
                     )}
                   </div>

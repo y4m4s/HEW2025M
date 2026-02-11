@@ -19,8 +19,9 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'openweathermap.org' }
     ],
     localPatterns: [
-      { pathname: '/uploads/**' },
-      { pathname: '/avatars/**' },
+      { pathname: '/category/**' },
+      { pathname: '/community/**' },
+      { pathname: '/back/**' },
     ],
   },
 

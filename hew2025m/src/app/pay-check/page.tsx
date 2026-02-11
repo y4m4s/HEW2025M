@@ -203,7 +203,7 @@ function PayCheckForm({ products, shippingAddress, shippingFee, onLoadingChange 
       clearCart();
 
       // ローディングメッセージを表示してからリダイレクト
-      setLoadingMessage('注文完了ページに移動中...');
+      setLoadingMessage('購入処理中...');
 
       // 1秒後にリダイレクト（ローディングメッセージを十分に表示するため）
       setTimeout(() => {

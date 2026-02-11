@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { subscribeToProfile, unsubscribeFromProfile } from "@/stores/useProfileStore";
+import { useCartStore } from "@/stores/useCartStore";
 
 /**
  * セッションCookieを作成する関数
@@ -36,6 +37,7 @@ export function useAuth() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       setLoading(false);
+      useCartStore.getState().syncCartOwner(currentUser?.uid ?? null);
 
       // Zustand ProfileStoreのFirestore監視を開始/停止
       if (currentUser) {

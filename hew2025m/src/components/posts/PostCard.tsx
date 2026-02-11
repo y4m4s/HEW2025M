@@ -15,7 +15,6 @@ export interface Post {
   date: string;
   likes: number;
   comments: number;
-  category: 'sea' | 'river';
   isLiked?: boolean;
   imageUrl?: string;
   tags?: string[];
@@ -120,7 +119,7 @@ export default function PostCard({ post, variant = 'default', priority = false }
               {post.title}
             </h3>
 
-            <p className="text-gray-600 text-sm line-clamp-2 mb-3 flex-1">
+            <p className="text-gray-600 text-sm line-clamp-2 mb-3 flex-1 break-words-safe">
               {post.excerpt || '本文のプレビューが表示されます。'}
             </p>
 
@@ -155,7 +154,7 @@ export default function PostCard({ post, variant = 'default', priority = false }
   // Used for default locatons (Post List etc)
   return (
     <Link href={`/post-detail/${post.id}`} className="block">
-      <article className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col sm:flex-row min-h-[200px] sm:h-56">
+      <article className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-1 flex flex-col sm:flex-row min-h-[200px] sm:h-56">
         {/* Left Side: Image */}
         <div className="w-full sm:w-[200px] md:w-[240px] lg:w-[280px] h-[180px] sm:h-full bg-gray-100 flex-shrink-0 relative group overflow-hidden">
           {post.imageUrl ? (
@@ -186,7 +185,7 @@ export default function PostCard({ post, variant = 'default', priority = false }
           </h3>
 
           {/* Excerpt */}
-          <p className="text-gray-600 text-sm sm:text-base mb-3 leading-relaxed line-clamp-2">
+          <p className="text-gray-600 text-sm sm:text-base mb-3 leading-relaxed line-clamp-2 break-words-safe">
             {post.excerpt || '本文のプレビューが表示されます。'}
           </p>
 
@@ -195,7 +194,7 @@ export default function PostCard({ post, variant = 'default', priority = false }
             {post.tags && post.tags.length > 0 ? (
               <>
                 {post.tags.slice(0, 3).map((tag, i) => (
-                  <span key={i} className={`px-2.5 py-1 text-xs font-medium rounded-full truncate max-w-[120px] ${post.category === 'sea' ? 'bg-blue-500 text-white' : 'bg-green-500 text-white'}`}>
+                  <span key={i} className="px-2.5 py-1 text-xs font-medium rounded-full truncate max-w-[120px] bg-blue-500 text-white">
                     {tag}
                   </span>
                 ))}

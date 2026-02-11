@@ -11,7 +11,8 @@ interface CommentListProps {
   loading: boolean;
   currentUserId?: string;
   onDeleteComment: (commentId: string) => void;
-  onReply?: (parentId: string, content: string) => Promise<void>;
+  onReply?: (parentId: string, content: string) => Promise<boolean>;
+  targetCommentId?: string | null;
 }
 
 const INITIAL_DISPLAY_COUNT = 5;
@@ -22,6 +23,7 @@ export default function CommentList({
   currentUserId,
   onDeleteComment,
   onReply,
+  targetCommentId,
 }: CommentListProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -41,8 +43,11 @@ export default function CommentList({
     );
   }
 
-  const hasMore = comments.length > INITIAL_DISPLAY_COUNT;
-  const displayedComments = comments.slice(0, INITIAL_DISPLAY_COUNT);
+  const showAllComments = Boolean(targetCommentId);
+  const hasMore = !showAllComments && comments.length > INITIAL_DISPLAY_COUNT;
+  const displayedComments = showAllComments
+    ? comments
+    : comments.slice(0, INITIAL_DISPLAY_COUNT);
 
   return (
     <>
@@ -54,6 +59,7 @@ export default function CommentList({
             currentUserId={currentUserId}
             onDelete={onDeleteComment}
             onReply={onReply}
+            targetCommentId={targetCommentId}
           />
         ))}
 

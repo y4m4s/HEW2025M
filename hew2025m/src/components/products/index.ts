@@ -7,3 +7,4 @@ export { default as SellerInfo } from './SellerInfo';
 export { default as RecentlyViewed } from './RecentlyViewed';
 export { default as SmartRakuten } from './SmartRakuten';
 export { default as Rakuten } from './rakuten';
+export { RelatedProducts } from './RelatedProducts';

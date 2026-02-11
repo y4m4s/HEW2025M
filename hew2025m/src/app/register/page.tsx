@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Button, LoadingScreen } from "@/components";
 import { auth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, signInWithPopup, TwitterAuthProvider, OAuthProvider, GoogleAuthProvider, fetchSignInMethodsForEmail, AuthProvider } from "firebase/auth";
-import { useState, useEffect } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 
@@ -11,7 +11,7 @@ function SuccessToast({ message }: { message: string }) {
   return (
     <div className="fixed top-8 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] text-white px-6 py-4 rounded-xl shadow-lg z-50 flex items-center gap-3 animate-fadein">
       <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#14ba53" /><path d="M16 10l-4.5 4.5L8 11.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-      <span className="text-lg font-bold drop-shadow-lg" style={{ fontFamily: 'せのびゴシック, sans-serif' }}>{message}</span>
+      <span className="text-lg font-bold drop-shadow-lg">{message}</span>
     </div>
   );
 }
@@ -23,30 +23,54 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isNavigating, startTransition] = useTransition();
+  const [validationErrors, setValidationErrors] = useState({
+    email: "",
+    password: "",
+    confirmPassword: ""
+  });
   const router = useRouter();
 
-  // ログイン済みユーザーをホームにリダイレクト
   useEffect(() => {
-    if (!authLoading && user) {
-      router.push('/');
-    }
-  }, [user, authLoading, router]);
+    router.prefetch("/setup-username");
+  }, [router]);
 
   const showSuccessAndRedirect = (msg: string, to: string) => {
     setSuccessMessage(msg);
-    setTimeout(() => {
+    window.setTimeout(() => {
       setSuccessMessage("");
-      setIsRedirecting(true);
-      router.push(to);
-    }, 1800);
+      startTransition(() => {
+        router.push(to);
+      });
+    }, 1500);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // バリデーションエラーをリセット
+    setValidationErrors({ email: "", password: "", confirmPassword: "" });
+
+    // メールアドレスのバリデーション
+    if (!email) {
+      setValidationErrors(prev => ({ ...prev, email: "メールアドレスを入力してください" }));
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setValidationErrors(prev => ({ ...prev, email: "メールアドレスの形式が正しくありません" }));
+      return;
+    }
+
+    // パスワードの長さチェック
+    if (password.length < 8) {
+      setValidationErrors(prev => ({ ...prev, password: "パスワードは8文字以上で設定してください" }));
+      return;
+    }
+
+    // パスワード確認チェック
     if (password !== confirmPassword) {
-      setSuccessMessage("パスワードが一致しません");
-      setTimeout(() => setSuccessMessage(""), 1400);
+      setValidationErrors(prev => ({ ...prev, confirmPassword: "パスワードが一致しません" }));
       return;
     }
 
@@ -72,11 +96,11 @@ export default function RegisterPage() {
       const firebaseError = error as { code?: string };
 
       if (firebaseError.code === "auth/email-already-in-use") {
-        errorMessage = "このメールアドレスは既に登録されています。";
+        errorMessage = "このメールアドレスは既に登録されています";
       } else if (firebaseError.code === "auth/invalid-email") {
         errorMessage = "メールアドレスの形式が正しくありません";
       } else if (firebaseError.code === "auth/weak-password") {
-        errorMessage = "パスワードは6文字以上で設定してください";
+        errorMessage = "パスワードは8文字以上で設定してください";
       }
 
       setSuccessMessage(errorMessage);
@@ -163,13 +187,13 @@ export default function RegisterPage() {
     return <LoadingScreen message="読み込み中..." />;
   }
 
-  if (isRedirecting) {
+  if (isNavigating) {
     return <LoadingScreen message="画面を移動しています..." />;
   }
 
-  // ログイン済みの場合は何も表示しない（リダイレクト中）
+  // ログイン済みの場合もローディング表示（middlewareがリダイレクトするまで）
   if (user) {
-    return null;
+    return <LoadingScreen message="画面を移動しています..." />;
   }
 
   return (
@@ -185,7 +209,7 @@ export default function RegisterPage() {
 
           <div className="relative z-10 text-center">
             <Link href="/" className="inline-block mb-6 transition-transform hover:scale-105">
-              <h1 className="text-5xl lg:text-6xl font-bold tracking-tight drop-shadow-md" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+              <h1 className="text-5xl lg:text-6xl font-bold tracking-tight drop-shadow-md">
                 ツリマチ
               </h1>
             </Link>
@@ -201,7 +225,7 @@ export default function RegisterPage() {
         <div className="w-full lg:w-7/12 p-8 lg:p-16 bg-white flex flex-col justify-center">
           <div className="max-w-md mx-auto w-full">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 tracking-tight mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>アカウント作成</h2>
+              <h2 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">アカウント作成</h2>
               <p className="text-sm text-gray-500">
                 必要な情報を入力して、コミュニティに参加しましょう
               </p>
@@ -213,13 +237,21 @@ export default function RegisterPage() {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">メールアドレス</label>
                   <input
-                    type="email"
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 focus:bg-white focus:border-[#2FA3E3] focus:ring-4 focus:ring-[#2FA3E3]/10 transition-all duration-200 outline-none"
+                    type="text"
+                    autoComplete="email"
+                    className={`w-full px-4 py-3 rounded-xl bg-gray-50 border ${validationErrors.email ? 'border-red-500' : 'border-gray-200'} text-gray-900 focus:bg-white focus:border-[#2FA3E3] focus:ring-4 focus:ring-[#2FA3E3]/10 transition-all duration-200 outline-none`}
                     placeholder="name@example.com"
-                    required
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    onChange={e => {
+                      setEmail(e.target.value);
+                      if (validationErrors.email) {
+                        setValidationErrors(prev => ({ ...prev, email: "" }));
+                      }
+                    }}
                   />
+                  {validationErrors.email && (
+                    <p className="text-red-600 text-sm mt-1.5 ml-1">{validationErrors.email}</p>
+                  )}
                 </div>
 
                 {/* パスワード */}
@@ -227,12 +259,20 @@ export default function RegisterPage() {
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">パスワード</label>
                   <input
                     type="password"
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 focus:bg-white focus:border-[#2FA3E3] focus:ring-4 focus:ring-[#2FA3E3]/10 transition-all duration-200 outline-none"
+                    autoComplete="new-password"
+                    className={`w-full px-4 py-3 rounded-xl bg-gray-50 border ${validationErrors.password ? 'border-red-500' : 'border-gray-200'} text-gray-900 focus:bg-white focus:border-[#2FA3E3] focus:ring-4 focus:ring-[#2FA3E3]/10 transition-all duration-200 outline-none`}
                     placeholder="8文字以上で入力"
-                    required
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
+                    onChange={e => {
+                      setPassword(e.target.value);
+                      if (validationErrors.password) {
+                        setValidationErrors(prev => ({ ...prev, password: "" }));
+                      }
+                    }}
                   />
+                  {validationErrors.password && (
+                    <p className="text-red-600 text-sm mt-1.5 ml-1">{validationErrors.password}</p>
+                  )}
                 </div>
 
                 {/* パスワード確認 */}
@@ -240,19 +280,29 @@ export default function RegisterPage() {
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">パスワード（確認）</label>
                   <input
                     type="password"
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 focus:bg-white focus:border-[#2FA3E3] focus:ring-4 focus:ring-[#2FA3E3]/10 transition-all duration-200 outline-none"
+                    autoComplete="new-password"
+                    className={`w-full px-4 py-3 rounded-xl bg-gray-50 border ${validationErrors.confirmPassword ? 'border-red-500' : 'border-gray-200'} text-gray-900 focus:bg-white focus:border-[#2FA3E3] focus:ring-4 focus:ring-[#2FA3E3]/10 transition-all duration-200 outline-none`}
                     placeholder="パスワードを再入力"
-                    required
                     value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
+                    onChange={e => {
+                      setConfirmPassword(e.target.value);
+                      if (validationErrors.confirmPassword) {
+                        setValidationErrors(prev => ({ ...prev, confirmPassword: "" }));
+                      }
+                    }}
                   />
+                  {validationErrors.confirmPassword && (
+                    <p className="text-red-600 text-sm mt-1.5 ml-1">{validationErrors.confirmPassword}</p>
+                  )}
                 </div>
               </div>
 
               <div className="pt-2">
-                <button
+                <Button
                   type="submit"
-                  className="w-full py-3.5 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] hover:from-[#2FA3E3] hover:to-[#2FA3E3] text-white rounded-xl text-base font-bold shadow-lg shadow-blue-500/30 transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95 active:shadow-none disabled:opacity-70 disabled:cursor-not-allowed"
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
                   disabled={loading}
                 >
                   {loading ? (
@@ -264,7 +314,7 @@ export default function RegisterPage() {
                       作成中...
                     </span>
                   ) : "アカウント作成"}
-                </button>
+                </Button>
               </div>
 
               <div className="relative py-2">
@@ -280,32 +330,32 @@ export default function RegisterPage() {
               <div className="grid grid-cols-1 gap-3">
                 <button
                   type="button"
-                  className="flex items-center justify-center w-full px-4 py-3 border border-gray-200 bg-white rounded-xl hover:bg-gray-50 transition-colors gap-3 group relative overflow-hidden"
+                  className="flex items-center justify-center w-full px-4 py-3 border-2 border-gray-200 bg-white rounded-xl hover:border-gray-300 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 gap-3 group disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => handleSocialRegister('google')}
                   disabled={loading}
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3C34.7 32 30 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.4 16.4 18.7 13 24 13c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#FBBC05" d="M24 44c5.6 0 10.4-1.8 13.8-4.8l-6.4-5.3c-1.9 1.3-4.3 2.1-7.4 2.1-5.8 0-10.7-3.9-12.5-9h-7v5.7C7 40.3 14.9 44 24 44z" /><path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3-4.9 5-11.3 5z" /></g></svg>
-                  <span className="text-sm font-semibold text-gray-700">Googleで登録</span>
+                  <svg className="w-5 h-5 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-[5deg]" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3C34.7 32 30 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.4 16.4 18.7 13 24 13c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#FBBC05" d="M24 44c5.6 0 10.4-1.8 13.8-4.8l-6.4-5.3c-1.9 1.3-4.3 2.1-7.4 2.1-5.8 0-10.7-3.9-12.5-9h-7v5.7C7 40.3 14.9 44 24 44z" /><path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3-4.9 5-11.3 5z" /></g></svg>
+                  <span className="text-sm font-semibold text-gray-700 transition-colors group-hover:text-gray-900">Googleで登録</span>
                 </button>
 
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    className="flex items-center justify-center w-full px-4 py-3 bg-black text-white border border-black rounded-xl hover:bg-gray-800 transition-colors gap-2"
+                    className="flex items-center justify-center w-full px-4 py-3 bg-black text-white border-2 border-black rounded-xl hover:bg-gray-900 hover:shadow-lg hover:scale-105 transition-all duration-200 gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => handleSocialRegister('twitter')}
                     disabled={loading}
                   >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                    <svg className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
                     <span className="text-sm font-semibold">X (Twitter)</span>
                   </button>
 
                   <button
                     type="button"
-                    className="flex items-center justify-center w-full px-4 py-3 bg-[#6001d2] text-white border border-[#6001d2] rounded-xl hover:bg-[#5001b0] transition-colors gap-2"
+                    className="flex items-center justify-center w-full px-4 py-3 bg-[#6001d2] text-white border-2 border-[#6001d2] rounded-xl hover:bg-[#5001b0] hover:border-[#5001b0] hover:shadow-lg hover:scale-105 transition-all duration-200 gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => handleSocialRegister('yahoo')}
                     disabled={loading}
                   >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.52 18.217l-3.26-5.252-2.36 3.792H8.62l3.697-5.94-3.58-5.756h2.278l2.28 3.66 3.26-5.24h2.278l-4.52 7.26 4.637 7.453h-2.28z" /></svg>
+                    <svg className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.52 18.217l-3.26-5.252-2.36 3.792H8.62l3.697-5.94-3.58-5.756h2.278l2.28 3.66 3.26-5.24h2.278l-4.52 7.26 4.637 7.453h-2.28z" /></svg>
                     <span className="text-sm font-semibold">Yahoo!</span>
                   </button>
                 </div>

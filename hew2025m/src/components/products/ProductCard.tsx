@@ -75,7 +75,7 @@ export default function ProductCard({ product, variant = 'default', priority = f
           </div>
           <div className="p-5">
             <div className="h-14 mb-3">
-              <h5 className="text-lg font-bold text-gray-800 line-clamp-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+              <h5 className="text-lg font-bold text-gray-800 line-clamp-2">
                 {product.name}
               </h5>
             </div>

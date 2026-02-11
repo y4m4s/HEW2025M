@@ -45,6 +45,7 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
             aria-describedby={
               hasError ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined
             }
+            onInvalid={(e) => e.preventDefault()}
             {...props}
           />
 
@@ -58,10 +59,9 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
         {hasError ? (
           <p
             id={`${inputId}-error`}
-            className="mt-1.5 text-sm text-red-600 flex items-center gap-1 animate-slide-in-left"
+            className="text-red-600 text-sm mt-1.5 ml-1"
             role="alert"
           >
-            <AlertCircle size={14} />
             {error}
           </p>
         ) : helperText ? (
