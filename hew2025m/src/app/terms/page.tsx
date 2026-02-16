@@ -1,3 +1,5 @@
+'use client';
+
 import { FileText } from 'lucide-react';
 
 export default function TermsPage() {
@@ -12,22 +14,22 @@ export default function TermsPage() {
             </h1>
           </div>
 
-          <div className="space-y-6 text-gray-700 leading-relaxed">
+          <div className="pl-2 space-y-6 text-gray-700 leading-relaxed">
             <p>この利用規約（以下，「本規約」といいます。）は、ツリマチ株式会社（以下，「当社」といいます。）がこのウェブサイト上で提供するサービス「ツリマチ」（以下，「本サービス」といいます。）の利用条件を定めるものです。登録ユーザーの皆さま（以下，「ユーザー」といいます。）には，本規約に従って，本サービスをご利用いただきます。</p>
 
             <section>
               <h2 className="text-xl font-semibold pt-4 mb-3 text-gray-800">第1条（適用）</h2>
-              <p>本規約は，ユーザーと当社との間の本サービスの利用に関わる一切の関係に適用されるものとします。</p>
+              <p className="pl-2">本規約は，ユーザーと当社との間の本サービスの利用に関わる一切の関係に適用されるものとします。</p>
             </section>
 
             <section>
               <h2 className="text-xl font-semibold pt-4 mb-3 text-gray-800">第2条（利用登録）</h2>
-              <p>本サービスにおいては，登録希望者が本規約に同意の上，当社の定める方法によって利用登録を申請し，当社がこれを承認することによって，利用登録が完了するものとします。</p>
+              <p className="pl-2">本サービスにおいては，登録希望者が本規約に同意の上，当社の定める方法によって利用登録を申請し，当社がこれを承認することによって，利用登録が完了するものとします。</p>
             </section>
 
             <section>
               <h2 className="text-xl font-semibold pt-4 mb-3 text-gray-800">第3条（禁止事項）</h2>
-              <p>ユーザーは，本サービスの利用にあたり，以下の行為をしてはなりません。</p>
+              <p className="pl-2">ユーザーは，本サービスの利用にあたり，以下の行為をしてはなりません。</p>
               <ul className="list-disc list-inside space-y-2 mt-2 pl-4">
                 <li>法令または公序良俗に違反する行為</li>
                 <li>犯罪行為に関連する行為</li>
@@ -42,7 +44,7 @@ export default function TermsPage() {
 
             <section>
               <h2 className="text-xl font-semibold pt-4 mb-3 text-gray-800">第4条（免責事項）</h2>
-              <p>当社は，本サービスに起因してユーザーに生じたあらゆる損害について一切の責任を負いません。ただし，本サービスに関する当社とユーザーとの間の契約（本規約を含みます。）が消費者契約法に定める消費者契約となる場合，この免責規定は適用されません。</p>
+              <p className="pl-2">当社は，本サービスに起因してユーザーに生じたあらゆる損害について一切の責任を負いません。ただし，本サービスに関する当社とユーザーとの間の契約（本規約を含みます。）が消費者契約法に定める消費者契約となる場合，この免責規定は適用されません。</p>
             </section>
 
             <p className="text-right mt-8">以上</p>

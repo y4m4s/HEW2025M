@@ -142,6 +142,31 @@ export default function SellPage() {
     setPreviewUrls(previewUrls.filter((_, i) => i !== index));
   };
 
+  // ドラッグ&ドロップ処理
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 最大4つまでの制限をチェック
+    if (selectedFiles.length >= 4) {
+      toast.error('画像は最大4つまで添付できます');
+      return;
+    }
+
+    const files = Array.from(e.dataTransfer.files);
+    if (fileInputRef.current) {
+      const dt = new DataTransfer();
+      files.forEach((file) => dt.items.add(file));
+      fileInputRef.current.files = dt.files;
+      fileInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  };
+
   // 送信フォーム
   const onSubmit = async (data: ProductFormData) => {
     if (isSubmitting) return;
@@ -285,6 +310,8 @@ export default function SellPage() {
                     imageError ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
                   onClick={() => fileInputRef.current?.click()}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
                 >
                   <div className="flex justify-center text-gray-400 mb-3 sm:mb-4">
                     <Camera size={48} className="sm:w-16 sm:h-16" />

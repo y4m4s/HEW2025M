@@ -1,7 +1,7 @@
 "use client";
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
-import { Button, LoadingSpinner, FormField } from "@/components";
+import { Button, LoadingScreen, FormField } from "@/components";
 import { auth } from "@/lib/firebase";
 import {
   signInWithEmailAndPassword,
@@ -212,33 +212,33 @@ export default function LoginPage() {
 
   // 認証チェック中はローディング表示
   if (authLoading) {
-    return <LoadingSpinner message="読み込み中..." size="lg" fullScreen />;
+    return <LoadingScreen message="読み込み中..." />;
   }
 
   // ログイン済みの場合もローディング表示（middlewareがリダイレクトするまで）
   if (user) {
-    return <LoadingSpinner message="画面を移動しています..." size="lg" fullScreen />;
+    return <LoadingScreen message="画面を移動しています..." />;
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 font-sans text-gray-800 bg-[#f0f4f8]">
+    <div className="h-[calc(100vh-80px)] flex items-center justify-center p-2 sm:p-4 font-sans text-gray-800 bg-[#f0f4f8]">
       {/* メインカード */}
-      <div className="w-full max-w-5xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-[600px]">
+      <div className="w-full max-w-5xl h-fit max-h-[calc(100vh-96px)] bg-white rounded-2xl sm:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row">
 
         {/* 左側：ブランディングセクション */}
-        <div className="lg:w-5/12 bg-gradient-to-br from-[#2FA3E3] to-[#1d7bb8] relative overflow-hidden flex flex-col justify-center items-center text-white p-10 lg:p-12">
+        <div className="lg:w-5/12 bg-gradient-to-br from-[#2FA3E3] to-[#1d7bb8] relative overflow-hidden flex flex-col justify-center items-center text-white p-4 sm:p-6 lg:p-10">
           {/* 背景装飾 */}
           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-white/10 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
 
           <div className="relative z-10 text-center">
-            <Link href="/" className="inline-block mb-6 transition-transform hover:scale-105">
-              <h1 className="text-5xl lg:text-6xl font-bold tracking-tight drop-shadow-md">
+            <Link href="/" className="inline-block mb-3 sm:mb-4 lg:mb-6 transition-transform hover:scale-105">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight drop-shadow-md">
                 ツリマチ
               </h1>
             </Link>
-            <div className="h-1 w-16 bg-white/50 mx-auto rounded-full mb-6"></div>
-            <p className="text-lg lg:text-xl leading-relaxed font-light opacity-95 tracking-wide">
+            <div className="h-1 w-12 sm:w-16 bg-white/50 mx-auto rounded-full mb-3 sm:mb-4 lg:mb-6"></div>
+            <p className="text-base sm:text-lg lg:text-xl leading-relaxed font-light opacity-95 tracking-wide">
               おかえりなさい。<br />
               今日も素敵な釣り人ライフを。
             </p>
@@ -246,17 +246,17 @@ export default function LoginPage() {
         </div>
 
         {/* 右側：フォームセクション */}
-        <div className="w-full lg:w-7/12 p-8 lg:p-16 bg-white flex flex-col justify-center">
-          <div className="max-w-md mx-auto w-full">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">ログイン</h2>
-              <p className="text-sm text-gray-500">
+        <div className="w-full lg:w-7/12 p-4 sm:p-6 lg:p-8 bg-white flex flex-col justify-center overflow-y-auto">
+          <div className="max-w-md mx-auto w-full my-auto">
+            <div className="text-center mb-3 sm:mb-4">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-1.5">ログイン</h2>
+              <p className="text-xs sm:text-sm text-gray-500">
                 アカウント情報を入力してログインしてください
               </p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-2.5 sm:space-y-3">
+              <div className="space-y-2.5">
                 {/* メールアドレス */}
                 <FormField
                   type="text"
@@ -319,17 +319,17 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-1">
                 <Button
                   type="submit"
                   variant="primary"
                   size="lg"
-                  className="w-full"
+                  className="w-full py-2.5 sm:py-3 text-sm sm:text-base"
                   disabled={loading}
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
@@ -340,54 +340,54 @@ export default function LoginPage() {
               </div>
 
               {/* SNS Divider */}
-              <div className="relative flex py-2 items-center">
+              <div className="relative flex py-1.5 sm:py-2 items-center">
                 <div className="flex-grow border-t border-gray-200"></div>
-                <span className="flex-shrink mx-4 text-gray-400 text-xs font-medium">または外部アカウントでログイン</span>
+                <span className="flex-shrink mx-3 sm:mx-4 text-gray-400 text-[10px] sm:text-xs font-medium">または外部アカウントでログイン</span>
                 <div className="flex-grow border-t border-gray-200"></div>
               </div>
 
               {/* SNS Buttons */}
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 gap-2">
                 <button
                   type="button"
-                  className="flex items-center justify-center w-full px-4 py-3 border-2 border-gray-200 bg-white rounded-xl hover:border-gray-300 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 gap-3 group disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 bg-white rounded-lg sm:rounded-xl hover:border-gray-300 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 gap-2 sm:gap-3 group disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => handleSocialLogin('google')}
                   disabled={loading}
                 >
-                  <svg className="w-5 h-5 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-[5deg]" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3C34.7 32 30 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.4 16.4 18.7 13 24 13c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#FBBC05" d="M24 44c5.6 0 10.4-1.8 13.8-4.8l-6.4-5.3c-1.9 1.3-4.3 2.1-7.4 2.1-5.8 0-10.7-3.9-12.5-9h-7v5.7C7 40.3 14.9 44 24 44z" /><path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3-4.9 5-11.3 5z" /></g></svg>
-                  <span className="text-sm font-semibold text-gray-700 transition-colors group-hover:text-gray-900">Googleでログイン</span>
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-[5deg]" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3C34.7 32 30 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.4 16.4 18.7 13 24 13c2.5 0 4.8.8 6.7 2.3l6.2-6.2C33.3 6.6 28.9 5 24 5c-7.3 0-13.7 4.5-16.6 11.1l6.9 5.1z" /><path fill="#FBBC05" d="M24 44c5.6 0 10.4-1.8 13.8-4.8l-6.4-5.3c-1.9 1.3-4.3 2.1-7.4 2.1-5.8 0-10.7-3.9-12.5-9h-7v5.7C7 40.3 14.9 44 24 44z" /><path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3-4.9 5-11.3 5z" /></g></svg>
+                  <span className="text-xs sm:text-sm font-semibold text-gray-700 transition-colors group-hover:text-gray-900">Googleでログイン</span>
                 </button>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    className="flex items-center justify-center w-full px-4 py-3 bg-black text-white border-2 border-black rounded-xl hover:bg-gray-900 hover:shadow-lg hover:scale-105 transition-all duration-200 gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center w-full px-2 sm:px-4 py-2 sm:py-3 bg-black text-white border-2 border-black rounded-lg sm:rounded-xl hover:bg-gray-900 hover:shadow-lg hover:scale-105 transition-all duration-200 gap-1.5 sm:gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => handleSocialLogin('twitter')}
                     disabled={loading}
                   >
-                    <svg className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                    <span className="text-sm font-semibold">X (Twitter)</span>
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 group-hover:scale-110" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                    <span className="text-xs sm:text-sm font-semibold">X (Twitter)</span>
                   </button>
 
                   <button
                     type="button"
-                    className="flex items-center justify-center w-full px-4 py-3 bg-[#6001d2] text-white border-2 border-[#6001d2] rounded-xl hover:bg-[#5001b0] hover:border-[#5001b0] hover:shadow-lg hover:scale-105 transition-all duration-200 gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center w-full px-2 sm:px-4 py-2 sm:py-3 bg-[#6001d2] text-white border-2 border-[#6001d2] rounded-lg sm:rounded-xl hover:bg-[#5001b0] hover:border-[#5001b0] hover:shadow-lg hover:scale-105 transition-all duration-200 gap-1.5 sm:gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => handleSocialLogin('yahoo')}
                     disabled={loading}
                   >
-                    <svg className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.52 18.217l-3.26-5.252-2.36 3.792H8.62l3.697-5.94-3.58-5.756h2.278l2.28 3.66 3.26-5.24h2.278l-4.52 7.26 4.637 7.453h-2.28z" /></svg>
-                    <span className="text-sm font-semibold">Yahoo!</span>
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 group-hover:scale-110" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.52 18.217l-3.26-5.252-2.36 3.792H8.62l3.697-5.94-3.58-5.756h2.278l2.28 3.66 3.26-5.24h2.278l-4.52 7.26 4.637 7.453h-2.28z" /></svg>
+                    <span className="text-xs sm:text-sm font-semibold">Yahoo!</span>
                   </button>
                 </div>
               </div>
 
               {/* 新規登録リンク */}
-              <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col items-center gap-4">
-                <p className="text-sm text-gray-500">アカウントをお持ちでないですか？</p>
+              <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-gray-100 flex flex-col items-center gap-1.5 sm:gap-2">
+                <p className="text-xs sm:text-sm text-gray-500">アカウントをお持ちでないですか？</p>
                 <Button
                   variant="ghost"
                   href="/register"
-                  className="gap-2"
+                  className="gap-2 text-xs sm:text-sm py-1.5 sm:py-2"
                 >
                   新規登録する
                 </Button>

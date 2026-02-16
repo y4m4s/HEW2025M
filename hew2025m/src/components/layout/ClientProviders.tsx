@@ -22,7 +22,7 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
             fontSize: '15px',
           },
           error: {
-            icon: <MdErrorOutline />,
+            icon: <MdErrorOutline size={24} style={{ minWidth: '24px', minHeight: '24px', flexShrink: 0 }} />,
             style: {
               background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
               border: '2px solid #dc2626',
@@ -34,7 +34,7 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
             },
           },
           success: {
-            icon: <FaCheck />,
+            icon: <FaCheck size={20} style={{ minWidth: '20px', minHeight: '20px', flexShrink: 0 }} />,
             style: {
               background: '#fff',
               border: '2px solid #2FA3E3',
@@ -46,7 +46,7 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
             },
           },
           loading: {
-            icon: <RiLoaderFill />,
+            icon: <RiLoaderFill size={24} style={{ minWidth: '24px', minHeight: '24px', flexShrink: 0 }} />,
             style: {
               background: 'linear-gradient(135deg, #2FA3E3 0%, #1d7bb8 100%)',
               border: '2px solid #1d7bb8',

@@ -290,7 +290,7 @@ export default function MapPage() {
                 <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
                   <Link href={`/post-detail/${selectedPost._id}`} className="block group">
                     <h4 className="font-bold text-base sm:text-xl mb-1.5 sm:mb-2 line-clamp-2 text-gray-900 group-hover:text-blue-600 transition-colors">{selectedPost.title}</h4>
-                    <p className="text-gray-600 text-xs sm:text-sm line-clamp-3 leading-relaxed">
+                    <p className="px-1 text-gray-600 text-xs sm:text-sm line-clamp-3 leading-relaxed">
                       {selectedPost.content}
                     </p>
                   </Link>
@@ -307,9 +307,9 @@ export default function MapPage() {
                   ) : authorProfile ? (
                     <Link
                       href={`/profile/${(selectedPost.authorId || '').replace('user-', '')}`}
-                      className="flex items-center gap-2.5 sm:gap-3 py-2.5 sm:py-3 border-y border-gray-100 group/author hover:bg-blue-50 transition-colors"
+                      className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 border-y border-gray-100 rounded-lg bg-white hover:bg-gray-50 hover:border-[#2FA3E3] transition-all duration-200 group/author"
                     >
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center group-hover/author:scale-110 transition-transform flex-shrink-0">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center flex-shrink-0 border-2 border-gray-200 group-hover/author:border-[#2FA3E3] transition-all duration-200">
                         {authorProfile.photoURL ? (
                           <Image
                             src={decodeHtmlEntities(authorProfile.photoURL)}
@@ -324,11 +324,11 @@ export default function MapPage() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs sm:text-sm font-semibold text-gray-800 group-hover/author:text-blue-600 transition-colors truncate">
+                        <div className="text-xs sm:text-sm font-semibold text-gray-800 group-hover/author:text-[#2FA3E3] transition-colors truncate">
                           {authorProfile.displayName}
                         </div>
                         {authorProfile.username && (
-                          <div className="text-[10px] sm:text-xs text-gray-500 truncate">@{authorProfile.username}</div>
+                          <div className="text-[10px] sm:text-xs text-gray-500 group-hover/author:text-gray-700 transition-colors truncate">@{authorProfile.username}</div>
                         )}
                       </div>
                     </Link>

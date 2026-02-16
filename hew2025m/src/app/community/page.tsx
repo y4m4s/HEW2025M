@@ -175,7 +175,7 @@ export default function CommunityPage() {
               </div>
               {popularPost ? (
                 <div className="transform hover:scale-[1.02] transition-transform duration-300">
-                  <PostCard post={popularPost} variant="compact" />
+                  <PostCard post={popularPost} variant="default" />
                 </div>
               ) : (
                 <div className="text-center py-12 sm:py-14 md:py-16 bg-white rounded-xl shadow-sm border border-gray-100">

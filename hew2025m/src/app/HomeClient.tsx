@@ -189,7 +189,7 @@ export default function HomeClient({ initialProducts }: HomeClientProps) {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
             {CATEGORIES.map((category) => (
               <Link key={category.id} href={`/product-list?category=${category.id}`}>
-                <div className="relative rounded-xl sm:rounded-2xl shadow-lg overflow-hidden group cursor-pointer h-40 sm:h-48 md:h-56 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#4FC3F7] before:to-[#29B6F6] before:scale-x-0 before:transition-transform before:duration-300 before:shadow-lg before:z-20 hover:before:scale-x-100">
+                <div className="relative rounded-xl sm:rounded-2xl shadow-lg overflow-hidden group cursor-pointer h-40 sm:h-48 md:h-56 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 before:absolute before:top-0 before:left-[-100%] before:w-full before:h-full before:bg-white/20 before:transform before:skew-x-[-45deg] before:transition-all before:duration-500 before:ease-out before:z-20 hover:before:left-[100%]">
                   {/* 背景画像 */}
                   <Image
                     src={category.image}
@@ -256,7 +256,7 @@ export default function HomeClient({ initialProducts }: HomeClientProps) {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 md:gap-10">
             <Link href="/post-list">
-              <div className="relative rounded-xl sm:rounded-2xl shadow-lg overflow-hidden group cursor-pointer h-48 sm:h-56 md:h-64 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#4FC3F7] before:to-[#29B6F6] before:scale-x-0 before:transition-transform before:duration-300 before:shadow-lg before:z-20 hover:before:scale-x-100">
+              <div className="relative rounded-xl sm:rounded-2xl shadow-lg overflow-hidden group cursor-pointer h-48 sm:h-56 md:h-64 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 before:absolute before:top-0 before:left-[-100%] before:w-full before:h-full before:bg-white/20 before:transform before:skew-x-[-45deg] before:transition-all before:duration-500 before:ease-out before:z-20 hover:before:left-[100%]">
                 {/* 背景画像 */}
                 <Image
                   src="/community/釣果.webp"
@@ -275,7 +275,7 @@ export default function HomeClient({ initialProducts }: HomeClientProps) {
               </div>
             </Link>
             <Link href="/map">
-              <div className="relative rounded-xl sm:rounded-2xl shadow-lg overflow-hidden group cursor-pointer h-48 sm:h-56 md:h-64 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#4FC3F7] before:to-[#29B6F6] before:scale-x-0 before:transition-transform before:duration-300 before:shadow-lg before:z-20 hover:before:scale-x-100">
+              <div className="relative rounded-xl sm:rounded-2xl shadow-lg overflow-hidden group cursor-pointer h-48 sm:h-56 md:h-64 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 before:absolute before:top-0 before:left-[-100%] before:w-full before:h-full before:bg-white/20 before:transform before:skew-x-[-45deg] before:transition-all before:duration-500 before:ease-out before:z-20 hover:before:left-[100%]">
                 {/* 背景画像 */}
                 <Image
                   src="/community/釣り場.webp"
@@ -294,7 +294,7 @@ export default function HomeClient({ initialProducts }: HomeClientProps) {
               </div>
             </Link>
             <Link href="/community">
-              <div className="relative rounded-xl sm:rounded-2xl shadow-lg overflow-hidden group cursor-pointer h-48 sm:h-56 md:h-64 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-[#4FC3F7] before:to-[#29B6F6] before:scale-x-0 before:transition-transform before:duration-300 before:shadow-lg before:z-20 hover:before:scale-x-100">
+              <div className="relative rounded-xl sm:rounded-2xl shadow-lg overflow-hidden group cursor-pointer h-48 sm:h-56 md:h-64 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 before:absolute before:top-0 before:left-[-100%] before:w-full before:h-full before:bg-white/20 before:transform before:skew-x-[-45deg] before:transition-all before:duration-500 before:ease-out before:z-20 hover:before:left-[100%]">
                 {/* 背景画像 */}
                 <Image
                   src="/community/釣り仲間.webp"
@@ -360,9 +360,9 @@ export default function HomeClient({ initialProducts }: HomeClientProps) {
               <div className="flex gap-3 sm:gap-5 justify-center flex-wrap">
                 <Button
                   onClick={() => router.push('/sell')}
-                  variant="primary"
+                  variant="outline"
                   size="lg"
-                  className="bg-white text-[#2FA3E3] hover:shadow-xl py-3 sm:py-4 md:py-5 px-6 sm:px-8 md:px-9 text-sm sm:text-base"
+                  className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-[#2FA3E3] py-3 sm:py-4 md:py-5 px-6 sm:px-8 md:px-9 text-sm sm:text-base"
                   icon={<Fish size={18} className="sm:w-5 sm:h-5" />}
                 >
                   商品を出品

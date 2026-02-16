@@ -22,7 +22,7 @@ export interface Post {
 
 interface PostCardProps {
   post: Post;
-  variant?: 'default' | 'simple' | 'compact' | 'grid';
+  variant?: 'default' | 'simple' | 'grid';
   /** 上位表示される投稿（priority loading用） */
   priority?: boolean;
 }
@@ -185,7 +185,7 @@ export default function PostCard({ post, variant = 'default', priority = false }
           </h3>
 
           {/* Excerpt */}
-          <p className="text-gray-600 text-sm sm:text-base mb-3 leading-relaxed line-clamp-2 break-words-safe">
+          <p className="text-gray-600 text-sm sm:text-base ml-1 mb-3 leading-relaxed line-clamp-2 break-words-safe">
             {post.excerpt || '本文のプレビューが表示されます。'}
           </p>
 

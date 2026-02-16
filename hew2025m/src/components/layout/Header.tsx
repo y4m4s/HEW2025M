@@ -48,6 +48,7 @@ const categories = [
 export default function Header() {
   const { user } = useAuth();
   const profile = useProfileStore((state) => state.profile);
+  const profileLoading = useProfileStore((state) => state.loading);
   const router = useRouter();
   const cartItems = useCartStore((state) => state.items);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
@@ -220,7 +221,9 @@ export default function Header() {
                     aria-label="プロフィール"
                   >
                     <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                      {profile.photoURL ? (
+                      {profileLoading ? (
+                        <div className="w-full h-full bg-gray-300 animate-pulse"></div>
+                      ) : profile.photoURL ? (
                         <Image
                           src={decodeHtmlEntities(profile.photoURL)}
                           alt="プロフィール画像"
@@ -246,7 +249,9 @@ export default function Header() {
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-12 h-12 rounded-full bg-gray-200 border-1 border-gray-300 flex-shrink-0">
                       <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                        {profile.photoURL ? (
+                        {profileLoading ? (
+                          <div className="w-full h-full bg-gray-300 animate-pulse"></div>
+                        ) : profile.photoURL ? (
                           <Image
                             src={decodeHtmlEntities(profile.photoURL)}
                             alt="プロフィール画像"
@@ -362,10 +367,10 @@ export default function Header() {
 
       {/* モバイルメニュー */}
       <div
-        className={`lg:hidden overflow-hidden transition-all duration-300 ease-in-out border-t border-gray-200 bg-white ${isMobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0 border-t-0'
+        className={`mt-3 pt-2 lg:hidden overflow-hidden transition-all duration-300 ease-in-out border-t border-gray-200 bg-white ${isMobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0 border-t-0'
           }`}
       >
-        <nav className="px-4 py-4 space-y-1">
+        <nav className="px-4 space-y-1">
           {user ? (
             <>
               {/* ユーザー情報 */}
@@ -376,14 +381,16 @@ export default function Header() {
               >
                 <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0">
                   <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                    {profile.photoURL ? (
+                    {profileLoading ? (
+                      <div className="w-full h-full bg-gray-300 animate-pulse"></div>
+                    ) : profile.photoURL ? (
                       <Image
                         src={decodeHtmlEntities(profile.photoURL)}
                         alt="プロフィール画像"
                         width={40}
                         height={40}
                         className="w-full h-full object-cover"
-                                              />
+                      />
                     ) : (
                       <UserIcon size={20} />
                     )}
@@ -468,21 +475,23 @@ export default function Header() {
 
               <div className="border-t border-gray-200 my-2"></div>
 
-              <Link
-                href="/login"
-                className="block px-3 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors text-center text-gray-700 font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                ログイン
-              </Link>
+              <div className="flex gap-3 px-3">
+                <Link
+                  href="/login"
+                  className="flex-1 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors text-center text-gray-700 font-medium"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  ログイン
+                </Link>
 
-              <Link
-                href="/register"
-                className="block px-3 py-3 rounded-lg bg-[#2FA3E3] hover:bg-[#2892c9] transition-colors text-center text-white font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                新規登録
-              </Link>
+                <Link
+                  href="/register"
+                  className="flex-1 py-3 rounded-lg bg-[#2FA3E3] hover:bg-[#2892c9] transition-colors text-center text-white font-medium"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  新規登録
+                </Link>
+              </div>
             </>
           )}
         </nav>

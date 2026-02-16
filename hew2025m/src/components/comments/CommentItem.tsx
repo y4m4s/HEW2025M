@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { User, Trash2, MessageCircle } from 'lucide-react';
 import { Comment } from '@/types/comment';
 import CommentInput from './CommentInput';
+import DeleteCommentModal from './DeleteCommentModal';
 
 interface CommentItemProps {
   comment: Comment;
@@ -40,6 +41,7 @@ export default function CommentItem({
     (comment.replies || []).some((reply) => containsTargetComment(reply, targetCommentId));
   const [showReplies, setShowReplies] = useState(shouldAutoExpandReplies);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // コメントの日時をフォーマット
   const formatCommentDate = (dateString: string): string => {
@@ -96,11 +98,25 @@ export default function CommentItem({
 
   const replyCount = comment.replies?.length || 0;
 
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    onDelete(comment._id);
+    setShowDeleteModal(false);
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+  };
+
   return (
-    <div
-      id={`comment-${comment._id}`}
-      className={`pb-4 last:border-none scroll-mt-4 ${isReply ? 'ml-10 border-l-2 border-gray-200 pl-4' : 'border-b border-gray-200'}`}
-    >
+    <>
+      <div
+        id={`comment-${comment._id}`}
+        className={`pb-4 last:border-none scroll-mt-4 ${isReply ? 'ml-10 border-l-2 border-gray-200 pl-4' : 'border-b border-gray-200'}`}
+      >
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2 p-2">
           {comment.userPhotoURL && !imageError ? (
@@ -130,7 +146,7 @@ export default function CommentItem({
         </div>
         {isOwner && (
           <button
-            onClick={() => onDelete(comment._id)}
+            onClick={handleDeleteClick}
             className="text-red-600 hover:text-red-800 transition-colors p-1"
             title="コメントを削除"
           >
@@ -195,6 +211,15 @@ export default function CommentItem({
           ))}
         </div>
       )}
-    </div>
+      </div>
+
+      {/* 削除確認モーダル */}
+      <DeleteCommentModal
+        isOpen={showDeleteModal}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        commentPreview={comment.content}
+      />
+    </>
   );
 }

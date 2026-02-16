@@ -10,7 +10,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/useAuth';
 
 import { useCartStore } from '@/stores/useCartStore';
-import { Button, CartProductCard, type CartProduct, LoadingSpinner } from '@/components';
+import { Button, CartProductCard, type CartProduct, CartSkeleton } from '@/components';
 
 
 export default function CartPage() {
@@ -139,7 +139,7 @@ export default function CartPage() {
 
   // サーバーサイドレンダリングとクライアントの表示の差異によるエラーを防ぎます
   if (!isMounted) {
-    return <LoadingSpinner message="読み込み中..." size="lg" fullScreen />;
+    return <CartSkeleton />;
   }
 
   // 有効な商品のみで計算

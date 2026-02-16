@@ -195,10 +195,6 @@ export default function Comment(props: CommentProps) {
   const handleDeleteComment = async (commentId: string) => {
     if (!user || !targetId) return;
 
-    if (!confirm('このコメントを削除しますか?')) {
-      return;
-    }
-
     try {
       const token = await user.getIdToken();
       if (!token) {

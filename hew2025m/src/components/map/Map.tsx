@@ -89,6 +89,13 @@ const Map = forwardRef<MapRef, MapProps>(({ onMarkerClick, onMapClick, posts: ex
     if (!searchQuery.trim()) return;
 
     setIsSearching(true);
+
+    // トーストメッセージ用に検索クエリを適切な長さに切り詰める
+    const maxLength = 25;
+    const displayQuery = searchQuery.length > maxLength
+      ? searchQuery.substring(0, maxLength) + '...'
+      : searchQuery;
+
     try {
       const geocoder = new google.maps.Geocoder();
       const result = await geocoder.geocode({
@@ -97,7 +104,7 @@ const Map = forwardRef<MapRef, MapProps>(({ onMarkerClick, onMapClick, posts: ex
         region: 'JP',
       });
 
-      if (result.results[0]) {
+      if (result.results && result.results.length > 0) {
         const location = result.results[0].geometry.location;
         const newCenter = {
           lat: location.lat(),
@@ -109,12 +116,19 @@ const Map = forwardRef<MapRef, MapProps>(({ onMarkerClick, onMapClick, posts: ex
           map.panTo(newCenter);
           map.setZoom(15);
         }
-        toast.success('場所を検索しました');
+        toast.success(`「${displayQuery}」に移動しました`);
+      } else {
+        // 検索結果が見つからない場合（ZERO_RESULTS）
+        toast.error(`「${displayQuery}」にヒットする場所はありませんでした`);
       }
-      // 場所が見つからなくてもエラーは表示しない
-    } catch (error) {
-      console.error('場所の検索に失敗しました:', error);
-      // エラーが発生してもトーストは表示しない
+    } catch (error: unknown) {
+      // エラーが発生した場合
+      // Google Maps APIのエラーを静かに処理（コンソールログを抑制）
+      const mapsError = error as { code?: string };
+      if (mapsError.code !== 'ZERO_RESULTS') {
+        console.error('場所の検索に失敗しました:', error);
+      }
+      toast.error(`「${displayQuery}」にヒットする場所はありませんでした`);
     } finally {
       setIsSearching(false);
     }

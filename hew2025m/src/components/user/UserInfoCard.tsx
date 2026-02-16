@@ -141,7 +141,7 @@ export default function UserInfoCard({
             <Link href={`/profile/${userProfile.uid}`} className="flex-1">
               <div className="flex items-center justify-center sm:justify-start sm:items-start gap-3 md:gap-4 px-4 h-full rounded-lg bg-white hover:bg-gray-50 border border-transparent hover:border-[#2FA3E3] transition-colors cursor-pointer">
                 {/* プロフィール画像 */}
-                <div className="flex-shrink-0 self-center">
+                <div className="p-2 flex-shrink-0 self-center">
                   {userProfile.photoURL ? (
                     <Image
                       src={decodeHtmlEntities(userProfile.photoURL)}
@@ -183,7 +183,7 @@ export default function UserInfoCard({
             {showRating && (
               <div className="flex items-center">
                 {/* 評価カード */}
-                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
                   <div className="flex items-center gap-4">
                     <div className="text-3xl md:text-4xl font-bold text-gray-800">
                       {averageRating > 0 ? averageRating.toFixed(1) : '---'}
