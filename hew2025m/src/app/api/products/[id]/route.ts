@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
+import Comment from '@/models/Comment';
 import { requireAuth } from '@/lib/simpleAuth';
 
 // 個別商品を取得
@@ -125,6 +126,11 @@ export async function DELETE(
         { status: 403 }
       );
     }
+
+    await Comment.deleteMany({
+      productId: id,
+      $or: [{ itemType: 'product' }, { itemType: { $exists: false } }],
+    });
 
     // 商品を削除
     await Product.findByIdAndDelete(id);

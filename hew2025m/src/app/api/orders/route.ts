@@ -35,7 +35,6 @@ export async function POST(request: Request) {
     const body: CreateOrderRequest = await request.json();
     const {
       buyerId,
-      buyerName,
       items,
       paymentMethod,
       paymentIntentId,

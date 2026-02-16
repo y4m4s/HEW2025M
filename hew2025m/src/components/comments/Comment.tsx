@@ -1,28 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/useAuth';
 import { useProfileStore } from '@/stores/useProfileStore';
 import { Comment as CommentType } from '@/types/comment';
+import { LoginRequiredModal } from '@/components';
 import CommentInput from './CommentInput';
 import CommentList from './CommentList';
-import { LoginRequiredModal } from '@/components';
-import toast from 'react-hot-toast';
-import {
-  createCommentNotification,
-  createPostCommentNotification,
-  createReplyNotification
-} from '@/lib/notifications';
 
 interface CommentProps {
   productId?: string;
   postId?: string;
-  itemOwnerId?: string; // Add this
-  itemTitle?: string; // Add this
+  itemOwnerId?: string;
+  itemTitle?: string;
   onCommentCountChange?: (count: number) => void;
 }
 
-export default function Comment({ productId, postId, itemOwnerId, itemTitle, onCommentCountChange }: CommentProps) {
+function countAllComments(list: CommentType[]): number {
+  return list.reduce((total, comment) => {
+    return total + 1 + countAllComments(comment.replies || []);
+  }, 0);
+}
+
+export default function Comment(props: CommentProps) {
+  const { productId, postId, onCommentCountChange } = props;
   const { user } = useAuth();
   const profile = useProfileStore((state) => state.profile);
 
@@ -31,215 +33,210 @@ export default function Comment({ productId, postId, itemOwnerId, itemTitle, onC
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginRequiredAction, setLoginRequiredAction] = useState('');
+  const [targetCommentId, setTargetCommentId] = useState<string | null>(null);
+  const handledTargetRef = useRef<string | null>(null);
 
-  // どちらのIDが渡されたかに基づいてAPIエンドポイントを決定
   const targetId = productId || postId;
   const apiBasePath = productId ? 'products' : 'posts';
 
   useEffect(() => {
-    if (targetId) {
-      fetchComments();
-    }
+    if (typeof window === 'undefined') return;
+
+    const syncTargetFromHash = () => {
+      const hash = window.location.hash;
+      if (!hash.startsWith('#comment-')) {
+        setTargetCommentId(null);
+        return;
+      }
+
+      const id = hash.replace('#comment-', '').trim();
+      setTargetCommentId(id || null);
+    };
+
+    syncTargetFromHash();
+    window.addEventListener('hashchange', syncTargetFromHash);
+
+    return () => {
+      window.removeEventListener('hashchange', syncTargetFromHash);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!targetId) return;
+
+    const run = async () => {
+      await fetchComments();
+    };
+    run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetId]);
 
-  // コメント一覧を取得
+  useEffect(() => {
+    handledTargetRef.current = null;
+  }, [targetCommentId, targetId]);
+
+  useEffect(() => {
+    if (!targetCommentId || commentsLoading) return;
+    if (handledTargetRef.current === targetCommentId) return;
+
+    const elementId = `comment-${targetCommentId}`;
+    let attempts = 0;
+    const maxAttempts = 20;
+
+    const tryScroll = () => {
+      const element = document.getElementById(elementId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add('comment-highlight');
+
+        window.setTimeout(() => {
+          element.classList.remove('comment-highlight');
+        }, 2000);
+
+        handledTargetRef.current = targetCommentId;
+        return;
+      }
+
+      if (attempts < maxAttempts) {
+        attempts += 1;
+        window.setTimeout(tryScroll, 120);
+      }
+    };
+
+    tryScroll();
+  }, [comments, commentsLoading, targetCommentId]);
+
   const fetchComments = async () => {
+    if (!targetId) return;
+
     try {
       setCommentsLoading(true);
       const response = await fetch(`/api/${apiBasePath}/${targetId}/comments`);
       if (!response.ok) {
-        throw new Error('コメントの取得に失敗しました');
+        throw new Error('Failed to fetch comments');
       }
+
       const data = await response.json();
       const fetchedComments = data.comments || [];
       setComments(fetchedComments);
 
-      // 親コンポーネントにコメント数を通知
       if (onCommentCountChange) {
-        onCommentCountChange(fetchedComments.length);
+        onCommentCountChange(countAllComments(fetchedComments));
       }
     } catch (err) {
-      console.error('コメント取得エラー:', err);
+      console.error('Comment fetch error:', err);
     } finally {
       setCommentsLoading(false);
     }
   };
 
-  // コメントを投稿
-  const handleSubmitComment = async (content: string, parentId?: string) => {
+  const handleSubmitComment = async (content: string, parentId?: string): Promise<boolean> => {
     if (!user) {
       setLoginRequiredAction('コメント');
       setShowLoginModal(true);
-      return;
+      return false;
     }
 
     if (!content.trim()) {
       toast.error('コメント内容を入力してください');
-      return;
+      return false;
     }
 
     if (content.length > 140) {
       toast.error('コメントは140文字以内で入力してください');
-      return;
+      return false;
     }
 
     setCommentSubmitting(true);
     try {
       const commentData = {
         userId: user.uid,
-        userName: profile.displayName || user.displayName || 'ゲスト',
+        userName: profile.displayName || user.displayName || 'ユーザー',
         userPhotoURL: profile.photoURL || user.photoURL || '',
-        content: content,
+        content,
         parentId: parentId || undefined,
       };
 
       const token = await user.getIdToken();
       if (!token) {
-        throw new Error('認証トークンの取得に失敗しました');
+        throw new Error('Failed to get auth token');
       }
 
       const response = await fetch(`/api/${apiBasePath}/${targetId}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(commentData),
       });
 
       if (!response.ok) {
-        throw new Error('コメントの投稿に失敗しました');
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || 'Failed to post comment');
       }
 
-      const responseData = await response.json();
-      const newComment = responseData.comment;
-
-      // 通知を作成
-      if (parentId) {
-
-        const findComment = (list: CommentType[], id: string): CommentType | undefined => {
-          for (const c of list) {
-            if (c._id === id) return c;
-            if (c.replies && c.replies.length > 0) {
-              const found = findComment(c.replies, id);
-              if (found) return found;
-            }
-          }
-          return undefined;
-        };
-
-        const parentComment = findComment(comments, parentId);
-        if (parentComment && parentComment.userId !== user.uid) {
-          await createReplyNotification(
-            parentComment.userId,
-            user.uid,
-            profile.displayName || user.displayName || 'ゲスト',
-            targetId!,
-            itemTitle || '投稿',
-            newComment._id,
-            content,
-            productId ? 'product' : 'post'
-          );
-        }
-      } else {
-        // 通常コメントの場合、投稿者/出品者に通知
-        if (itemOwnerId && itemOwnerId !== user.uid) {
-          if (postId) {
-            await createPostCommentNotification(
-              itemOwnerId,
-              user.uid,
-              profile.displayName || user.displayName || 'ゲスト',
-              postId,
-              itemTitle || '投稿',
-              newComment._id,
-              content
-            );
-          } else if (productId) {
-            await createCommentNotification(
-              itemOwnerId,
-              user.uid,
-              profile.displayName || user.displayName || 'ゲスト',
-              productId,
-              itemTitle || '商品',
-              newComment._id,
-              content
-            );
-          }
-        }
-      }
-
-      // コメントをリロード
+      await response.json();
       await fetchComments();
+      return true;
     } catch (err) {
-      console.error('コメント投稿エラー:', err);
-      toast.error('コメントの投稿に失敗しました');
+      console.error('Comment submit error:', err);
+      toast.error(err instanceof Error ? err.message : 'コメントの投稿に失敗しました');
+      return false;
     } finally {
       setCommentSubmitting(false);
     }
   };
 
-  // 返信を投稿
-  const handleReplyComment = async (parentId: string, content: string) => {
-    await handleSubmitComment(content, parentId);
+  const handleReplyComment = async (parentId: string, content: string): Promise<boolean> => {
+    return handleSubmitComment(content, parentId);
   };
 
-  // コメントを削除
   const handleDeleteComment = async (commentId: string) => {
-    if (!user) return;
-
-    if (!confirm('このコメントを削除しますか?')) {
-      return;
-    }
+    if (!user || !targetId) return;
 
     try {
       const token = await user.getIdToken();
       if (!token) {
-        throw new Error('認証トークンの取得に失敗しました');
+        throw new Error('Failed to get auth token');
       }
 
-      const response = await fetch(
-        `/api/${apiBasePath}/${targetId}/comments/${commentId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/${apiBasePath}/${targetId}/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'コメントの削除に失敗しました');
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || 'Failed to delete comment');
       }
 
-      // コメントをリロード
       await fetchComments();
     } catch (err) {
-      console.error('コメント削除エラー:', err);
+      console.error('Comment delete error:', err);
       toast.error(err instanceof Error ? err.message : 'コメントの削除に失敗しました');
     }
   };
 
   return (
     <div>
-      {/* コメント入力欄 */}
       <CommentInput
         onSubmit={handleSubmitComment}
         isSubmitting={commentSubmitting}
         maxLength={140}
       />
 
-      {/* コメント一覧 */}
       <CommentList
         comments={comments}
         loading={commentsLoading}
         currentUserId={user?.uid}
         onDeleteComment={handleDeleteComment}
         onReply={handleReplyComment}
+        targetCommentId={targetCommentId}
       />
 
-      {/* ログイン必須モーダル */}
       <LoginRequiredModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}

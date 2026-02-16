@@ -1,6 +1,8 @@
 export interface Comment {
   _id: string;
   productId: string;
+  itemType?: 'product' | 'post';
+  itemOwnerId?: string;
   userId: string;
   userName: string;
   userPhotoURL?: string;

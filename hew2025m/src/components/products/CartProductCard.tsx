@@ -105,9 +105,9 @@ export default function CartProductCard({ product }: CartProductCardProps) {
   return (
     <Link href={`/product-detail/${product.id}`}>
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer">
-        <div className="flex">
+        <div className="flex items-stretch">
           {/* 商品画像 */}
-          <div className="w-28 h-28 sm:w-40 sm:h-40 flex-shrink-0 bg-gray-200 flex items-center justify-center">
+          <div className="w-28 sm:w-40 flex-shrink-0 bg-gray-200 flex items-center justify-center">
             {product.imageUrl ? (
               <Image
                 src={decodeHtmlEntities(product.imageUrl)}
@@ -118,7 +118,7 @@ export default function CartProductCard({ product }: CartProductCardProps) {
                 quality={IMAGE_QUALITY.STANDARD}
                 placeholder="blur"
                 blurDataURL={BLUR_DATA_URLS.product}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover block"
               />
             ) : (
               <Fish size={48} className="text-gray-400" />

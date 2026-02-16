@@ -4,12 +4,9 @@ import { useState, useEffect } from 'react';
 import { decodeHtmlEntities } from '@/lib/sanitize';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { User, Star, MessageCircle } from 'lucide-react';
-import { useAuth } from '@/lib/useAuth';
+import { User, Star } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import LoginRequiredModal from './LoginRequiredModal';
 import RatingListModal from './RatingListModal';
 import { Button } from '@/components';
 
@@ -38,8 +35,6 @@ interface UserInfoCardProps {
   loading?: boolean;
   fallbackName?: string;
   showRating?: boolean; // 評価を表示するか
-  showActions?: boolean; // アクションボタンを表示するか
-  isOwnProfile?: boolean; // 自分のプロフィールかどうか
 }
 
 export default function UserInfoCard({
@@ -48,15 +43,9 @@ export default function UserInfoCard({
   loading = false,
   fallbackName,
   showRating = false,
-  showActions = false,
-  isOwnProfile = false,
 }: UserInfoCardProps) {
-  const { user } = useAuth();
-  const router = useRouter();
   const [averageRating, setAverageRating] = useState<number>(0);
   const [totalRatings, setTotalRatings] = useState<number>(0);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [loginRequiredAction, setLoginRequiredAction] = useState('');
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [ratings, setRatings] = useState<RatingWithUser[]>([]);
 
@@ -130,27 +119,6 @@ export default function UserInfoCard({
     fetchRating();
   }, [showRating, userProfile?.uid]);
 
-  const handleMessageClick = () => {
-    if (!user) {
-      setLoginRequiredAction('メッセージを送る');
-      setShowLoginModal(true);
-      return;
-    }
-
-    if (!userProfile) return;
-    router.push(`/message?userId=${userProfile.uid}`);
-  };
-
-  const handleRatingClick = () => {
-    if (!user) {
-      setLoginRequiredAction('評価する');
-      setShowLoginModal(true);
-      return;
-    }
-
-    if (!userProfile) return;
-    router.push(`/profile/${userProfile.uid}`);
-  };
 
   return (
     <section className="px-4 md:px-6 py-3 md:py-4 mt-6 md:mt-8 bg-white rounded-lg shadow-md overflow-hidden">
@@ -171,9 +139,9 @@ export default function UserInfoCard({
           <div className="flex flex-row gap-4 md:gap-6">
             {/* 左側: ユーザープロフィールカード */}
             <Link href={`/profile/${userProfile.uid}`} className="flex-1">
-              <div className="flex items-center justify-center sm:justify-start sm:items-start gap-3 md:gap-4 px-4 rounded-lg bg-white hover:bg-gray-50 border border-transparent hover:border-[#2FA3E3] transition-colors cursor-pointer h-full">
+              <div className="flex items-center justify-center sm:justify-start sm:items-start gap-3 md:gap-4 px-4 h-full rounded-lg bg-white hover:bg-gray-50 border border-transparent hover:border-[#2FA3E3] transition-colors cursor-pointer">
                 {/* プロフィール画像 */}
-                <div className="flex-shrink-0 self-center">
+                <div className="p-2 flex-shrink-0 self-center">
                   {userProfile.photoURL ? (
                     <Image
                       src={decodeHtmlEntities(userProfile.photoURL)}
@@ -203,7 +171,7 @@ export default function UserInfoCard({
                 {/* Bio */}
                 {userProfile.bio && (
                   <div className="hidden sm:block flex-1 min-w-0 self-center">
-                    <p className="text-xs md:text-sm text-gray-700 break-words whitespace-pre-wrap line-clamp-3">
+                    <p className="text-xs md:text-sm text-gray-700 break-words-safe whitespace-pre-wrap line-clamp-3">
                       {userProfile.bio}
                     </p>
                   </div>
@@ -211,69 +179,43 @@ export default function UserInfoCard({
               </div>
             </Link>
 
-            {/* 右側: 評価とアクション（showRatingまたはshowActionsがtrueの場合のみ） */}
-            {(showRating || showActions) && (
-              <div className="flex flex-col gap-3 md:gap-4 lg:w-80">
+            {/* 右側: 評価（showRatingがtrueの場合のみ） */}
+            {showRating && (
+              <div className="flex items-center">
                 {/* 評価カード */}
-                {showRating && (
-                  <div className="bg-white rounded-xl p-3 md:p-4 border border-gray-200 shadow-sm flex-1 flex flex-col justify-center gap-3">
-                    <div className="flex items-center mx-auto p-3 gap-3">
-                      <div className="text-2xl md:text-3xl font-bold">
-                        {averageRating > 0 ? averageRating.toFixed(1) : '---'}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              size={16}
-                              className={`md:w-5 md:h-5 ${i < Math.round(averageRating)
-                                ? 'fill-yellow-400 text-yellow-400'
-                                : 'text-gray-300'
-                                } transition-colors`}
-                            />
-                          ))}
-                        </div>
-                        <p className="text-xs md:text-sm text-gray-600 mt-1">{totalRatings}件の評価</p>
-                      </div>
+                <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+                  <div className="flex items-center gap-4">
+                    <div className="text-3xl md:text-4xl font-bold text-gray-800">
+                      {averageRating > 0 ? averageRating.toFixed(1) : '---'}
                     </div>
-                    {/* 評価を見るボタン */}
-                    {totalRatings > 0 && (
-                      <Button
-                        onClick={() => setIsRatingModalOpen(true)}
-                        variant="ghost"
-                        size="sm"
-                        className="w-full"
-                      >
-                        評価を見る
-                      </Button>
-                    )}
+                    <div>
+                      <div className="flex items-center gap-1 mb-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            size={20}
+                            className={`${i < Math.round(averageRating)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-gray-300'
+                              } transition-colors`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-sm text-gray-600">{totalRatings}件の評価</p>
+                    </div>
                   </div>
-                )}
-
-                {/* アクションボタン（自分のプロフィールでない場合のみ表示） */}
-                {showActions && !isOwnProfile && (
-                  <div className="flex gap-2 md:gap-3">
+                  {/* 評価を見るボタン */}
+                  {totalRatings > 0 && (
                     <Button
-                      onClick={handleRatingClick}
-                      variant="outline"
+                      onClick={() => setIsRatingModalOpen(true)}
+                      variant="ghost"
                       size="sm"
-                      icon={<Star size={16} className="md:w-[18px] md:h-[18px]" />}
-                      className="flex-1 text-xs md:text-sm rounded-xl"
+                      className="w-full mt-3"
                     >
-                      評価する
+                      評価を見る
                     </Button>
-                    <Button
-                      onClick={handleMessageClick}
-                      variant="primary"
-                      size="sm"
-                      icon={<MessageCircle size={16} className="md:w-[18px] md:h-[18px]" />}
-                      className="flex-1 text-xs md:text-sm rounded-xl"
-                    >
-                      メッセージ
-                    </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -291,13 +233,6 @@ export default function UserInfoCard({
           </div>
         )}
       </div>
-
-      {/* ログイン必須モーダル */}
-      <LoginRequiredModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        action={loginRequiredAction}
-      />
 
       {/* 評価一覧モーダル */}
       <RatingListModal

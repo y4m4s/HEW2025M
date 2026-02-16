@@ -34,20 +34,15 @@ yarn-error.log*
 tsc_errors*.log
 *.log
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
-.env.local*
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# uploads
-/public/uploads/*
-!/public/uploads/.gitkeep
-/public/avatars/*
 
 # IDE config
 .idea

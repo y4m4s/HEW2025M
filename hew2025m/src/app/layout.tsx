@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
-import { Header, Footer, ClientProviders } from "@/components";
+import { AppShell, ClientProviders } from "@/components";
+
+// せのびゴシックフォントの最適化された読み込み（見出しのみに使用）
+const senobiGothic = localFont({
+  src: "../../public/fonts/Senobi-Gothic-Regular.woff2",
+  variable: "--font-senobi",
+  display: "swap",
+  preload: true,
+});
 
 export const metadata: Metadata = {
   title: {
@@ -35,14 +44,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja">
+    <html lang="ja" className={senobiGothic.variable}>
       <body>
         <ClientProviders>
-          <Header />
-          <main>
-            {children}
-          </main>
-          <Footer />
+          <AppShell>{children}</AppShell>
         </ClientProviders>
       </body>
     </html>

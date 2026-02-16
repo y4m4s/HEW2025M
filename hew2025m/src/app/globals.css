@@ -1,14 +1,5 @@
 @import "tailwindcss";
 
-/* === フォント定義 === */
-@font-face {
-  font-family: 'せのびゴシック';
-  src: url('/fonts/Senobi-Gothic-Regular.woff2') format('woff2');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
 /* === カラー変数（プロジェクト統一） === */
 :root {
   --primary-color: #2FA3E3;
@@ -112,6 +103,78 @@
   50% {
     transform: translateY(-10px);
   }
+}
+
+/* === Hero Vertical Scroll Animation === */
+@keyframes scroll-vertical {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.animate-scroll-vertical {
+  animation: scroll-vertical 30s linear infinite;
+}
+
+/* === Hero Water Flow Animation === */
+@keyframes wave-slow {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(10%, 5%) rotate(5deg);
+  }
+  50% {
+    transform: translate(-5%, 10%) rotate(-3deg);
+  }
+  75% {
+    transform: translate(-10%, -5%) rotate(2deg);
+  }
+}
+
+@keyframes wave-medium {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  33% {
+    transform: translate(-8%, 8%) rotate(-4deg);
+  }
+  66% {
+    transform: translate(8%, -8%) rotate(4deg);
+  }
+}
+
+@keyframes wave-fast {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  20% {
+    transform: translate(5%, -5%) rotate(3deg);
+  }
+  40% {
+    transform: translate(-5%, 5%) rotate(-3deg);
+  }
+  60% {
+    transform: translate(8%, 3%) rotate(2deg);
+  }
+  80% {
+    transform: translate(-3%, -8%) rotate(-2deg);
+  }
+}
+
+.animate-wave-slow {
+  animation: wave-slow 20s ease-in-out infinite;
+}
+
+.animate-wave-medium {
+  animation: wave-medium 15s ease-in-out infinite;
+}
+
+.animate-wave-fast {
+  animation: wave-fast 10s ease-in-out infinite;
 }
 
 /* === Micro-interactions === */
@@ -247,4 +310,54 @@
 /* === Smooth Transitions === */
 button, a, input, select, textarea {
   transition: all var(--transition-base) ease-in-out;
+}
+
+/* === Typography === */
+/* デフォルトフォント: システムフォントで可読性を重視 */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+}
+
+/* 見出しのみせのびゴシックを適用（ブランディング） */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-senobi), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* === Category Border Animation === */
+/* SVGストロークが角丸に沿って流れるアニメーション */
+@keyframes border-stroke {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -800;
+  }
+}
+
+.animate-border-stroke {
+  animation: border-stroke 3s linear infinite;
+}
+
+/* === Comment Highlight Animation === */
+@keyframes highlight-fade {
+  0% {
+    background-color: rgba(254, 249, 195, 0.5); /* 薄い黄色 */
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.comment-highlight {
+  animation: highlight-fade 2s ease-out forwards;
+  border-radius: var(--radius-lg);
+}
+
+/* === Text Break Utilities === */
+/* 長い英数字の羅列やURLを適切に改行 */
+.break-words-safe {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
 }

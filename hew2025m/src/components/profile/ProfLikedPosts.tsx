@@ -22,6 +22,7 @@ interface LikedPost {
   category: 'sea' | 'river';
   likes: number;
   comments?: { _id: string }[];
+  commentsCount?: number;
   createdAt: string;
   likedAt: string;
 }
@@ -106,8 +107,7 @@ export default function ProfLikedPosts({ onCountChange, userId }: ProfLikedPosts
                 day: '2-digit',
               }),
               likes: post.likes || 0,
-              comments: post.comments?.length || 0,
-              category: post.category,
+              comments: post.commentsCount ?? post.comments?.length ?? 0,
               isLiked: true, // いいねした投稿なので常にtrue
               imageUrl: post.imageUrl || '',
             };

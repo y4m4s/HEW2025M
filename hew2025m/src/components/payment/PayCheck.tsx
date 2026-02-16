@@ -149,10 +149,10 @@ export default function PayCheck() {
         );
 
         const validItemMeta = orderItemsWithMeta.filter(
-          (item): item is { item: OrderItemPayload; shippingPayer?: string } => item !== null
+          (item): item is { item: OrderItemPayload; shippingPayer: string } => item !== null
         );
-        const validItems = validItemMeta.map((item) => item.item);
-        const hasBuyerPaysItem = validItemMeta.some((item) => item.shippingPayer === 'buyer');
+        const validItems = validItemMeta.map((meta) => meta.item);
+        const hasBuyerPaysItem = validItemMeta.some((meta) => meta.shippingPayer === 'buyer');
 
         const subtotal = validItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 

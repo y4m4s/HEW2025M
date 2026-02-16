@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
-import { Fish, MapPin, User, List } from 'lucide-react';
+import { Fish, User, List } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 
 import { PostCard, Button, RecommendedUsers, LoadingSpinner, LoginRequiredModal, type Post } from '@/components';
@@ -70,7 +71,7 @@ export default function CommunityPage() {
           createdAt: string;
           likes?: number;
           comments?: unknown[];
-          category?: string;
+          commentsCount?: number;
           media?: Array<{ url: string; order: number }>;
         }) => ({
           id: post._id,
@@ -82,8 +83,7 @@ export default function CommunityPage() {
           authorPhotoURL: post.authorPhotoURL,
           date: formatDate(post.createdAt),
           likes: post.likes || 0,
-          comments: post.comments?.length || 0,
-          category: post.category || 'other',
+          comments: post.commentsCount ?? post.comments?.length ?? 0,
           isLiked: false,
           tags: post.tags,
           imageUrl: post.media && post.media.length > 0
@@ -140,7 +140,7 @@ export default function CommunityPage() {
             <div className="mb-6 sm:mb-8">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-2">
                 <div>
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1.5 sm:mb-2" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1.5 sm:mb-2">
                     コミュニティ
                   </h1>
                   <p className="text-sm sm:text-base text-gray-600">釣果を共有して、釣り仲間と繋がろう</p>
@@ -155,8 +155,8 @@ export default function CommunityPage() {
                     }
                   }}
                   variant="primary"
-                  size="md"
-                  className="shadow-lg hover:shadow-xl transition-shadow text-xs sm:text-sm w-full sm:w-auto"
+                  size="lg"
+                  className="shadow-lg hover:shadow-xl transition-shadow text-sm sm:text-base w-full sm:w-auto"
                 >
                   投稿する
                 </Button>
@@ -169,13 +169,13 @@ export default function CommunityPage() {
                 <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg p-1.5 sm:p-2">
                   <Fish className="text-white" size={20} />
                 </div>
-                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
                   人気の投稿
                 </h2>
               </div>
               {popularPost ? (
                 <div className="transform hover:scale-[1.02] transition-transform duration-300">
-                  <PostCard post={popularPost} variant="compact" />
+                  <PostCard post={popularPost} variant="default" />
                 </div>
               ) : (
                 <div className="text-center py-12 sm:py-14 md:py-16 bg-white rounded-xl shadow-sm border border-gray-100">
@@ -188,22 +188,13 @@ export default function CommunityPage() {
 
             {/* 最新の投稿セクション */}
             <section className="mb-8 sm:mb-10 md:mb-12">
-              <div className="flex justify-between items-center mb-4 sm:mb-5 md:mb-6">
-                <div className="flex items-center gap-2.5 sm:gap-3">
-                  <div className="bg-gradient-to-r from-blue-400 to-cyan-500 rounded-lg p-1.5 sm:p-2">
-                    <Fish className="text-white" size={20} />
-                  </div>
-                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
-                    最新の投稿
-                  </h2>
+              <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-5 md:mb-6">
+                <div className="bg-gradient-to-r from-blue-400 to-cyan-500 rounded-lg p-1.5 sm:p-2">
+                  <Fish className="text-white" size={20} />
                 </div>
-                <Link
-                  href="/post-list"
-                  className="text-[#2FA3E3] text-xs sm:text-sm font-semibold hover:text-[#1d7bb8] transition-colors duration-300 flex items-center gap-0.5 sm:gap-1 group"
-                >
-                  もっと見る
-                  <span className="transform group-hover:translate-x-1 transition-transform">→</span>
-                </Link>
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
+                  最新の投稿
+                </h2>
               </div>
               {latestPosts.length > 0 ? (
                 <>
@@ -218,13 +209,14 @@ export default function CommunityPage() {
                     ))}
                   </div>
                   <div className="text-center mt-6 sm:mt-7 md:mt-8">
-                    <Link
+                    <Button
                       href="/post-list"
-                      className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 bg-white text-[#2FA3E3] text-xs sm:text-sm font-semibold rounded-lg shadow-md hover:shadow-lg hover:bg-[#2FA3E3] hover:text-white transition-all duration-300 border-2 border-[#2FA3E3]"
+                      variant="primary"
+                      size="lg"
+                      className="shadow-md hover:shadow-lg transition-shadow"
                     >
                       すべての投稿を見る
-                      <span className="transform group-hover:translate-x-1 transition-transform">→</span>
-                    </Link>
+                    </Button>
                   </div>
                 </>
               ) : (
@@ -240,37 +232,25 @@ export default function CommunityPage() {
           {/* サイドバー */}
           <aside className="lg:w-80 space-y-4 sm:space-y-5 md:space-y-6 mt-6 lg:mt-0">
             {/* マップカード */}
-            <div className="bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500 rounded-xl sm:rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] group">
+            <div className="rounded-xl sm:rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] group">
               <Link href="/map" className="block">
                 <div className="relative h-48 sm:h-52 md:h-56 overflow-hidden">
-                  {/* 背景のアニメーション効果 */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400/30 to-transparent opacity-50 group-hover:opacity-70 transition-opacity duration-300"></div>
-
-                  {/* マップのイメージ的な装飾 */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="relative">
-                      {/* 背景の円 */}
-                      <div className="absolute inset-0 bg-white/20 rounded-full blur-3xl scale-150 group-hover:scale-175 transition-transform duration-500"></div>
-
-                      {/* メインアイコン */}
-                      <div className="relative bg-white/90 backdrop-blur-sm rounded-full p-4 sm:p-5 md:p-6 shadow-2xl group-hover:bg-white transition-colors duration-300">
-                        <MapPin className="text-blue-600" size={44} strokeWidth={2.5} />
-                      </div>
-
-                      {/* 周りの小さなピン */}
-                      <div className="absolute -top-3 sm:-top-4 -right-3 sm:-right-4 bg-white/80 backdrop-blur-sm rounded-full p-1.5 sm:p-2 shadow-lg animate-bounce">
-                        <MapPin className="text-cyan-500" size={16} />
-                      </div>
-                      <div className="absolute -bottom-1.5 sm:-bottom-2 -left-5 sm:-left-6 bg-white/80 backdrop-blur-sm rounded-full p-1.5 sm:p-2 shadow-lg animate-pulse">
-                        <MapPin className="text-teal-500" size={14} />
-                      </div>
-                    </div>
-                  </div>
+                  {/* 背景画像 */}
+                  <Image
+                    src="/back/map.webp"
+                    alt="釣りスポットマップ"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 320px"
+                    className="object-cover"
+                  />
+                  {/* グラデーションオーバーレイ（画像をぼかす） */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/60 via-cyan-500/60 to-teal-500/60"></div>
+                  <div className="absolute inset-0 bg-blue-500/20 group-hover:bg-blue-500/30 transition-colors duration-300"></div>
                 </div>
               </Link>
 
               <div className="bg-white p-4 sm:p-5 md:p-6">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-1.5 sm:mb-2 group-hover:text-blue-600 transition-colors duration-300" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-1.5 sm:mb-2 group-hover:text-blue-600 transition-colors duration-300">
                   釣りスポットマップ
                 </h3>
                 <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 leading-relaxed">
@@ -288,7 +268,7 @@ export default function CommunityPage() {
                 <div className="bg-blue-100 rounded-lg p-1.5 sm:p-2">
                   <List className="text-blue-600" size={20} />
                 </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-800" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+                <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-800">
                   投稿一覧
                 </h3>
               </div>
@@ -306,7 +286,7 @@ export default function CommunityPage() {
                 <div className="bg-purple-100 rounded-lg p-1.5 sm:p-2">
                   <User className="text-purple-600" size={20} />
                 </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-800" style={{ fontFamily: "せのびゴシック, sans-serif" }}>
+                <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-800">
                   おすすめユーザー
                 </h3>
               </div>

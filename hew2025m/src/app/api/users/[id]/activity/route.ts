@@ -1,4 +1,3 @@
-// src/app/api/users/[id]/activity/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Post from '@/models/Post';
@@ -9,11 +8,15 @@ import { IProduct } from '@/models/Product';
 import { IComment } from '@/models/Comment';
 import { ensureUserIdPrefix } from '@/lib/utils';
 
-// Tipo unificado para atividade
-export type ActivityItem = {
+type ActivityItem = {
   type: 'post' | 'comment';
   date: Date;
-  data: IPost | (IComment & { parent?: IPost | IProduct }); // Comentário com seu pai (post/produto)
+  data: IPost | (IComment & { parent?: IPost | IProduct });
+};
+
+type CommentWithType = IComment & {
+  productId: string;
+  itemType?: 'post' | 'product';
 };
 
 export async function GET(
@@ -29,49 +32,81 @@ export async function GET(
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // 1. Buscar todos os posts do usuário
     const normalizedAuthorId = ensureUserIdPrefix(userId);
     const userPosts: IPost[] = await Post.find({
-      authorId: { $in: [userId, normalizedAuthorId] }
-    }).sort({ createdAt: -1 }).lean();
-    const postActivities: ActivityItem[] = userPosts.map(post => ({
+      authorId: { $in: [userId, normalizedAuthorId] },
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const postActivities: ActivityItem[] = userPosts.map((post) => ({
       type: 'post',
       date: post.createdAt,
       data: post,
     }));
 
-    // 2. Buscar todos os comentários do usuário
-    const userComments: IComment[] = await Comment.find({ userId }).sort({ createdAt: -1 }).lean();
-    
-    // 3. Para cada comentário, buscar o item pai (post ou produto)
-    const parentIds = [...new Set(userComments.map(c => c.productId))];
-    const parentPosts = await Post.find({ _id: { $in: parentIds } }).lean();
-    const parentProducts = await Product.find({ _id: { $in: parentIds } }).lean();
+    const userComments: CommentWithType[] = await Comment.find({ userId })
+      .sort({ createdAt: -1 })
+      .lean();
 
-    const parentsMap = new Map<string, IPost | IProduct>();
-    parentPosts.forEach(p => parentsMap.set(p._id.toString(), p));
-    parentProducts.forEach(p => parentsMap.set(p._id.toString(), p));
-    
-    const commentActivities: ActivityItem[] = userComments.map(comment => {
-      const parent = parentsMap.get(comment.productId.toString());
+    const postParentIds = new Set<string>();
+    const productParentIds = new Set<string>();
+    const unknownParentIds = new Set<string>();
+
+    userComments.forEach((comment) => {
+      const parentId = comment.productId?.toString();
+      if (!parentId) return;
+
+      if (comment.itemType === 'post') {
+        postParentIds.add(parentId);
+      } else if (comment.itemType === 'product') {
+        productParentIds.add(parentId);
+      } else {
+        unknownParentIds.add(parentId);
+      }
+    });
+
+    const [parentPosts, parentProducts] = await Promise.all([
+      Post.find({ _id: { $in: [...postParentIds, ...unknownParentIds] } }).lean(),
+      Product.find({ _id: { $in: [...productParentIds, ...unknownParentIds] } }).lean(),
+    ]);
+
+    const postParentMap = new Map<string, IPost>();
+    const productParentMap = new Map<string, IProduct>();
+    parentPosts.forEach((post) => postParentMap.set(post._id.toString(), post));
+    parentProducts.forEach((product) => productParentMap.set(product._id.toString(), product));
+
+    const commentActivities: ActivityItem[] = userComments.map((comment) => {
+      const parentId = comment.productId?.toString();
+      let parent: IPost | IProduct | undefined;
+
+      if (comment.itemType === 'post') {
+        parent = postParentMap.get(parentId);
+      } else if (comment.itemType === 'product') {
+        parent = productParentMap.get(parentId);
+      } else {
+        parent = postParentMap.get(parentId) || productParentMap.get(parentId);
+      }
+
       return {
         type: 'comment',
         date: comment.createdAt,
         data: {
           ...comment,
-          parent: parent || undefined
+          parent,
         },
       };
     });
 
-    // 4. Combinar e ordenar todas as atividades
     const allActivities = [...postActivities, ...commentActivities];
     allActivities.sort((a, b) => b.date.getTime() - a.date.getTime());
 
     return NextResponse.json({ success: true, activities: allActivities });
-
   } catch (error) {
     console.error('Get user activity error:', error);
-    return NextResponse.json({ error: 'Failed to fetch user activity' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch user activity' },
+      { status: 500 }
+    );
   }
 }

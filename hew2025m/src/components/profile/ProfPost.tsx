@@ -51,6 +51,7 @@ export default function ProfPost({ onCountChange, userId }: ProfPostProps) {
           createdAt: string;
           likes?: number;
           comments?: unknown[];
+          commentsCount?: number;
           media?: Array<{ url: string; order: number }>;
           authorId?: string;
           authorName?: string;
@@ -73,7 +74,7 @@ export default function ProfPost({ onCountChange, userId }: ProfPostProps) {
             authorPhotoURL,
             date: formatDate(post.createdAt),
             likes: post.likes || 0,
-            comments: post.comments?.length || 0,
+            comments: post.commentsCount ?? post.comments?.length ?? 0,
             category: 'sea' as const,
             isLiked: false,
             imageUrl: post.media && post.media.length > 0

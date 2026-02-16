@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components';
 
 interface CommentInputProps {
-  onSubmit: (content: string) => Promise<void>;
+  onSubmit: (content: string) => Promise<boolean>;
   isSubmitting: boolean;
   maxLength?: number;
   placeholder?: string;
@@ -23,8 +23,14 @@ export default function CommentInput({
       return;
     }
 
-    await onSubmit(commentText);
-    setCommentText('');
+    try {
+      const success = await onSubmit(commentText);
+      if (success) {
+        setCommentText('');
+      }
+    } catch {
+      // Keep input text on failure.
+    }
   };
 
   const isOverLimit = commentText.length > maxLength;

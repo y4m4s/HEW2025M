@@ -4,11 +4,17 @@ import Comment from '@/models/Comment';
 import Post from '@/models/Post';
 import { requireAuth } from '@/lib/simpleAuth';
 import { getCachedUserInfo } from '@/lib/userCache';
+import {
+  createOwnerCommentNotificationServer,
+  createReplyNotificationServer,
+} from '@/lib/serverNotifications';
+import { extractUid } from '@/lib/utils';
 
-
-// コメントの型定義
 interface CommentDocument {
   _id: { toString(): string };
+  productId: string;
+  itemType?: 'post' | 'product';
+  itemOwnerId?: string;
   parentId?: string;
   userId: string;
   userName: string;
@@ -21,17 +27,18 @@ interface CommentWithReplies extends CommentDocument {
   replies: CommentWithReplies[];
 }
 
-// コメントを階層構造に変換するヘルパー関数
+const POST_COMMENT_FILTER = {
+  $or: [{ itemType: 'post' }, { itemType: { $exists: false } }],
+};
+
 function organizeComments(comments: CommentDocument[]): CommentWithReplies[] {
   const commentMap = new Map<string, CommentWithReplies>();
   const rootComments: CommentWithReplies[] = [];
 
-  // まずすべてのコメントをマップに格納
   comments.forEach((comment) => {
     commentMap.set(comment._id.toString(), { ...comment, replies: [] });
   });
 
-  // 親子関係を構築
   comments.forEach((comment) => {
     const commentWithReplies = commentMap.get(comment._id.toString());
     if (!commentWithReplies) return;
@@ -41,55 +48,48 @@ function organizeComments(comments: CommentDocument[]): CommentWithReplies[] {
       if (parent) {
         parent.replies.push(commentWithReplies);
       }
-    } else {
-      rootComments.push(commentWithReplies);
+      return;
     }
+
+    rootComments.push(commentWithReplies);
   });
 
   return rootComments;
 }
 
-// 投稿のコメント一覧を取得
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
-
     const { id } = await params;
 
-    // 投稿が存在するか確認
     const post = await Post.findById(id);
     if (!post) {
-      return NextResponse.json(
-        { error: '投稿が見つかりませんでした' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
 
-    // コメントを取得（新しい順）
-    const allComments = await Comment.find({ productId: id })
+    const allComments = await Comment.find({
+      productId: id,
+      ...POST_COMMENT_FILTER,
+    })
       .sort({ createdAt: -1 })
       .lean();
 
-    // コメントを階層構造に変換
-    const comments = organizeComments(allComments);
-
     return NextResponse.json({
       success: true,
-      comments,
+      comments: organizeComments(allComments),
     });
   } catch (error) {
-    console.error('Get comments error:', error);
+    console.error('Get post comments error:', error);
     return NextResponse.json(
-      { error: 'コメントの取得に失敗しました' },
+      { error: 'Failed to fetch post comments' },
       { status: 500 }
     );
   }
 }
 
-// 新しいコメントを投稿
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -99,80 +99,99 @@ export async function POST(
     if (userIdOrError instanceof Response) {
       return userIdOrError;
     }
-    const userId = userIdOrError as string;
 
+    const actorUserId = extractUid(userIdOrError as string);
     await dbConnect();
 
     const { id } = await params;
-
-    // 投稿が存在するか確認
     const post = await Post.findById(id);
     if (!post) {
-      return NextResponse.json(
-        { error: '投稿が見つかりませんでした' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
 
     const body = await request.json();
-    const { userName, userPhotoURL, content, parentId } = body;
+    const { userName, userPhotoURL, content, parentId } = body as {
+      userName?: string;
+      userPhotoURL?: string;
+      content?: string;
+      parentId?: string;
+    };
 
-    // バリデーション
-    if (!userId || !content) {
+    if (!content) {
+      return NextResponse.json({ error: 'Content is required' }, { status: 400 });
+    }
+
+    const trimmedContent = content.trim();
+    if (!trimmedContent) {
+      return NextResponse.json({ error: 'Content is empty' }, { status: 400 });
+    }
+
+    if (trimmedContent.length > 140) {
       return NextResponse.json(
-        { error: '必須項目が不足しています' },
+        { error: 'Content must be 140 characters or less' },
         { status: 400 }
       );
     }
 
-    if (content.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'コメント内容を入力してください' },
-        { status: 400 }
-      );
-    }
-
-    if (content.length > 140) {
-      return NextResponse.json(
-        { error: 'コメントは140文字以内で入力してください' },
-        { status: 400 }
-      );
-    }
-
-    // 返信の場合、親コメントが存在するか確認
-    let parentComment = null;
+    let parentComment: CommentDocument | null = null;
     if (parentId) {
-      parentComment = await Comment.findById(parentId);
+      parentComment = await Comment.findById(parentId).lean();
       if (!parentComment) {
+        return NextResponse.json({ error: 'Parent comment not found' }, { status: 404 });
+      }
+
+      const parentMatchesItem = parentComment.productId === id;
+      const parentIsPostComment = !parentComment.itemType || parentComment.itemType === 'post';
+      if (!parentMatchesItem || !parentIsPostComment) {
         return NextResponse.json(
-          { error: '返信先のコメントが見つかりませんでした' },
-          { status: 404 }
+          { error: 'Invalid parent comment' },
+          { status: 400 }
         );
       }
     }
 
-    // コメントを作成（productIdフィールドに投稿IDを保存）
-    if (parentId && parentComment && parentComment.productId !== id) {
-      return NextResponse.json(
-        { error: 'Invalid parent comment' },
-        { status: 400 }
-      );
-    }
-
-    const cachedUser = await getCachedUserInfo(userId);
+    const cachedUser = await getCachedUserInfo(actorUserId);
     const safeUserName = cachedUser?.displayName || userName || 'ユーザー';
     const safeUserPhotoURL = cachedUser?.photoURL || userPhotoURL || '';
+    const ownerUserId = extractUid(post.authorId || '');
 
     const comment = await Comment.create({
-      productId: id, // 投稿IDを保存（モデル名はproductIdだが、汎用的に使用）
-      userId,
+      productId: id,
+      itemType: 'post',
+      itemOwnerId: ownerUserId || undefined,
+      userId: actorUserId,
       userName: safeUserName,
       userPhotoURL: safeUserPhotoURL,
-      content: content.trim(),
+      content: trimmedContent,
       parentId: parentId || undefined,
     });
 
-
+    if (parentComment) {
+      const parentUserId = extractUid(parentComment.userId);
+      if (parentUserId && parentUserId !== actorUserId) {
+        await createReplyNotificationServer({
+          parentCommentUserId: parentUserId,
+          actorUserId,
+          actorDisplayName: safeUserName,
+          itemType: 'post',
+          itemId: id,
+          itemTitle: post.title || '投稿',
+          commentId: comment._id.toString(),
+          replyContent: trimmedContent,
+        });
+      }
+    } else if (ownerUserId && ownerUserId !== actorUserId) {
+      await createOwnerCommentNotificationServer({
+        ownerUserId,
+        actorUserId,
+        actorDisplayName: safeUserName,
+        itemType: 'post',
+        itemId: id,
+        itemTitle: post.title || '投稿',
+        commentId: comment._id.toString(),
+        commentContent: trimmedContent,
+      });
+    }
 
     return NextResponse.json(
       {
@@ -184,7 +203,7 @@ export async function POST(
   } catch (error) {
     console.error('Post comment error:', error);
     return NextResponse.json(
-      { error: 'コメントの投稿に失敗しました' },
+      { error: 'Failed to post comment' },
       { status: 500 }
     );
   }

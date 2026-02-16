@@ -1,42 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import Post from '@/models/Post';
+import Post, { IPost } from '@/models/Post';
+import Comment from '@/models/Comment';
 import { requireAuth } from '@/lib/simpleAuth';
-import { getCachedUserInfoBatch, getCachedUserInfo } from '@/lib/userCache';
+import { getCachedUserInfo, getCachedUserInfoBatch } from '@/lib/userCache';
 import { ensureUserIdPrefix } from '@/lib/utils';
 
-// 正規表現の特殊文字をエスケープ（RegExpインジェクション対策）
 function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// 投稿一覧を取得 (GET handler)
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
+
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
     const authorId = searchParams.get('authorId');
     const keyword = searchParams.get('keyword');
     const tag = searchParams.get('tag');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = Math.min(parseInt(searchParams.get('limit') || '12'), 50); // 最大50件に制限
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = Math.min(parseInt(searchParams.get('limit') || '12', 10), 50);
+    const skip = (page - 1) * limit;
 
     const query: Record<string, unknown> = {};
-
-    if (category) {
-      query.category = category;
-    }
+    if (category) query.category = category;
+    if (tag) query.tags = tag;
     if (authorId) {
       const normalizedAuthorId = ensureUserIdPrefix(authorId);
       query.authorId = { $in: [authorId, normalizedAuthorId] };
     }
-    if (tag) {
-      query.tags = tag;
-    }
 
-    // キーワード検索: title, content, tags, addressを対象に検索
-    // RegExpインジェクション対策: 特殊文字をエスケープ
     if (keyword) {
       const escapedKeyword = escapeRegExp(keyword);
       const keywordRegex = new RegExp(escapedKeyword, 'i');
@@ -48,31 +42,57 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // ページネーションを適用
-    const skip = (page - 1) * limit;
+    const allTags = [
+      '釣り情報',
+      '釣果共有',
+      '初心者',
+      'レビュー',
+      '質問',
+      'おすすめ',
+      'トラブル注意',
+      '釣魚料理',
+    ];
 
-    // タグごとの投稿数を集計（N+1問題解決: aggregationで一括取得）
-    const allTags = ['釣行記', '情報共有', '質問', 'レビュー', '雑談', '初心者向け', 'トラブル相談', '釣果報告'];
-
-    // Promise.allで並列実行（Waterfall解消）
-    const [total, posts, tagCountsResult] = await Promise.all([
+    const [total, posts, totalPostCount, tagCountsResult] = await Promise.all([
       Post.countDocuments(query),
-      Post.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
+      Post.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Post.countDocuments({}),
       Post.aggregate([
         { $unwind: '$tags' },
         { $match: { tags: { $in: allTags } } },
         { $group: { _id: '$tags', count: { $sum: 1 } } },
-      ])
+      ]),
     ]);
 
-    const authorIds = [...new Set(posts.map((p) => (p as any).authorId).filter(Boolean))] as string[];
+    const authorIds = [
+      ...new Set(posts.map((post) => (post as unknown as IPost).authorId).filter(Boolean)),
+    ] as string[];
     const authorInfoMap = await getCachedUserInfoBatch(authorIds);
 
-    const postsWithAuthorInfo = posts.map((post: any) => {
-      const postObj = typeof post.toObject === 'function' ? post.toObject() : post;
+    const postIds = posts.map((post) => (post as { _id: { toString(): string } })._id.toString());
+    const commentCountsRaw = postIds.length
+      ? await Comment.aggregate([
+          {
+            $match: {
+              productId: { $in: postIds },
+              $or: [{ itemType: 'post' }, { itemType: { $exists: false } }],
+            },
+          },
+          { $group: { _id: '$productId', count: { $sum: 1 } } },
+        ])
+      : [];
+
+    const commentCountMap = new Map<string, number>(
+      commentCountsRaw.map((row) => [row._id as string, row.count as number])
+    );
+
+    const postsWithAuthorInfo = posts.map((post) => {
+      const postObj =
+        typeof (post as { toObject?: () => IPost }).toObject === 'function'
+          ? (post as { toObject: () => IPost }).toObject()
+          : (post as unknown as IPost);
+      const postId = (post as { _id: { toString(): string } })._id.toString();
+
       const authorInfo = authorInfoMap.get(postObj.authorId) || {
         displayName: postObj.authorName || 'ユーザー',
         photoURL: '',
@@ -80,14 +100,16 @@ export async function GET(request: NextRequest) {
 
       return {
         ...postObj,
+        _id: postId,
         authorDisplayName: authorInfo.displayName,
         authorPhotoURL: authorInfo.photoURL,
+        commentsCount: commentCountMap.get(postId) || 0,
       };
     });
 
     const tagCounts: Record<string, number> = {};
     allTags.forEach((tagName) => {
-      const found = tagCountsResult.find((r) => r._id === tagName);
+      const found = tagCountsResult.find((row) => row._id === tagName);
       tagCounts[tagName] = found ? found.count : 0;
     });
 
@@ -99,25 +121,24 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         hasMore: skip + posts.length < total,
+        totalPostCount,
       },
       tagCounts,
     });
   } catch (error) {
     console.error('Get posts error:', error);
     return NextResponse.json(
-      { error: '投稿の取得に失敗しました' },
+      { error: 'Failed to fetch posts' },
       { status: 500 }
     );
   }
 }
 
-// 新規投稿を作成 (POST handler)
 export async function POST(request: NextRequest) {
   try {
-    // 認証チェック
     const userIdOrError = await requireAuth(request);
     if (userIdOrError instanceof Response) {
-      return userIdOrError; // 401エラーを返す
+      return userIdOrError;
     }
     const userId = userIdOrError as string;
 
@@ -125,46 +146,31 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, content, category, media, authorId, authorName, tags, address, location } = body;
 
-    // 認証されたユーザーIDとauthorIdが一致するか確認
     const normalizedAuthorId = ensureUserIdPrefix(userId);
     if (authorId && authorId !== normalizedAuthorId && authorId !== userId) {
       return NextResponse.json(
-        { error: '不正なリクエストです' },
+        { error: 'Forbidden' },
         { status: 403 }
       );
     }
 
-    // バリデーション
     if (!title || !content) {
       return NextResponse.json(
-        { error: '必須項目が入力されていません' },
+        { error: 'Title and content are required' },
         { status: 400 }
       );
     }
     if (content.length > 140) {
       return NextResponse.json(
-        { error: '本文は140文字以内で入力してください' },
+        { error: 'Content must be 140 characters or less' },
         { status: 400 }
       );
     }
 
-    // 投稿データを作成
     const cachedUser = await getCachedUserInfo(userId);
     const safeAuthorName = cachedUser?.displayName || authorName || 'ユーザー';
 
-    const postData: {
-      title: string;
-      content: string;
-      category: string;
-      media: Array<{ url: string; order: number }>;
-      authorId: string;
-      authorName: string;
-      tags: string[];
-      likes: number;
-      comments: unknown[];
-      address?: string;
-      location?: { lat: number; lng: number };
-    } = {
+    const post = await Post.create({
       title,
       content,
       category: category || '一般',
@@ -173,28 +179,21 @@ export async function POST(request: NextRequest) {
       authorName: safeAuthorName,
       tags: tags || [],
       likes: 0,
-      comments: [],
-    };
-
-    // locationとaddressが存在する場合のみ追加
-    if (address) {
-      postData.address = address;
-    }
-    if (location && typeof location.lat === 'number' && typeof location.lng === 'number') {
-      postData.location = location;
-    }
-
-    // 投稿を作成
-    const post = await Post.create(postData);
+      address: address || undefined,
+      location:
+        location && typeof location.lat === 'number' && typeof location.lng === 'number'
+          ? location
+          : undefined,
+    });
 
     return NextResponse.json(
-      { success: true, post, message: '投稿が作成されました' },
+      { success: true, post, message: 'Post created' },
       { status: 201 }
     );
   } catch (error) {
     console.error('Create post error:', error);
     return NextResponse.json(
-      { error: '投稿の作成に失敗しました' },
+      { error: 'Failed to create post' },
       { status: 500 }
     );
   }

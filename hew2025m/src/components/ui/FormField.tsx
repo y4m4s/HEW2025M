@@ -20,7 +20,7 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1"
+            className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1 ml-1"
           >
             {label}
             {props.required && <span className="text-red-500 ml-1">*</span>}
@@ -32,7 +32,7 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
             ref={ref}
             id={inputId}
             className={`
-              w-full px-4 py-3 rounded-xl bg-gray-50 border text-gray-900
+              w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base rounded-lg sm:rounded-xl bg-gray-50 border text-gray-900
               transition-all duration-200 outline-none
               ${hasError
                 ? 'border-red-500 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 bg-red-50'
@@ -45,12 +45,13 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
             aria-describedby={
               hasError ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined
             }
+            onInvalid={(e) => e.preventDefault()}
             {...props}
           />
 
           {hasError && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <AlertCircle size={20} className="text-red-500" />
+            <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <AlertCircle size={16} className="text-red-500 sm:w-5 sm:h-5" />
             </div>
           )}
         </div>
@@ -58,16 +59,15 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
         {hasError ? (
           <p
             id={`${inputId}-error`}
-            className="mt-1.5 text-sm text-red-600 flex items-center gap-1 animate-slide-in-left"
+            className="text-red-600 text-xs sm:text-sm mt-1 ml-1"
             role="alert"
           >
-            <AlertCircle size={14} />
             {error}
           </p>
         ) : helperText ? (
           <p
             id={`${inputId}-helper`}
-            className="mt-1.5 text-sm text-gray-500"
+            className="mt-1 text-xs sm:text-sm text-gray-500"
           >
             {helperText}
           </p>

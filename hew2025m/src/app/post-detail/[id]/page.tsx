@@ -236,9 +236,9 @@ export default function PostDetailPage() {
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
           // ハイライト効果を追加
-          element.classList.add('bg-yellow-100');
+          element.classList.add('comment-highlight');
           setTimeout(() => {
-            element.classList.remove('bg-yellow-100');
+            element.classList.remove('comment-highlight');
           }, 2000);
         }
       }, 500);
@@ -375,7 +375,7 @@ export default function PostDetailPage() {
                   post.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className={`px-3 py-1 rounded-full text-sm font-medium text-white ${post.category === 'sea' ? 'bg-blue-500' : 'bg-green-500'}`}
+                      className="px-3 py-1 rounded-full text-sm font-medium text-white bg-blue-500"
                     >
                       {tag}
                     </span>
@@ -480,7 +480,7 @@ export default function PostDetailPage() {
 
           {/* 本文 */}
           <div className="p-4 md:p-6">
-            <p className="text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed whitespace-pre-wrap mb-4 md:mb-6">
+            <p className="text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed whitespace-pre-wrap mb-4 md:mb-6 break-words-safe">
               {post.content}
             </p>
 
@@ -539,8 +539,6 @@ export default function PostDetailPage() {
           loading={authorProfileLoading}
           fallbackName={post.authorName}
           showRating={true}
-          showActions={true}
-          isOwnProfile={isOwnPost}
         />
 
         {/* コメントセクション */}
@@ -582,7 +580,7 @@ export default function PostDetailPage() {
                   post.tags.slice(0, 2).map((tag, index) => (
                     <span
                       key={index}
-                      className={`px-3 py-1 rounded-full text-sm font-medium text-white ${post.category === 'sea' ? 'bg-blue-500' : 'bg-green-500'}`}
+                      className="px-3 py-1 rounded-full text-sm font-medium text-white bg-blue-500"
                     >
                       {tag}
                     </span>
