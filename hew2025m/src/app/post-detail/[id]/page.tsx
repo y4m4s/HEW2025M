@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { Fish, MapPin, Heart, MessageCircle, Calendar, ArrowLeft, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button, Comment, ImageModal, CancelModal, LoginRequiredModal, UserInfoCard, LikedUsersModal } from '@/components';
+import { Fish, MapPin, Heart, MessageCircle, Calendar, ArrowLeft, Trash2, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { Button, Comment, ImageModal, CancelModal, LoginRequiredModal, UserInfoCard, LikedUsersModal, TagBadge } from '@/components';
 import { createPostLikeNotification, deletePostLikeNotification } from '@/lib/notifications';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
@@ -353,155 +354,181 @@ export default function PostDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto max-w-4xl px-4 py-4 md:py-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      <div className="container mx-auto max-w-3xl px-4 py-4 md:py-8">
         <Button
           onClick={() => router.back()}
           variant="ghost"
           size="sm"
           icon={<ArrowLeft size={16} />}
-          className="mb-4 md:mb-6"
+          className="mb-4 md:mb-6 hover:bg-white/80"
         >
           戻る
         </Button>
 
-        <article className="bg-white rounded-lg shadow-md overflow-hidden">
+        <article className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
           {/* ヘッダー */}
-          <div className="p-4 md:p-6 border-b">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              {/* タグを表示 */}
-              <div className="flex flex-wrap gap-2">
-                {post.tags && post.tags.length > 0 ? (
-                  post.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 rounded-full text-sm font-medium text-white bg-blue-500"
-                    >
-                      {tag}
-                    </span>
-                  ))
-                ) : (
-                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-300 text-gray-600">
-                    (タグなし)
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 text-gray-500 text-sm">
+          <div className="p-5 md:p-7">
+            {/* タグと日付 */}
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              {post.tags && post.tags.length > 0 ? (
+                post.tags.map((tag, index) => (
+                  <TagBadge key={index} tag={tag} size="lg" />
+                ))
+              ) : (
+                <span className="px-3 py-1.5 rounded-full text-sm font-semibold bg-gray-300 text-gray-600 shadow-sm">
+                  タグなし
+                </span>
+              )}
+              <div className="ml-auto flex items-center gap-2 text-gray-500 text-sm">
                 <Calendar size={16} />
                 <span>{formatDate(post.createdAt)}</span>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 flex-1">{post.title}</h1>
+            {/* タイトルと削除ボタン */}
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight flex-1">
+                {post.title}
+              </h1>
               {isOwnPost && (
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="flex items-center gap-2 px-3 md:px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed self-start"
+                  className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                   title="投稿を削除"
                 >
-                  <Trash2 size={18} className="md:w-5 md:h-5" />
-                  <span className="text-sm font-medium">{deleting ? '削除中...' : '削除'}</span>
+                  <Trash2 size={18} />
+                  <span className="text-sm font-medium hidden sm:inline">{deleting ? '削除中...' : '削除'}</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* 画像ギャラリー - カルーセル */}
+          {/* 画像ギャラリー - より大きく表示 */}
           {post.media && post.media.length > 0 ? (
-            <div className="bg-gray-100 p-3 md:p-4">
-              <div className="relative overflow-hidden rounded-lg bg-gray-200">
+            <div className="relative">
+              <div className="relative overflow-hidden bg-gray-900">
                 <div
-                  className="flex transition-transform duration-300 ease-in-out"
+                  className="flex transition-transform duration-500 ease-out"
                   style={{ transform: `translateX(-${currentSlide * 100}%)` }}
                 >
                   {post.media.map((item, index) => (
                     <div key={index} className="w-full flex-shrink-0">
                       {item.mimeType.startsWith('image/') ? (
-                        <div className="relative w-full" style={{ aspectRatio: '4/3' }}>
+                        <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
                           <Image
                             src={decodeHtmlEntities(item.url)}
                             alt={`投稿画像${index + 1}`}
                             fill
-                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 90vw, 800px"
-                            className="object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                            sizes="(max-width: 768px) 100vw, 800px"
+                            className="object-cover cursor-pointer hover:opacity-95 transition-opacity"
                             onClick={() => handleImageClick(index)}
+                            priority={index === 0}
                           />
                         </div>
                       ) : (
-                        <div className="w-full flex items-center justify-center bg-gray-100" style={{ aspectRatio: '4/3' }}>
-                          <Fish size={48} className="text-gray-400 md:w-16 md:h-16" />
+                        <div className="w-full flex items-center justify-center bg-gray-800" style={{ aspectRatio: '16/9' }}>
+                          <Fish size={64} className="text-gray-600" />
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
 
-                {/* ナビゲーションボタン（複数画像がある場合のみ） */}
+                {/* ナビゲーションボタン */}
                 {post.media && post.media.length > 1 && (
                   <>
                     <button
                       onClick={prevSlide}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-1.5 md:p-2 shadow-lg transition-all"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-2 shadow-xl transition-all hover:scale-110"
                     >
-                      <ChevronLeft size={18} className="md:w-5 md:h-5" />
+                      <ChevronLeft size={20} />
                     </button>
                     <button
                       onClick={nextSlide}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-800/70 hover:bg-gray-800/90 text-white rounded-full p-1.5 md:p-2 shadow-lg transition-all"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-2 shadow-xl transition-all hover:scale-110"
                     >
-                      <ChevronRight size={18} className="md:w-5 md:h-5" />
+                      <ChevronRight size={20} />
                     </button>
+                    {/* 画像カウンター */}
+                    <div className="absolute top-3 right-3 bg-black/60 text-white px-3 py-1 rounded-full text-sm font-medium">
+                      {currentSlide + 1} / {post.media.length}
+                    </div>
                   </>
                 )}
               </div>
 
-              {/* インジケーター（複数画像がある場合のみ） */}
+              {/* インジケーター */}
               {post.media && post.media.length > 1 && (
-                <div className="flex justify-center mt-3 md:mt-4 gap-2">
+                <div className="flex justify-center py-4 gap-2 bg-gray-50">
                   {post.media.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => goToSlide(index)}
-                      className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full transition-colors ${currentSlide === index ? 'bg-[#2FA3E3]' : 'bg-gray-300'
-                        }`}
+                      className={`h-1.5 rounded-full transition-all ${
+                        currentSlide === index ? 'w-8 bg-[#2FA3E3]' : 'w-1.5 bg-gray-300 hover:bg-gray-400'
+                      }`}
                     />
                   ))}
                 </div>
               )}
             </div>
           ) : (
-            <div className="aspect-video bg-gray-200 rounded-lg flex flex-col items-center justify-center mx-3 md:mx-4 my-3 md:my-4">
-              <Fish size={48} className="text-gray-400 mb-3 md:w-16 md:h-16" />
-              <p className="text-gray-500 text-sm">画像がありません</p>
+            <div className="bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center py-20">
+              <Fish size={64} className="text-gray-400 mb-4" />
+              <p className="text-gray-500 font-medium">画像がありません</p>
             </div>
           )}
 
-          {/* 本文 */}
-          <div className="p-4 md:p-6">
-            <p className="text-sm md:text-base lg:text-lg text-gray-700 leading-relaxed whitespace-pre-wrap mb-4 md:mb-6 break-words-safe">
+          {/* 本文とアクション */}
+          <div className="p-5 md:p-7">
+            {/* 本文 */}
+            <p className="text-base md:text-lg text-gray-800 leading-relaxed whitespace-pre-wrap mb-5 break-words-safe">
               {post.content}
             </p>
 
-            {/* 場所 */}
-            {post.address && (
-              <div className="flex items-center gap-2 text-gray-600 mb-4 md:mb-6">
-                <MapPin size={18} className="md:w-5 md:h-5 flex-shrink-0" />
-                <span className="text-sm md:text-base break-words">{post.address}</span>
+            {/* 場所情報 */}
+            {post.address && post.location && (
+              <Link
+                href={`/map?postId=${post._id}&lat=${post.location.lat}&lng=${post.location.lng}&address=${encodeURIComponent(post.address)}`}
+                className="flex items-center gap-3 px-4 py-3 mb-5 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 hover:border-[#2FA3E3] transition-all duration-200 group/location"
+              >
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center flex-shrink-0 border-2 border-gray-200 group-hover/location:border-[#2FA3E3] transition-all duration-200">
+                  <MapPin size={20} className="text-blue-600 group-hover/location:scale-110 transition-transform duration-200" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-500 mb-0.5">釣り場所</p>
+                  <p className="text-sm font-semibold text-gray-900 group-hover/location:text-[#2FA3E3] transition-colors duration-200 truncate">{post.address}</p>
+                </div>
+                <ExternalLink size={18} className="text-gray-400 flex-shrink-0 opacity-0 group-hover/location:opacity-100 group-hover/location:text-[#2FA3E3] transition-all duration-200" />
+              </Link>
+            )}
+            {post.address && !post.location && (
+              <div className="flex items-center gap-3 px-4 py-3 mb-5 border border-gray-200 rounded-lg bg-gray-50">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center flex-shrink-0 border-2 border-gray-300">
+                  <MapPin size={20} className="text-gray-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-500 mb-0.5">釣り場所</p>
+                  <p className="text-sm font-semibold text-gray-700 truncate">{post.address}</p>
+                </div>
               </div>
             )}
 
-            {/* アクション */}
-            <div className="flex items-center gap-4 md:gap-6 pt-4 border-t">
+            {/* アクションボタン */}
+            <div className="flex items-center gap-6 py-4 border-t border-gray-200">
               <button
                 onClick={handleLikeToggle}
                 disabled={likeLoading}
-                className={`flex items-center gap-2 ${isLiked ? 'text-red-500' : 'text-gray-600 hover:text-red-500'
-                  } transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`flex items-center gap-2.5 px-4 py-2 rounded-full transition-all ${
+                  isLiked
+                    ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                    : 'text-gray-600 hover:bg-gray-100'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                <Heart size={18} className={`${isLiked ? 'fill-current' : ''} md:w-5 md:h-5`} />
-                <span className="text-sm md:text-base">{likesCount}</span>
+                <Heart size={20} className={`${isLiked ? 'fill-current' : ''} transition-transform hover:scale-110`} />
+                <span className="font-semibold">{likesCount}</span>
               </button>
               <button
                 onClick={() => {
@@ -510,19 +537,19 @@ export default function PostDetailPage() {
                     commentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }
                 }}
-                className="flex items-center gap-2 text-gray-600 hover:text-blue-500 transition-colors"
+                className="flex items-center gap-2.5 px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 transition-all"
               >
-                <MessageCircle size={18} className="md:w-5 md:h-5" />
-                <span className="text-sm md:text-base">{commentCount}</span>
+                <MessageCircle size={20} className="transition-transform hover:scale-110" />
+                <span className="font-semibold">{commentCount}</span>
               </button>
             </div>
 
-            {/* いいねしたユーザーを表示 */}
+            {/* いいねユーザー表示 */}
             {likesCount > 0 && (
-              <div className="pt-3 md:pt-4">
+              <div className="pt-2">
                 <button
                   onClick={() => setShowLikedUsersModal(true)}
-                  className="text-xs md:text-sm text-gray-600 hover:text-blue-500 hover:underline transition-colors"
+                  className="text-sm text-gray-700 hover:text-blue-600 hover:underline transition-colors font-medium"
                 >
                   {likesCount}人がいいねしています
                 </button>
@@ -533,17 +560,27 @@ export default function PostDetailPage() {
         </article>
 
         {/* 投稿者情報 */}
-        <UserInfoCard
-          title="投稿者情報"
-          userProfile={authorProfile}
-          loading={authorProfileLoading}
-          fallbackName={post.authorName}
-          showRating={true}
-        />
+        <div className="mt-6">
+          <UserInfoCard
+            title="投稿者"
+            userProfile={authorProfile}
+            loading={authorProfileLoading}
+            fallbackName={post.authorName}
+            showRating={false}
+          />
+        </div>
 
         {/* コメントセクション */}
-        <section id="comment-section" className="mt-6 md:mt-8 bg-white rounded-lg shadow-md p-4 md:p-6">
-          <h3 className="text-lg md:text-xl font-bold mb-4">コメント</h3>
+        <section id="comment-section" className="mt-6 bg-white rounded-2xl shadow-lg p-5 md:p-7 border border-gray-100">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+            <MessageCircle size={24} className="text-blue-600" />
+            <h3 className="text-xl md:text-2xl font-bold text-gray-900">コメント</h3>
+            {commentCount > 0 && (
+              <span className="ml-auto px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+                {commentCount}
+              </span>
+            )}
+          </div>
           <Comment
             postId={params.id as string}
             itemOwnerId={post.authorId.startsWith('user-') ? post.authorId.replace('user-', '') : post.authorId}
@@ -572,52 +609,47 @@ export default function PostDetailPage() {
         message="この投稿を本当に削除しますか？この操作は取り消せません。"
         isDeleting={deleting}
       >
-        <div className="bg-white rounded-lg shadow-md overflow-hidden max-w-md w-full">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden max-w-md w-full border border-gray-200">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex flex-wrap gap-2">
                 {post.tags && post.tags.length > 0 ? (
                   post.tags.slice(0, 2).map((tag, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 rounded-full text-sm font-medium text-white bg-blue-500"
-                    >
-                      {tag}
-                    </span>
+                    <TagBadge key={index} tag={tag} size="sm" />
                   ))
                 ) : (
-                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-300 text-gray-600">
-                    (タグなし)
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-300 text-gray-600 shadow-sm">
+                    タグなし
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-gray-500 text-sm">
-                <Calendar size={16} />
+              <div className="flex items-center gap-1.5 text-gray-500 text-xs">
+                <Calendar size={14} />
                 <span>{formatDate(post.createdAt)}</span>
               </div>
             </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-3 line-clamp-2">{post.title}</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-3 line-clamp-2">{post.title}</h3>
             {post.media && post.media.length > 0 && post.media[0].mimeType.startsWith('image/') ? (
-              <div className="relative w-full mb-3" style={{ aspectRatio: '4/3' }}>
+              <div className="relative w-full mb-3 rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
                 <Image
                   src={decodeHtmlEntities(post.media[0].url)}
                   alt={post.title}
                   fill
                   sizes="400px"
-                  className="object-contain rounded-lg"
+                  className="object-cover"
                 />
               </div>
             ) : (
-              <div className="w-full bg-gray-200 rounded-lg flex flex-col items-center justify-center mb-3" style={{ aspectRatio: '4/3' }}>
-                <Fish size={64} className="text-gray-400 mb-3" />
+              <div className="w-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex flex-col items-center justify-center mb-3" style={{ aspectRatio: '16/9' }}>
+                <Fish size={48} className="text-gray-400 mb-2" />
                 <p className="text-gray-500 text-sm">画像がありません</p>
               </div>
             )}
-            <p className="text-gray-700 text-sm line-clamp-3 mb-3">{post.content}</p>
+            <p className="text-gray-700 text-sm line-clamp-3 mb-3 leading-relaxed">{post.content}</p>
             {post.address && (
-              <div className="flex items-center gap-2 text-gray-600 text-sm">
-                <MapPin size={16} />
-                <span className="truncate">{post.address}</span>
+              <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                <MapPin size={16} className="text-blue-600 flex-shrink-0" />
+                <span className="text-sm text-blue-800 truncate">{post.address}</span>
               </div>
             )}
           </div>

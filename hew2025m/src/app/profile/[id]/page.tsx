@@ -257,7 +257,7 @@ export default function UserProfilePage() {
           isOpen={editOpen}
           onClose={() => setEditOpen(false)}
           currentProfile={targetProfile}
-          onSaveSuccess={fetchUserProfile}
+          onSaveSuccess={(updated) => setTargetProfile((prev) => prev ? { ...prev, ...updated } : prev)}
         />
       )}
 
@@ -394,7 +394,7 @@ export default function UserProfilePage() {
                 <h2 className="font-bold mb-2">
                   自己紹介
                 </h2>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap break-words-safe">
+                <p className="pl-2 text-sm text-gray-600 whitespace-pre-wrap break-words-safe">
                   {targetProfile.bio || "自己紹介が設定されていません"}
                 </p>
               </div>

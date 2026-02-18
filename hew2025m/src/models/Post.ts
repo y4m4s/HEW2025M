@@ -39,7 +39,7 @@ export interface IPost {
 const PostSchema = new Schema<IPost>(
   {
     title: { type: String, required: true, trim: true, maxlength: 50 },
-    content: { type: String, required: true, trim: true, maxlength: 140 },
+    content: { type: String, required: true, trim: true, maxlength: 1000 },
     media: {
       type: [
         {
@@ -102,7 +102,11 @@ PostSchema.index({ tags: 1 });
 PostSchema.index({ createdAt: -1 });
 PostSchema.index({ 'media.uniqueId': 1 });
 
-const Post: Model<IPost> =
-  mongoose.models.Post || mongoose.model<IPost>('Post', PostSchema);
+// 開発環境でモデルキャッシュをクリア
+if (process.env.NODE_ENV === 'development' && mongoose.models.Post) {
+  delete mongoose.models.Post;
+}
+
+const Post: Model<IPost> = mongoose.model<IPost>('Post', PostSchema);
 
 export default Post;

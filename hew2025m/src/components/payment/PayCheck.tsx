@@ -120,7 +120,7 @@ export default function PayCheck() {
           items.map(async (cartItem) => {
             try {
               const response = await fetch(`/api/products/${cartItem.id}`);
-              if (!response.ok) throw new Error('Product not found');
+              if (!response.ok) throw new Error('商品が見つかりませんでした');
               const productData = await response.json();
               const product = productData.product;
 
@@ -237,7 +237,7 @@ export default function PayCheck() {
         });
 
         if (!orderResponse.ok) {
-          throw new Error('Failed to save order');
+          throw new Error('注文の保存に失敗しました');
         }
 
         const orderData = await orderResponse.json();

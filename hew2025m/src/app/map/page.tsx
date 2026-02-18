@@ -1,13 +1,13 @@
 'use client';
 import dynamic from 'next/dynamic';
 import { decodeHtmlEntities } from '@/lib/sanitize';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { MapPin, Navigation, ExternalLink, User, Fish, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 
 // 直接インポート（軽量コンポーネント）
@@ -52,6 +52,7 @@ interface AuthorProfile {
 export default function MapPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const mapRef = useRef<MapRef>(null);
   const [selectedPost, setSelectedPost] = useState<SelectedPost | null>(null);
   const [clickedLocation, setClickedLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
@@ -78,7 +79,8 @@ export default function MapPage() {
       });
   }, []);
 
-  const handleMarkerClick = (post: SelectedPost) => {
+  // マーカークリック処理
+  const handleMarkerClick = useCallback((post: SelectedPost) => {
     // 同じ位置にある投稿を検索（緯度経度が完全一致するもの）
     const postsAtLocation = allPosts.filter(
       p => p.location &&
@@ -102,10 +104,54 @@ export default function MapPage() {
         lng: post.location.lng,
         address: post.address
       });
+
+      // 地図を投稿の位置に移動
+      if (mapRef.current) {
+        mapRef.current.panToLocation(post.location.lat, post.location.lng, 15);
+      }
     } else {
       setClickedLocation(null);
     }
-  };
+  }, [allPosts]);
+
+  // URLパラメータから投稿IDを取得して該当投稿を選択
+  useEffect(() => {
+    const postId = searchParams.get('postId');
+    const lat = searchParams.get('lat');
+    const lng = searchParams.get('lng');
+    const address = searchParams.get('address');
+
+    // 投稿データとmapRefが読み込まれるまで待つ
+    if (allPosts.length === 0 || !mapRef.current) return;
+
+    if (postId) {
+      // 投稿IDから該当投稿を検索
+      const targetPost = allPosts.find(p => p._id === postId);
+
+      if (targetPost) {
+        // 該当投稿が見つかった場合、handleMarkerClickを呼び出す
+        handleMarkerClick(targetPost);
+      }
+    } else if (lat && lng) {
+      // postIdがない場合は従来通り位置情報のみで移動
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lng);
+
+      if (!isNaN(latitude) && !isNaN(longitude)) {
+        // 地図を指定された位置に移動
+        mapRef.current.panToLocation(latitude, longitude, 15);
+
+        // クリックした場所として設定
+        if (address) {
+          setClickedLocation({
+            lat: latitude,
+            lng: longitude,
+            address: decodeURIComponent(address)
+          });
+        }
+      }
+    }
+  }, [searchParams, allPosts, handleMarkerClick]);
 
   // 前の投稿に移動
   const handlePreviousPost = () => {
@@ -224,8 +270,8 @@ export default function MapPage() {
     <div className="min-h-screen flex flex-col">
 
       <div className="flex-1 container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        <main className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          <aside className="lg:col-span-1 bg-white rounded-lg shadow-sm border order-2 lg:order-1">
+        <main className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 items-start">
+          <aside className="lg:col-span-1 bg-white rounded-lg shadow-sm border order-2 lg:order-first flex flex-col lg:h-[calc(100vh-8rem)] lg:max-h-[800px]">
             <div className="bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-t-lg border-b">
               <div className="flex items-center justify-between">
                 <h3 className="flex items-center gap-2 font-semibold text-sm sm:text-base">
@@ -258,16 +304,17 @@ export default function MapPage() {
               </div>
             </div>
 
-            {!selectedPost ? (
-              <div className="p-3 sm:p-4 text-center py-8 sm:py-10 text-gray-500">
-                <MapPin size={40} className="mx-auto mb-3 sm:mb-4 text-gray-400 sm:w-12 sm:h-12" />
-                <p className="text-xs sm:text-sm">マップ上のマーカーをクリックして</p>
-                <p className="text-xs sm:text-sm">投稿情報を表示</p>
-              </div>
-            ) : (
-              <>
-                {/* 画像エリア */}
-                <Link href={`/post-detail/${selectedPost._id}`} className="block group">
+            <div className="flex-1 overflow-y-auto">
+              {!selectedPost ? (
+                <div className="p-3 sm:p-4 text-center py-8 sm:py-10 text-gray-500">
+                  <MapPin size={40} className="mx-auto mb-3 sm:mb-4 text-gray-400 sm:w-12 sm:h-12" />
+                  <p className="text-xs sm:text-sm">マップ上のマーカーをクリックして</p>
+                  <p className="text-xs sm:text-sm">投稿情報を表示</p>
+                </div>
+              ) : (
+                <>
+                  {/* 画像エリア */}
+                  <Link href={`/post-detail/${selectedPost._id}`} className="block group">
                   <div className="relative h-32 sm:h-40 bg-gray-200 flex items-center justify-center overflow-hidden">
                     {selectedPost.media && selectedPost.media.length > 0 ? (
                       <Image
@@ -360,36 +407,44 @@ export default function MapPage() {
                 </div>
               </>
             )}
+            </div>
           </aside>
 
-          <div className="lg:col-span-2 space-y-4 sm:space-y-6 order-1 lg:order-2">
+          {/* 地図と新しい場所を選択のコンテナ */}
+          <div className="contents lg:col-span-2 lg:block lg:space-y-4 xl:space-y-6 order-1 lg:order-last">
             {/* 地図の枠 */}
-            <section className="bg-white rounded-lg shadow-sm border">
-            <div className="bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-t-lg border-b flex justify-between items-center">
-              <h3 className="flex items-center gap-1.5 sm:gap-2 font-semibold text-sm sm:text-base">
-                <MapPin size={16} className="text-blue-600 sm:w-[18px] sm:h-[18px]" />
-                マップ
-              </h3>
-              <Button
-                variant="outline"
-                size="md"
-                className="bg-white border text-xs sm:text-sm"
-                icon={<Navigation size={12} className="sm:w-3.5 sm:h-3.5" />}
-                onClick={handleCurrentLocation}
-              >
-                現在地
-              </Button>
-            </div>
-
-            <div className="relative overflow-hidden rounded-b-lg">
-              <div className="h-64 sm:h-80 md:h-96">
-                <Map ref={mapRef} onMarkerClick={handleMarkerClick} onMapClick={handleMapClick} posts={allPosts} />
+            <section className="bg-white rounded-lg shadow-sm border order-1">
+              <div className="bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-t-lg border-b flex justify-between items-center">
+                <h3 className="flex items-center gap-1.5 sm:gap-2 font-semibold text-sm sm:text-base">
+                  <MapPin size={16} className="text-blue-600 sm:w-[18px] sm:h-[18px]" />
+                  マップ
+                </h3>
+                <Button
+                  variant="outline"
+                  size="md"
+                  className="bg-white border text-xs sm:text-sm"
+                  icon={<Navigation size={12} className="sm:w-3.5 sm:h-3.5" />}
+                  onClick={handleCurrentLocation}
+                >
+                  現在地
+                </Button>
               </div>
-            </div>
-          </section>
 
-          {/* 新しい場所で投稿の枠 */}
-          <section className="bg-white rounded-lg shadow-sm border">
+              <div className="relative overflow-hidden rounded-b-lg">
+                <div className="h-64 sm:h-80 md:h-96">
+                  <Map
+                    ref={mapRef}
+                    onMarkerClick={handleMarkerClick}
+                    onMapClick={handleMapClick}
+                    posts={allPosts}
+                    selectedPostId={selectedPost?._id || null}
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* 新しい場所で投稿の枠 */}
+            <section className="bg-white rounded-lg shadow-sm border order-3">
             <div className="bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-t-lg border-b">
               <h3 className="flex items-center gap-1.5 sm:gap-2 font-semibold text-sm sm:text-base">
                 <Navigation size={16} className="text-blue-600 sm:w-[18px] sm:h-[18px]" />
@@ -455,7 +510,7 @@ export default function MapPage() {
               )}
             </div>
           </section>
-        </div>
+          </div>
         </main>
       </div>
 

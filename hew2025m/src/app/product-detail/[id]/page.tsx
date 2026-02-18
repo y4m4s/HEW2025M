@@ -183,7 +183,7 @@ export default function SellDetailPage() {
       setProduct(data.product);
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : '不明なエラーが発生しました');
+      setError(err instanceof Error ? err.message : '商品の取得に失敗しました');
     } finally {
       setLoading(false);
     }

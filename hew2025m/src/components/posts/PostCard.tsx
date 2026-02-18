@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { Fish, User } from 'lucide-react';
 import { IMAGE_QUALITY, BLUR_DATA_URLS } from '@/lib/imageOptimization';
 import { decodeHtmlEntities } from '@/lib/sanitize';
+import TagBadge from '@/components/ui/TagBadge';
 
 export interface Post {
   id: string;
@@ -25,9 +26,11 @@ interface PostCardProps {
   variant?: 'default' | 'simple' | 'grid';
   /** 上位表示される投稿（priority loading用） */
   priority?: boolean;
+  /** 本文（excerpt）を表示するか */
+  showExcerpt?: boolean;
 }
 
-export default function PostCard({ post, variant = 'default', priority = false }: PostCardProps) {
+export default function PostCard({ post, variant = 'default', priority = false, showExcerpt = true }: PostCardProps) {
   // Simple variant (Sidebar/Small list) - Keep existing or slight adjust?
   // User asked for specific design "Image on left, Title/Body/Tags/Date/Author on right".
   // This sounds like the new 'default' or a new 'horizontal' variant.
@@ -108,20 +111,22 @@ export default function PostCard({ post, variant = 'default', priority = false }
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-gray-400 bg-gray-50">
                 <Fish size={32} className="mb-2 opacity-50" />
-                <span className="text-xs font-medium">No Image</span>
+                <span className="text-xs font-medium">画像なし</span>
               </div>
             )}
           </div>
 
           {/* Bottom: Content */}
           <div className="flex-1 p-4 flex flex-col">
-            <h3 className="font-bold text-gray-800 mb-2 line-clamp-2 hover:text-[#2FA3E3] transition-colors">
+            <h3 className="font-bold text-gray-800 mb-2 line-clamp-2 overflow-hidden hover:text-[#2FA3E3] transition-colors break-words">
               {post.title}
             </h3>
 
-            <p className="text-gray-600 text-sm line-clamp-2 mb-3 flex-1 break-words-safe">
-              {post.excerpt || '本文のプレビューが表示されます。'}
-            </p>
+            {showExcerpt && (
+              <p className="text-gray-600 text-sm line-clamp-2 mb-3 flex-1 break-words-safe">
+                {post.excerpt || '本文のプレビューが表示されます。'}
+              </p>
+            )}
 
             <div className="border-t border-gray-100 pt-3 mt-auto flex items-center justify-between text-xs text-gray-500">
               <div className="flex items-center gap-1.5 overflow-hidden">
@@ -172,7 +177,7 @@ export default function PostCard({ post, variant = 'default', priority = false }
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-gray-400 bg-gray-50">
               <Fish size={40} className="mb-2 opacity-50" />
-              <span className="text-sm font-medium">No Image</span>
+              <span className="text-sm font-medium">画像なし</span>
             </div>
           )}
         </div>
@@ -185,27 +190,27 @@ export default function PostCard({ post, variant = 'default', priority = false }
           </h3>
 
           {/* Excerpt */}
-          <p className="text-gray-600 text-sm sm:text-base ml-1 mb-3 leading-relaxed line-clamp-2 break-words-safe">
-            {post.excerpt || '本文のプレビューが表示されます。'}
-          </p>
+          {showExcerpt && (
+            <p className="text-gray-600 text-sm sm:text-base ml-1 mb-3 leading-relaxed line-clamp-2 break-words-safe">
+              {post.excerpt || '本文のプレビューが表示されます。'}
+            </p>
+          )}
 
           {/* Tags */}
-          <div className="flex flex-wrap gap-1.5 mb-3">
+          <div className="flex flex-wrap gap-2 mb-3">
             {post.tags && post.tags.length > 0 ? (
               <>
                 {post.tags.slice(0, 3).map((tag, i) => (
-                  <span key={i} className="px-2.5 py-1 text-xs font-medium rounded-full truncate max-w-[120px] bg-blue-500 text-white">
-                    {tag}
-                  </span>
+                  <TagBadge key={i} tag={tag} size="md" />
                 ))}
                 {post.tags.length > 3 && (
-                  <span className="px-2.5 py-1 bg-gray-200 text-gray-600 text-xs font-medium rounded-full">
+                  <span className="px-2.5 py-1 bg-gray-200 text-gray-600 text-xs font-semibold rounded-full shadow-sm">
                     +{post.tags.length - 3}
                   </span>
                 )}
               </>
             ) : (
-              <span className="px-2.5 py-1 bg-gray-300 text-gray-600 text-xs font-medium rounded-full">
+              <span className="px-2.5 py-1 bg-gray-300 text-gray-600 text-xs font-semibold rounded-full shadow-sm">
                 タグなし
               </span>
             )}

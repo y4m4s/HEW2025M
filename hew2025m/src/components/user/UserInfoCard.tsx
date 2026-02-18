@@ -138,7 +138,7 @@ export default function UserInfoCard({
         ) : userProfile ? (
           <div className="flex flex-row gap-4 md:gap-6">
             {/* 左側: ユーザープロフィールカード */}
-            <Link href={`/profile/${userProfile.uid}`} className="flex-1">
+            <Link href={`/profile/${userProfile.uid}`} className="flex-1 min-w-0">
               <div className="flex items-center justify-center sm:justify-start sm:items-start gap-3 md:gap-4 px-4 h-full rounded-lg bg-white hover:bg-gray-50 border border-transparent hover:border-[#2FA3E3] transition-colors cursor-pointer">
                 {/* プロフィール画像 */}
                 <div className="p-2 flex-shrink-0 self-center">
@@ -159,11 +159,11 @@ export default function UserInfoCard({
                 </div>
 
                 {/* 名前とユーザー名 */}
-                <div className="flex-shrink-0 self-center">
-                  <p className="font-semibold text-lg md:text-xl whitespace-nowrap">
+                <div className="flex-shrink-0 self-center min-w-0 max-w-[200px]">
+                  <p className="font-semibold text-lg md:text-xl truncate">
                     {userProfile.displayName}
                   </p>
-                  <p className="text-sm md:text-base text-gray-500 whitespace-nowrap">
+                  <p className="text-sm md:text-base text-gray-500 truncate">
                     @{userProfile.username}
                   </p>
                 </div>

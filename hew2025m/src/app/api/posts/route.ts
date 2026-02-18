@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Get posts error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch posts' },
+      { error: '投稿の取得に失敗しました' },
       { status: 500 }
     );
   }
@@ -149,20 +149,20 @@ export async function POST(request: NextRequest) {
     const normalizedAuthorId = ensureUserIdPrefix(userId);
     if (authorId && authorId !== normalizedAuthorId && authorId !== userId) {
       return NextResponse.json(
-        { error: 'Forbidden' },
+        { error: '投稿権限がありません' },
         { status: 403 }
       );
     }
 
     if (!title || !content) {
       return NextResponse.json(
-        { error: 'Title and content are required' },
+        { error: '件名と本文を入力してください' },
         { status: 400 }
       );
     }
-    if (content.length > 140) {
+    if (content.length > 1000) {
       return NextResponse.json(
-        { error: 'Content must be 140 characters or less' },
+        { error: '本文は1000文字以内で入力してください' },
         { status: 400 }
       );
     }
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Create post error:', error);
     return NextResponse.json(
-      { error: 'Failed to create post' },
+      { error: '投稿の作成に失敗しました' },
       { status: 500 }
     );
   }

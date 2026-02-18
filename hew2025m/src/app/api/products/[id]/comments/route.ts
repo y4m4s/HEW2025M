@@ -67,7 +67,7 @@ export async function GET(
 
     const product = await Product.findById(id);
     if (!product) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+      return NextResponse.json({ error: '商品が見つかりませんでした' }, { status: 404 });
     }
 
     const allComments = await Comment.find({
@@ -84,7 +84,7 @@ export async function GET(
   } catch (error) {
     console.error('Get product comments error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch product comments' },
+      { error: 'コメントの取得に失敗しました' },
       { status: 500 }
     );
   }
@@ -106,7 +106,7 @@ export async function POST(
     const { id } = await params;
     const product = await Product.findById(id);
     if (!product) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+      return NextResponse.json({ error: '商品が見つかりませんでした' }, { status: 404 });
     }
 
     const body = await request.json();
@@ -118,17 +118,17 @@ export async function POST(
     };
 
     if (!content) {
-      return NextResponse.json({ error: 'Content is required' }, { status: 400 });
+      return NextResponse.json({ error: 'コメント内容を入力してください' }, { status: 400 });
     }
 
     const trimmedContent = content.trim();
     if (!trimmedContent) {
-      return NextResponse.json({ error: 'Content is empty' }, { status: 400 });
+      return NextResponse.json({ error: 'コメント内容を入力してください' }, { status: 400 });
     }
 
     if (trimmedContent.length > 140) {
       return NextResponse.json(
-        { error: 'Content must be 140 characters or less' },
+        { error: 'コメントは140文字以内で入力してください' },
         { status: 400 }
       );
     }
@@ -137,14 +137,14 @@ export async function POST(
     if (parentId) {
       parentComment = await Comment.findById(parentId).lean();
       if (!parentComment) {
-        return NextResponse.json({ error: 'Parent comment not found' }, { status: 404 });
+        return NextResponse.json({ error: '返信先のコメントが見つかりませんでした' }, { status: 404 });
       }
 
       const parentMatchesItem = parentComment.productId === id;
       const parentIsProductComment = !parentComment.itemType || parentComment.itemType === 'product';
       if (!parentMatchesItem || !parentIsProductComment) {
         return NextResponse.json(
-          { error: 'Invalid parent comment' },
+          { error: '返信先のコメントが無効です' },
           { status: 400 }
         );
       }
@@ -203,7 +203,7 @@ export async function POST(
   } catch (error) {
     console.error('Post comment error:', error);
     return NextResponse.json(
-      { error: 'Failed to post comment' },
+      { error: 'コメントの投稿に失敗しました' },
       { status: 500 }
     );
   }

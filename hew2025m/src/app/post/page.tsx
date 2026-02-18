@@ -66,7 +66,6 @@ function PostContent() {
     'レビュー',
     '雑談',
     '初心者向け',
-    'トラブル相談',
     '釣果報告'
   ];
 
@@ -133,6 +132,22 @@ function PostContent() {
 
     setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
     setPreviewUrls(previewUrls.filter((_, i) => i !== index));
+  };
+
+  // 画像の順番を入れ替え
+  const handleReorderImages = (dragIndex: number, dropIndex: number) => {
+    const newFiles = [...selectedFiles];
+    const newUrls = [...previewUrls];
+
+    // 配列の順番を入れ替え
+    const [draggedFile] = newFiles.splice(dragIndex, 1);
+    const [draggedUrl] = newUrls.splice(dragIndex, 1);
+
+    newFiles.splice(dropIndex, 0, draggedFile);
+    newUrls.splice(dropIndex, 0, draggedUrl);
+
+    setSelectedFiles(newFiles);
+    setPreviewUrls(newUrls);
   };
 
   // ドラッグ&ドロップ処理
@@ -265,7 +280,17 @@ function PostContent() {
       });
 
       if (!postResponse.ok) {
-        const errorData = await postResponse.json();
+        console.error('Post creation failed with status:', postResponse.status, postResponse.statusText);
+        const responseText = await postResponse.text();
+        console.error('Response body:', responseText);
+
+        let errorData;
+        try {
+          errorData = JSON.parse(responseText);
+        } catch {
+          errorData = { error: responseText || '投稿の作成に失敗しました' };
+        }
+
         throw new Error(errorData.error || '投稿の作成に失敗しました');
       }
 
@@ -331,20 +356,20 @@ function PostContent() {
                 <textarea
                   {...register('content')}
                   id="content"
-                  rows={6}
-                  className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-none text-sm sm:text-base ${errors.content
+                  rows={12}
+                  className={`w-full p-3 sm:p-4 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-y text-sm sm:text-base ${errors.content
                     ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
                     : 'border-gray-300 focus:border-[#2FA3E3] focus:ring-[#2FA3E3]/20'
                     }`}
-                  placeholder="本文を140字以内で入力してください"
+                  placeholder="本文を1000文字以内で入力してください"
                   disabled={isSubmitting}
                   aria-invalid={errors.content ? "true" : "false"}
                 />
                 {errors.content && <p className="text-red-600 text-sm mt-1.5 ml-1" role="alert">{errors.content.message}</p>}
-                <div className={`text-right text-sm mt-1 ${(contentValue?.length || 0) > 140 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                  {contentValue?.length || 0}/140文字
-                  {(contentValue?.length || 0) > 140 && (
-                    <span className="ml-2">({(contentValue?.length || 0) - 140}文字超過)</span>
+                <div className={`text-right text-sm mt-1 ${(contentValue?.length || 0) > 1000 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                  {contentValue?.length || 0}/1000文字
+                  {(contentValue?.length || 0) > 1000 && (
+                    <span className="ml-2">({(contentValue?.length || 0) - 1000}文字超過)</span>
                   )}
                 </div>
               </div>
@@ -382,64 +407,114 @@ function PostContent() {
 
                 {/* プレビュー表示 */}
                 {previewUrls.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
-                    {previewUrls.map((url, index) => (
-                      <div key={index} className="relative group">
+                  <div className="mt-4 sm:mt-6">
+                    <p className="text-xs sm:text-sm text-gray-500 mb-2">ドラッグして順番を変更できます</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                      {previewUrls.map((url, index) => (
                         <div
-                          className="relative w-full h-24 sm:h-32 cursor-pointer overflow-hidden rounded-lg border-2 border-gray-200 hover:border-[#2FA3E3] transition-all hover:shadow-lg"
-                          onClick={() => {
-                            setSelectedImageIndex(index);
-                            setIsImageModalOpen(true);
+                          key={index}
+                          className="relative group"
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = 'move';
+                            e.dataTransfer.setData('text/plain', index.toString());
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                            if (dragIndex !== index) {
+                              handleReorderImages(dragIndex, index);
+                            }
                           }}
                         >
-                          <Image
-                            src={url}
-                            alt={`プレビュー ${index + 1}`}
-                            width={200}
-                            height={200}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                          {/* 順番表示バッジ */}
+                          <div className="absolute top-1 left-1 sm:top-2 sm:left-2 bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center shadow-md z-10">
+                            {index + 1}
+                          </div>
+
+                          <div
+                            className="relative w-full h-24 sm:h-32 cursor-move overflow-hidden rounded-lg border-2 border-gray-200 hover:border-[#2FA3E3] transition-all hover:shadow-lg"
+                            onClick={() => {
+                              setSelectedImageIndex(index);
+                              setIsImageModalOpen(true);
+                            }}
+                          >
+                            <Image
+                              src={url}
+                              alt={`プレビュー ${index + 1}`}
+                              width={200}
+                              height={200}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveFile(index);
+                            }}
+                            className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
+                            disabled={isSubmitting}
+                          >
+                            <X size={16} className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveFile(index);
-                          }}
-                          className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
-                          disabled={isSubmitting}
-                        >
-                          <X size={16} className="w-3 h-3 sm:w-4 sm:h-4" />
-                        </button>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">
-                  タグ
+                <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-3 sm:mb-4">
+                  タグを選択
+                  {selectedTags.length > 0 && (
+                    <span className="ml-2 text-sm font-normal text-gray-500">
+                      ({selectedTags.length}個選択中)
+                    </span>
+                  )}
                 </label>
-                <div className="flex flex-wrap gap-2 sm:gap-2.5">
-                  {availableTags.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => toggleTag(tag)}
-                      disabled={isSubmitting}
-                      className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 ${selectedTags.includes(tag)
-                        ? 'bg-[#2FA3E3] text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                      {tag}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3">
+                  {availableTags.map((tag) => {
+                    const isSelected = selectedTags.includes(tag);
+
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => toggleTag(tag)}
+                        disabled={isSubmitting}
+                        className={`
+                          group relative
+                          px-4 sm:px-5 py-2 sm:py-2.5
+                          rounded-full
+                          text-xs sm:text-sm font-semibold
+                          transition-all duration-300
+                          transform hover:scale-105 active:scale-95
+                          disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
+                          ${isSelected
+                            ? 'bg-[#2FA3E3] text-white shadow-lg hover:shadow-xl hover:bg-[#2892CC]'
+                            : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md'
+                          }
+                        `}
+                      >
+                        {/* ホバー時の輝きエフェクト */}
+                        {!isSelected && (
+                          <span className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
+                        )}
+
+                        <span className="relative z-10">{tag}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-                <p className="text-xs sm:text-sm text-gray-500 mt-2">
-                  複数選択可能です
+                <p className="text-xs sm:text-sm text-gray-500 mt-3 pl-2">
+                  ※複数選択可能です
                 </p>
               </div>
 

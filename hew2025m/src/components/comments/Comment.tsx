@@ -113,7 +113,7 @@ export default function Comment(props: CommentProps) {
       setCommentsLoading(true);
       const response = await fetch(`/api/${apiBasePath}/${targetId}/comments`);
       if (!response.ok) {
-        throw new Error('Failed to fetch comments');
+        throw new Error('コメントの取得に失敗しました');
       }
 
       const data = await response.json();
@@ -159,7 +159,7 @@ export default function Comment(props: CommentProps) {
 
       const token = await user.getIdToken();
       if (!token) {
-        throw new Error('Failed to get auth token');
+        throw new Error('認証トークンの取得に失敗しました');
       }
 
       const response = await fetch(`/api/${apiBasePath}/${targetId}/comments`, {
@@ -173,7 +173,7 @@ export default function Comment(props: CommentProps) {
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        throw new Error(data?.error || 'Failed to post comment');
+        throw new Error(data?.error || 'コメントの投稿に失敗しました');
       }
 
       await response.json();
@@ -198,7 +198,7 @@ export default function Comment(props: CommentProps) {
     try {
       const token = await user.getIdToken();
       if (!token) {
-        throw new Error('Failed to get auth token');
+        throw new Error('認証トークンの取得に失敗しました');
       }
 
       const response = await fetch(`/api/${apiBasePath}/${targetId}/comments/${commentId}`, {
@@ -210,7 +210,7 @@ export default function Comment(props: CommentProps) {
 
       if (!response.ok) {
         const data = await response.json().catch(() => null);
-        throw new Error(data?.error || 'Failed to delete comment');
+        throw new Error(data?.error || 'コメントの削除に失敗しました');
       }
 
       await fetchComments();
