@@ -35,15 +35,17 @@ interface MapProps {
   onMarkerClick?: (post: MapPost) => void;
   onMapClick?: (lat: number, lng: number) => void;
   posts?: MapPost[]; // 親から投稿データを受け取る（オプション）
+  selectedPostId?: string | null; // 外部から選択された投稿IDを受け取る
 }
 
 export interface MapRef {
   moveToCurrentLocation: () => void;
+  panToLocation: (lat: number, lng: number, zoom?: number) => void;
   zoomIn: () => void;
   zoomOut: () => void;
 }
 
-const Map = forwardRef<MapRef, MapProps>(({ onMarkerClick, onMapClick, posts: externalPosts }, ref) => {
+const Map = forwardRef<MapRef, MapProps>(({ onMarkerClick, onMapClick, posts: externalPosts, selectedPostId }, ref) => {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
   });
@@ -167,6 +169,15 @@ const Map = forwardRef<MapRef, MapProps>(({ onMarkerClick, onMapClick, posts: ex
         toast.error('このブラウザは位置情報に対応していません。');
       }
     },
+    panToLocation: (lat: number, lng: number, zoom = 15) => {
+      const newCenter = { lat, lng };
+      setCenter(newCenter);
+      setZoom(zoom);
+      if (map) {
+        map.panTo(newCenter);
+        map.setZoom(zoom);
+      }
+    },
     zoomIn: () => {
       if (map) {
         const currentZoom = map.getZoom() || 7;
@@ -255,7 +266,9 @@ const Map = forwardRef<MapRef, MapProps>(({ onMarkerClick, onMapClick, posts: ex
         }}
       >
         {posts.filter(post => post.location).map((post, idx) => {
-          const isSelected = selectedPost && selectedPost._id === post._id;
+          // 内部のselectedPostまたは外部から渡されたselectedPostIdで選択判定
+          const isSelected = (selectedPost && selectedPost._id === post._id) ||
+                            (selectedPostId && selectedPostId === post._id);
           return (
             <Marker
               key={idx}

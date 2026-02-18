@@ -47,5 +47,5 @@ export const PostFormSchema = z.object({
     .max(30, { message: '件名は30文字以内で入力してください' }),
   content: z.string()
     .min(1, { message: '本文を入力してください' })
-    .max(140, { message: '本文は140文字以内で入力してください' }),
+    .max(1000, { message: '本文は1000文字以内で入力してください' }),
 });

@@ -15,3 +15,4 @@ export { default as PostDetailSkeleton } from './PostDetailSkeleton';
 export { default as ProductDetailSkeleton } from './ProductDetailSkeleton';
 export { default as CartSkeleton } from './CartSkeleton';
 export { default as FormField } from './FormField';
+export { default as TagBadge } from './TagBadge';

@@ -51,17 +51,17 @@ export async function DELETE(
 
     const comment = await Comment.findById(commentId);
     if (!comment) {
-      return NextResponse.json({ error: 'Comment not found' }, { status: 404 });
+      return NextResponse.json({ error: 'コメントが見つかりませんでした' }, { status: 404 });
     }
 
     const commentOwnerId = extractUid(comment.userId);
     const isPostComment = !comment.itemType || comment.itemType === 'post';
     if (!isPostComment || comment.productId !== id) {
-      return NextResponse.json({ error: 'Comment not found' }, { status: 404 });
+      return NextResponse.json({ error: 'コメントが見つかりませんでした' }, { status: 404 });
     }
 
     if (commentOwnerId !== actorUserId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'コメントの削除権限がありません' }, { status: 403 });
     }
 
     const idsToDelete = await collectCommentTreeIds(commentId, id);
@@ -75,7 +75,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Delete post comment error:', error);
     return NextResponse.json(
-      { error: 'Failed to delete comment' },
+      { error: 'コメントの削除に失敗しました' },
       { status: 500 }
     );
   }

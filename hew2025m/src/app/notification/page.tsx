@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
-import { Megaphone, MessageSquare, Trash2, Heart, Star, ShoppingCart, UserPlus, Mail, Bell, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Megaphone, MessageSquare, Heart, Star, ShoppingCart, UserPlus, Mail, Bell, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { CustomSelect, Button, UserHoverCard, LoadingSpinner } from '@/components';
 import {
@@ -169,14 +169,6 @@ export default function NotificationPage() {
     }
   };
 
-  // すべて削除する処理
-  const handleDeleteAll = () => {
-    // すべての通知を削除します
-    notifications.forEach(notif => {
-      handleDelete(notif.id);
-    });
-  };
-
   // ページ変更時は先頭にスクロール
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -242,33 +234,21 @@ export default function NotificationPage() {
   return (
     <div className="bg-gray-100 min-h-screen p-3 sm:p-5 md:p-8">
       <div className="max-w-4xl mx-auto">
-        {/* ヘッダー（「すべて既読にする」ボタンが機能するようになりました） */}
+        {/* ヘッダー */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
             <Bell size={24} className="text-[#2FA3E3] sm:w-7 sm:h-7" />
             通知
           </h1>
-          <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
-            <Button
-              onClick={handleDeleteAll}
-              variant="secondary"
+          {/* フィルター機能 */}
+          <div className="w-full sm:w-48">
+            <CustomSelect
+              value={filterValue}
+              onChange={setFilterValue}
+              options={filterOptions}
+              placeholder="フィルター"
               size="sm"
-              icon={<Trash2 size={16} />}
-              className="flex-shrink-0"
-            >
-              <span className="hidden sm:inline">すべて削除する</span>
-              <span className="sm:hidden">全削除</span>
-            </Button>
-            {/* フィルター機能 */}
-            <div className="flex-1 sm:flex-none sm:w-48">
-              <CustomSelect
-                value={filterValue}
-                onChange={setFilterValue}
-                options={filterOptions}
-                placeholder="フィルター"
-                size="sm"
-              />
-            </div>
+            />
           </div>
         </div>
 
@@ -346,7 +326,7 @@ export default function NotificationPage() {
                     return <span className="font-bold">{notification.title}</span>;
                   })()}
                 </h3>
-                <p className="text-xs sm:text-sm text-gray-600 mt-1.5 sm:mt-2 line-clamp-2 break-words leading-relaxed">
+                <p className="text-xs sm:text-sm text-gray-600 mt-1.5 sm:mt-2 line-clamp-2 break-words leading-relaxed pl-2">
                   {notification.description}
                 </p>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 sm:mt-3 text-xs text-gray-500">

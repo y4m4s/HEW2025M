@@ -48,11 +48,6 @@ const SHIPPING_PAYER_OPTIONS = [
   { label: '出品者負担', value: 'seller' },
   { label: '購入者負担', value: 'buyer' },
 ];
-const SORT_OPTIONS = [
-  { label: '新着順', value: 'newest' },
-  { label: '価格の安い順', value: 'price-low' },
-  { label: '価格の高い順', value: 'price-high' },
-];
 
 // 状態を日本語に変換
 const formatCondition = (cond: string): string => {
@@ -95,18 +90,6 @@ const filterByKeyword = (items: Product[], searchKeyword: string): Product[] => 
   );
 };
 
-// ソート
-const sortProducts = (items: Product[], sort: string): Product[] => {
-  const sorted = [...items];
-
-  if (sort === 'price-low') {
-    sorted.sort((a, b) => a.price - b.price);
-  } else if (sort === 'price-high') {
-    sorted.sort((a, b) => b.price - a.price);
-  }
-
-  return sorted;
-};
 
 interface ProductListClientProps {
   initialProducts: Product[];
@@ -150,7 +133,7 @@ function ProductListContent({
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [shippingPayer, setShippingPayer] = useState('');
-  const [sortBy] = useState('newest');
+  const [hideSold, setHideSold] = useState(false);
   const [keyword, setKeyword] = useState('');
   const debouncedKeyword = useDebounce(keyword, SEARCH_DEBOUNCE_DELAY);
 
@@ -244,7 +227,6 @@ function ProductListContent({
         filtered = filterByKeyword(filtered, debouncedKeyword);
       }
 
-      filtered = sortProducts(filtered, sortBy);
 
       if (resetProducts) {
         setProducts(filtered);
@@ -276,7 +258,7 @@ function ProductListContent({
     setProducts([]);
     setHasMore(true);
     fetchProductsRef.current?.(1, true);
-  }, [category, minPrice, maxPrice, shippingPayer, sortBy, debouncedKeyword]);
+  }, [category, minPrice, maxPrice, shippingPayer, debouncedKeyword]);
 
   // Intersection Observerの設定
   useEffect(() => {
@@ -395,7 +377,7 @@ function ProductListContent({
               </div>
             </div>
 
-            {/* 並び替えとフィルターリセット */}
+            {/* フィルターリセット・SOLD非表示 */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
               <p className="text-sm sm:text-base text-gray-600">
                 {loading && products.length === 0 ? (
@@ -420,15 +402,18 @@ function ProductListContent({
                     フィルターをリセット
                   </button>
                 )}
-                <div className="flex items-center gap-2 flex-1 sm:flex-initial">
-                  <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">並び替え:</span>
-                  <CustomSelect
-                    value={sortBy}
-                    onChange={(value) => handleFilterChange('sortBy', value)}
-                    options={SORT_OPTIONS}
-                    className="w-full sm:w-[180px]"
-                  />
-                </div>
+                {/* SOLD表示/非表示トグル */}
+                <button
+                  onClick={() => setHideSold((prev) => !prev)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-150 whitespace-nowrap shadow-sm ${
+                    hideSold
+                      ? 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
+                      : 'bg-white text-[#2FA3E3] border border-[#2FA3E3] hover:bg-blue-50'
+                  }`}
+                >
+                  <span className="inline-block w-2 h-2 rounded-full bg-current opacity-70" />
+                  {hideSold ? 'SOLDを表示' : 'SOLDを非表示'}
+                </button>
               </div>
             </div>
 
@@ -453,13 +438,15 @@ function ProductListContent({
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8">
-                  {products.map((product, index) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      priority={index < 4}
-                    />
-                  ))}
+                  {products
+                    .filter((product) => !hideSold || product.status !== 'sold')
+                    .map((product, index) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        priority={index < 4}
+                      />
+                    ))}
                 </div>
 
                 {/* 無限スクロール用のローディングインジケーター */}
