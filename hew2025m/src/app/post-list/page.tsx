@@ -224,7 +224,6 @@ export default function PostList() {
     { key: 'レビュー', label: 'レビュー' },
     { key: '雑談', label: '雑談' },
     { key: '初心者向け', label: '初心者向け' },
-    { key: 'トラブル相談', label: 'トラブル相談' },
     { key: '釣果報告', label: '釣果報告' }
   ];
 

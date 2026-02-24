@@ -7,10 +7,8 @@ export type ProductCategory =
   | 'lure'     // ルアー
   | 'line'     // ライン/糸
   | 'hook'     // ハリ/針
-  | 'bait'     // 餌
   | 'wear'     // ウェア
   | 'set'      // セット用品
-  | 'service'  // サービス
   | 'other';   // その他
 
 // 商品の状態型定義
@@ -60,7 +58,7 @@ const ProductSchema = new Schema<IProduct>(
     },
     category: {
       type: String,
-      enum: ['rod', 'reel', 'lure', 'line', 'hook', 'bait', 'wear', 'set', 'service', 'other'],
+      enum: ['rod', 'reel', 'lure', 'line', 'hook', 'wear', 'set', 'other'],
       required: [true, 'カテゴリーは必須です'],
     },
     condition: {

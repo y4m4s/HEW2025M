@@ -20,10 +20,8 @@ const CATEGORIES = [
   { id: 'lure', name: 'ルアー', description: 'ハード・ソフト', image: '/category/ルアー.webp' },
   { id: 'line', name: 'ライン/糸', description: '各種ライン', image: '/category/ライン.webp' },
   { id: 'hook', name: 'ハリ/針', description: '各種フック', image: '/category/針.webp' },
-  { id: 'bait', name: '餌', description: '生餌・練り餌', image: '/category/餌.webp' },
   { id: 'wear', name: 'ウェア', description: '服・装備品', image: '/category/ウェア.webp' },
   { id: 'set', name: 'セット用品', description: 'まとめてお得', image: '/category/セット.webp' },
-  { id: 'service', name: 'サービス', description: 'ガイド・修理', image: '/category/サービス.webp' },
   { id: 'other', name: 'その他', description: 'その他の用品', image: '/category/その他.webp' },
 ] as const;
 
@@ -186,7 +184,7 @@ export default function HomeClient({ initialProducts }: HomeClientProps) {
             <h3 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3 text-gray-800">釣り用品カテゴリー</h3>
             <p className="text-sm sm:text-base text-gray-600">よく取引されている釣り用品をチェック</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
             {CATEGORIES.map((category) => (
               <Link key={category.id} href={`/product-list?category=${category.id}`}>
                 <div className="relative rounded-xl sm:rounded-2xl shadow-lg overflow-hidden group cursor-pointer h-40 sm:h-48 md:h-56 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 before:absolute before:top-0 before:left-[-100%] before:w-full before:h-full before:bg-white/20 before:transform before:skew-x-[-45deg] before:transition-all before:duration-500 before:ease-out before:z-20 hover:before:left-[100%]">

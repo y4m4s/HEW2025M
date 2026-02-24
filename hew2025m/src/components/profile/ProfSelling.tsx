@@ -143,7 +143,7 @@ export default function ProfSelling({ onCountChange, userId }: ProfSellingProps)
               )}
             </div>
             <div className="p-3 text-sm">
-              <p className="font-medium truncate">{product.title}</p>
+              <h3 className="font-medium truncate">{product.title}</h3>
               <div className="flex items-center justify-between mt-1">
                 <p className="text-lg font-bold text-[#2FA3E3]">¥{product.price.toLocaleString()}</p>
                 <p className="text-xs text-gray-500">{formatDate(product.createdAt)}</p>

@@ -216,7 +216,7 @@ export default function ProfBookmark({ onCountChange }: ProfBookmarkProps) {
                 )}
               </div>
               <div className="p-3">
-                <p className="text-sm font-medium text-gray-900 line-clamp-2 mb-1 h-10">{product.title}</p>
+                <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1 h-10">{product.title}</h3>
                 <div className="flex items-center justify-between gap-2">
                   <p className={`text-lg font-bold ${isSold ? 'text-gray-500' : 'text-[#2FA3E3]'}`}>
                     ¥{product.price.toLocaleString()}

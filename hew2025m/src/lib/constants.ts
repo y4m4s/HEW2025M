@@ -1,6 +1,6 @@
 // アプリケーション全体で使用する共通定数
 
-import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from "react-icons/gi";
+import { GiFishingPole, GiFishingHook, GiFishingLure } from "react-icons/gi";
 import { FaTape, FaTshirt, FaBox } from "react-icons/fa";
 import { SiHelix } from "react-icons/si";
 import { Puzzle } from "lucide-react";
@@ -21,10 +21,8 @@ export const CATEGORIES: Category[] = [
   { name: "ルアー", value: "lure", href: "/product-list?category=lure", Icon: GiFishingLure },
   { name: "ライン/糸", value: "line", href: "/product-list?category=line", Icon: SiHelix },
   { name: "ハリ/針", value: "hook", href: "/product-list?category=hook", Icon: GiFishingHook },
-  { name: "餌", value: "bait", href: "/product-list?category=bait", Icon: GiEarthWorm },
   { name: "ウェア", value: "wear", href: "/product-list?category=wear", Icon: FaTshirt },
   { name: "セット用品", value: "set", href: "/product-list?category=set", Icon: FaBox },
-  { name: "サービス", value: "service", href: "/product-list?category=service", Icon: GiSpanner },
   { name: "その他", value: "other", href: "/product-list?category=other", Icon: Puzzle },
 ];
 

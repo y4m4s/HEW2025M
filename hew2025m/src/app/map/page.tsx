@@ -334,10 +334,10 @@ export default function MapPage() {
                 </Link>
 
                 {/* コンテンツエリア */}
-                <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+                <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                   <Link href={`/post-detail/${selectedPost._id}`} className="block group">
-                    <h4 className="font-bold text-base sm:text-xl mb-1.5 sm:mb-2 line-clamp-2 text-gray-900 group-hover:text-blue-600 transition-colors">{selectedPost.title}</h4>
-                    <p className="px-1 text-gray-600 text-xs sm:text-sm line-clamp-3 leading-relaxed">
+                    <h4 className="font-bold text-base sm:text-lg mb-1 sm:mb-1.5 line-clamp-2 text-gray-900 group-hover:text-blue-600 transition-colors">{selectedPost.title}</h4>
+                    <p className="px-1 text-gray-600 text-xs sm:text-sm line-clamp-2 leading-relaxed">
                       {selectedPost.content}
                     </p>
                   </Link>
@@ -382,17 +382,17 @@ export default function MapPage() {
                   ) : null}
 
                   {/* 位置情報 */}
-                  <div className="space-y-2.5 sm:space-y-3">
+                  <div className="space-y-1.5 sm:space-y-2">
                     <div className="flex items-center gap-1.5 sm:gap-2">
                       <MapPin size={14} className="text-blue-600 flex-shrink-0 sm:w-4 sm:h-4" />
                       <span className="text-xs sm:text-sm font-bold text-gray-800">位置情報</span>
                     </div>
-                    <div className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm pl-4 sm:pl-6">
-                      <div className="space-y-0.5 sm:space-y-1">
+                    <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm pl-4 sm:pl-6">
+                      <div className="space-y-0.5">
                         <span className="text-gray-500 text-[10px] sm:text-xs block">住所</span>
-                        <span className="font-medium text-gray-900 block break-words">{selectedPost.address || '住所未設定'}</span>
+                        <span className="font-medium text-gray-900 block break-words line-clamp-2">{selectedPost.address || '住所未設定'}</span>
                       </div>
-                      <div className="space-y-0.5 sm:space-y-1">
+                      <div className="space-y-0.5">
                         <span className="text-gray-500 text-[10px] sm:text-xs block">投稿日</span>
                         <span className="font-medium text-gray-900 block">{selectedPost.createdAt ? new Date(selectedPost.createdAt).toLocaleDateString('ja-JP') : '日付未設定'}</span>
                       </div>

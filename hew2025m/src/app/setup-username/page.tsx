@@ -142,9 +142,25 @@ export default function SetupUsernamePage() {
       return;
     }
 
+    // チェック未完了の場合は送信をブロック
+    if (usernameStatus === 'checking' || usernameStatus === 'idle') {
+      setError("ユーザーIDの確認が完了していません。しばらく待ってから再度お試しください");
+      return;
+    }
+
     setSaving(true);
 
     try {
+      // 送信直前にサーバーサイドで重複確認（レースコンディション対策）
+      const checkRes = await fetch(`/api/auth/check-username?username=${encodeURIComponent(username)}`);
+      const checkData = await checkRes.json();
+      if (!checkData.available) {
+        setError("このユーザーネームは既に使用されています");
+        setUsernameStatus('taken');
+        setSaving(false);
+        return;
+      }
+
       // タイムアウト付きで保存処理を実行（10秒）
       const savePromise = setDoc(doc(db, "users", user.uid), {
         displayName: displayName.trim(),
@@ -318,7 +334,7 @@ export default function SetupUsernamePage() {
               <div className="pt-1 sm:pt-2">
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || usernameStatus === 'checking' || usernameStatus === 'taken'}
                   className="w-full py-3 sm:py-4 bg-gradient-to-r from-[#2FA3E3] to-[#1d7bb8] hover:from-[#2FA3E3] hover:to-[#2FA3E3] text-white rounded-lg sm:rounded-xl text-sm sm:text-base font-bold shadow-lg shadow-blue-500/30 transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95 active:shadow-none disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {saving ? (

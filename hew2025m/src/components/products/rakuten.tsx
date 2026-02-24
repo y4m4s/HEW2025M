@@ -99,15 +99,18 @@ export default function RakutenProducts({
   };
 
   return (
-    <div className="mt-8 pt-6 border-t border-gray-100 bg-white rounded-xl shadow-sm p-4">
-      {/* ヘッダー部分 */}
-      <div className="flex justify-between items-center mb-4 px-1">
-        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-          <ShoppingCart size={20} className="text-blue-500" />
-          関連商品の相場をチェック
-          <span className="text-[10px] text-gray-400 font-normal border border-gray-300 rounded px-1 ml-1">R</span>
-        </h3>
-      </div>
+    <>
+    {/* ヘッダー部分 */}
+    <div className="mt-6 flex justify-between items-center mb-4 px-1">
+      <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+        <ShoppingCart size={20} className="text-blue-500" />
+        関連商品の相場をチェック
+        <span className="text-[10px] text-gray-400 font-normal border border-gray-300 rounded px-1 ml-1">R</span>
+      </h3>
+    </div>
+
+    <div className="pt-6 border-t border-gray-100 bg-white rounded-xl shadow-sm p-4">
+      
 
       {loading ? (
         <div className="flex justify-center p-12">
@@ -199,5 +202,6 @@ export default function RakutenProducts({
         </div>
       )}
     </div>
+    </>
   );
 }

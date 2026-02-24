@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const ProductFormSchema = z.object({
   title: z.string()
     .min(1, { message: '商品名を入力してください' })
-    .max(30, { message: '商品名は30文字以内で入力してください' }),
+    .max(50, { message: '商品名は50文字以内で入力してください' }),
   price: z.coerce.number({ message: '価格を数値で入力してください' })
     .min(1, { message: '価格は1円以上で入力してください' })
     .max(99999999, { message: '価格は99,999,999円以下で入力してください' }),
