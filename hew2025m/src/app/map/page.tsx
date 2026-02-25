@@ -1,6 +1,6 @@
 'use client';
 export const dynamic = 'force-dynamic';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 import { decodeHtmlEntities } from '@/lib/sanitize';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { MapPin, Navigation, ExternalLink, User, Fish, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -16,7 +16,7 @@ import Button from '@/components/ui/Button';
 import LoginRequiredModal from '@/components/user/LoginRequiredModal';
 
 // 動的インポート（重いコンポーネント - Google Maps API等）
-const Map = dynamic(() => import('@/components/map/Map'), {
+const Map = dynamicImport(() => import('@/components/map/Map'), {
   ssr: false,
   loading: () => (
     <div className="h-full flex items-center justify-center bg-gray-100">
@@ -28,12 +28,12 @@ const Map = dynamic(() => import('@/components/map/Map'), {
   )
 });
 
-const WeatherWidget = dynamic(() => import('@/components/map/WeatherWidget'), {
+const WeatherWidget = dynamicImport(() => import('@/components/map/WeatherWidget'), {
   ssr: false,
   loading: () => <div className="h-24 animate-pulse bg-gray-100 rounded-lg" />
 });
 
-const TideWidget = dynamic(() => import('@/components/map/TideWidget'), {
+const TideWidget = dynamicImport(() => import('@/components/map/TideWidget'), {
   ssr: false,
   loading: () => <div className="h-16 animate-pulse bg-gray-100 rounded-lg" />
 });
