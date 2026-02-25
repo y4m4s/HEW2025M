@@ -1,4 +1,5 @@
 'use client';
+export const dynamic = 'force-dynamic';
 import dynamic from 'next/dynamic';
 import { decodeHtmlEntities } from '@/lib/sanitize';
 import { useState, useRef, useEffect, useCallback } from 'react';
