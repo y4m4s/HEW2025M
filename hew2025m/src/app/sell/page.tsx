@@ -4,10 +4,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import Image from 'next/image';
 import { Camera, Fish, X, Puzzle } from 'lucide-react';
-import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from 'react-icons/gi';
+import { GiFishingPole, GiFishingHook, GiFishingLure } from 'react-icons/gi';
 import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
 import { SiHelix } from 'react-icons/si';
-import { Button, CustomSelect, LoadingSpinner, ImageModal } from '@/components';
+import { Button, CustomSelect, LoadingSpinner, ImageModal, SubmittingOverlay } from '@/components';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { useProfileStore } from '@/stores/useProfileStore';
@@ -24,10 +24,8 @@ const CATEGORIES = [
   { label: 'ルアー', value: 'lure', icon: GiFishingLure },
   { label: 'ライン/糸', value: 'line', icon: SiHelix },
   { label: 'ハリ/針', value: 'hook', icon: GiFishingHook },
-  { label: '餌', value: 'bait', icon: GiEarthWorm },
   { label: 'ウェア', value: 'wear', icon: FaTshirt },
   { label: 'セット用品', value: 'set', icon: FaBox },
-  { label: 'サービス', value: 'service', icon: GiSpanner },
   { label: 'その他', value: 'other', icon: Puzzle },
 ];
 
@@ -142,7 +140,22 @@ export default function SellPage() {
     setPreviewUrls(previewUrls.filter((_, i) => i !== index));
   };
 
-  // ドラッグ&ドロップ処理
+  // 画像並び替え
+  const handleReorderImages = (dragIndex: number, dropIndex: number) => {
+    const newFiles = [...selectedFiles];
+    const newUrls = [...previewUrls];
+
+    const [draggedFile] = newFiles.splice(dragIndex, 1);
+    const [draggedUrl] = newUrls.splice(dragIndex, 1);
+
+    newFiles.splice(dropIndex, 0, draggedFile);
+    newUrls.splice(dropIndex, 0, draggedUrl);
+
+    setSelectedFiles(newFiles);
+    setPreviewUrls(newUrls);
+  };
+
+  // ドロップゾーンへのファイル追加
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -284,6 +297,7 @@ export default function SellPage() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      {uploadProgress && <SubmittingOverlay message="出品しています……" />}
       <div className="container mx-auto px-4 sm:px-5 py-4 sm:py-8">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-800 mb-2">
@@ -334,39 +348,64 @@ export default function SellPage() {
 
                 {/* プレビュー表示 */}
                 {previewUrls.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                    {previewUrls.map((url, index) => (
-                      <div key={index} className="relative group">
+                  <>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-4 mb-2">ドラッグして順番を変更できます</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {previewUrls.map((url, index) => (
                         <div
-                          className="relative w-full h-32 cursor-pointer overflow-hidden rounded-lg border-2 border-gray-200 hover:border-[#2FA3E3] transition-all hover:shadow-lg"
-                          onClick={() => {
-                            setSelectedImageIndex(index);
-                            setIsImageModalOpen(true);
+                          key={index}
+                          className="relative group"
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = 'move';
+                            e.dataTransfer.setData('text/plain', index.toString());
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                            if (dragIndex !== index) {
+                              handleReorderImages(dragIndex, index);
+                            }
                           }}
                         >
-                          <Image
-                            src={url}
-                            alt={`プレビュー ${index + 1}`}
-                            width={200}
-                            height={200}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                          <div
+                            className="relative w-full h-32 cursor-move overflow-hidden rounded-lg border-2 border-gray-200 hover:border-[#2FA3E3] transition-all hover:shadow-lg"
+                            onClick={() => {
+                              setSelectedImageIndex(index);
+                              setIsImageModalOpen(true);
+                            }}
+                          >
+                            <Image
+                              src={url}
+                              alt={`プレビュー ${index + 1}`}
+                              width={200}
+                              height={200}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                          </div>
+                          <div className="absolute top-1 left-1 sm:top-2 sm:left-2 bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center shadow-md z-10">
+                            {index + 1}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveFile(index);
+                            }}
+                            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
+                            disabled={isSubmitting}
+                          >
+                            <X size={16} />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveFile(index);
-                          }}
-                          className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
-                          disabled={isSubmitting}
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -385,10 +424,10 @@ export default function SellPage() {
                   disabled={isSubmitting}
                 />
                 {errors.title && <p className="text-red-600 text-sm mt-1.5 ml-1" role="alert">{errors.title.message}</p>}
-                <div className={`text-right text-sm mt-1 ${titleValue.length > 30 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
-                  {titleValue.length}/30文字
-                  {titleValue.length > 30 && (
-                    <span className="ml-2">({titleValue.length - 30}文字超過)</span>
+                <div className={`text-right text-sm mt-1 ${titleValue.length > 50 ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                  {titleValue.length}/50文字
+                  {titleValue.length > 50 && (
+                    <span className="ml-2">({titleValue.length - 50}文字超過)</span>
                   )}
                 </div>
               </div>
@@ -527,13 +566,6 @@ export default function SellPage() {
                   {errors.shippingDays && <p className="text-red-600 text-sm mt-1.5 ml-1" role="alert">{errors.shippingDays.message}</p>}
                 </div>
               </div>
-
-              {/* アップロード*/}
-              {uploadProgress && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 text-center">
-                  <p className="text-blue-700 text-sm sm:text-base">{uploadProgress}</p>
-                </div>
-              )}
 
               {/*送信フォーム*/}
               <div className="text-center pt-4 sm:pt-6">

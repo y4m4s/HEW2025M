@@ -20,18 +20,15 @@ const CommentSchema = new Schema<IComment>(
     productId: {
       type: String,
       required: [true, '商品IDは必須です'],
-      index: true,
     },
     itemType: {
       type: String,
       enum: ['product', 'post'],
       required: [true, 'アイテム種別は必須です'],
-      index: true,
     },
     itemOwnerId: {
       type: String,
       required: false,
-      index: true,
     },
     userId: {
       type: String,
@@ -54,7 +51,6 @@ const CommentSchema = new Schema<IComment>(
     parentId: {
       type: String,
       required: false,
-      index: true,
     },
   },
   {

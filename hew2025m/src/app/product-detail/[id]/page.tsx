@@ -306,8 +306,8 @@ export default function SellDetailPage() {
   const getCategoryLabel = (category: string): string => {
     const map: Record<string, string> = {
       'rod': 'ロッド/竿', 'reel': 'リール', 'lure': 'ルアー', 'line': 'ライン/糸',
-      'hook': 'ハリ/針', 'bait': '餌', 'wear': 'ウェア', 'set': 'セット用品',
-      'service': 'サービス', 'other': 'その他'
+      'hook': 'ハリ/針', 'wear': 'ウェア', 'set': 'セット用品',
+      'other': 'その他'
     };
     return map[category] || category;
   };

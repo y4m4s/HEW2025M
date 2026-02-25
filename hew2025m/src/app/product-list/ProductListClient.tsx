@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { Fish, Search, Puzzle } from 'lucide-react';
-import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from 'react-icons/gi';
+import { GiFishingPole, GiFishingHook, GiFishingLure } from 'react-icons/gi';
 import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
 import { SiHelix } from 'react-icons/si';
 import { useAuth } from '@/lib/useAuth';
@@ -25,10 +25,8 @@ const CATEGORY_OPTIONS = [
   { label: 'ルアー', value: 'lure', icon: GiFishingLure },
   { label: 'ライン/糸', value: 'line', icon: SiHelix },
   { label: 'ハリ/針', value: 'hook', icon: GiFishingHook },
-  { label: '餌', value: 'bait', icon: GiEarthWorm },
   { label: 'ウェア', value: 'wear', icon: FaTshirt },
   { label: 'セット用品', value: 'set', icon: FaBox },
-  { label: 'サービス', value: 'service', icon: GiSpanner },
   { label: 'その他', value: 'other', icon: Puzzle },
 ];
 
