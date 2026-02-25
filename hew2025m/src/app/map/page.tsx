@@ -1,8 +1,7 @@
 'use client';
-export const dynamic = 'force-dynamic';
 import dynamicImport from 'next/dynamic';
 import { decodeHtmlEntities } from '@/lib/sanitize';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { MapPin, Navigation, ExternalLink, User, Fish, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -50,7 +49,7 @@ interface AuthorProfile {
   photoURL?: string;
 }
 
-export default function MapPage() {
+function MapPageContent() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -522,5 +521,13 @@ export default function MapPage() {
         action={loginRequiredAction}
       />
     </div>
+  );
+}
+
+export default function MapPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div></div>}>
+      <MapPageContent />
+    </Suspense>
   );
 }
