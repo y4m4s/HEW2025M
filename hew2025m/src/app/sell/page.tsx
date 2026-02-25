@@ -7,7 +7,7 @@ import { Camera, Fish, X, Puzzle } from 'lucide-react';
 import { GiFishingPole, GiFishingHook, GiFishingLure } from 'react-icons/gi';
 import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
 import { SiHelix } from 'react-icons/si';
-import { Button, CustomSelect, LoadingSpinner, ImageModal } from '@/components';
+import { Button, CustomSelect, LoadingSpinner, ImageModal, SubmittingOverlay } from '@/components';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/useAuth';
 import { useProfileStore } from '@/stores/useProfileStore';
@@ -297,6 +297,7 @@ export default function SellPage() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      {uploadProgress && <SubmittingOverlay message="出品しています……" />}
       <div className="container mx-auto px-4 sm:px-5 py-4 sm:py-8">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-800 mb-2">
@@ -565,13 +566,6 @@ export default function SellPage() {
                   {errors.shippingDays && <p className="text-red-600 text-sm mt-1.5 ml-1" role="alert">{errors.shippingDays.message}</p>}
                 </div>
               </div>
-
-              {/* アップロード*/}
-              {uploadProgress && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 text-center">
-                  <p className="text-blue-700 text-sm sm:text-base">{uploadProgress}</p>
-                </div>
-              )}
 
               {/*送信フォーム*/}
               <div className="text-center pt-4 sm:pt-6">
