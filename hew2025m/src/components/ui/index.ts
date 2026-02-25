@@ -16,3 +16,4 @@ export { default as ProductDetailSkeleton } from './ProductDetailSkeleton';
 export { default as CartSkeleton } from './CartSkeleton';
 export { default as FormField } from './FormField';
 export { default as TagBadge } from './TagBadge';
+export { default as SubmittingOverlay } from './SubmittingOverlay';

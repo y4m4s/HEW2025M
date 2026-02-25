@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import Header from "./Header";
 import Footer from "./Footer";
 
-const HIDE_LAYOUT_PATHS = ["/setup-username"];
+const HIDE_LAYOUT_PATHS = ["/setup-username", "/register", "/login"];
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();

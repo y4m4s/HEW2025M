@@ -75,7 +75,7 @@ export default function ProductCard({ product, variant = 'default', priority = f
           </div>
           <div className="p-5">
             <div className="h-14 mb-3">
-              <h5 className="text-lg font-bold text-gray-800 line-clamp-2">
+              <h5 className="text-lg font-bold text-gray-800 line-clamp-2 break-all">
                 {product.name}
               </h5>
             </div>
@@ -140,7 +140,7 @@ export default function ProductCard({ product, variant = 'default', priority = f
         </div>
         <div className="p-4">
           <div className="mb-2">
-            <h3 className="font-semibold text-gray-800 line-clamp-2 min-h-[3rem]">
+            <h3 className="font-semibold text-gray-800 line-clamp-2 min-h-[3rem] break-all">
               {product.name}
             </h3>
           </div>

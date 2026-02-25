@@ -11,7 +11,7 @@ import { PostFormSchema } from '@/lib/schemas';
 import { z } from 'zod';
 import { useAuth } from '@/lib/useAuth';
 
-import { Button, MapModal, type LocationData, ImageModal } from '@/components';
+import { Button, MapModal, type LocationData, ImageModal, SubmittingOverlay } from '@/components';
 import { useProfileStore } from '@/stores/useProfileStore';
 import { uploadFileToFirebase } from '@/lib/firebaseUtils';
 
@@ -313,6 +313,7 @@ function PostContent() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      {uploadProgress && <SubmittingOverlay message="投稿しています……" />}
       <div className="container mx-auto px-4 sm:px-5 py-4 sm:py-6 md:py-8">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-800 mb-2">
@@ -575,13 +576,6 @@ function PostContent() {
                   </div>
                 )}
               </div>
-
-              {/* 進行状況表示 */}
-              {uploadProgress && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 text-center">
-                  <p className="text-sm sm:text-base text-blue-700">{uploadProgress}</p>
-                </div>
-              )}
 
               <div className="text-center pt-4 sm:pt-6">
                 <Button

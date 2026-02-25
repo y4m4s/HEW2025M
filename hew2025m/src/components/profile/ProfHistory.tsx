@@ -155,7 +155,7 @@ export default function ProfHistory({ onCountChange, userId }: ProfHistoryProps)
               </div>
             </div>
             <div className="p-3 text-sm">
-              <p className="font-medium truncate">{product.title}</p>
+              <h3 className="font-medium truncate">{product.title}</h3>
               <div className="flex items-center justify-between gap-2 mt-1">
                 <p className="text-lg font-bold text-gray-500">¥{product.price.toLocaleString()}</p>
                 <span className="text-xs text-gray-500">{formatDate(product.createdAt)}</span>

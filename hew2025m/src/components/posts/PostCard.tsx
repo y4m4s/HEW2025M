@@ -61,7 +61,7 @@ export default function PostCard({ post, variant = 'default', priority = false, 
 
           {/* コンテンツ */}
           <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
-            <h3 className="font-medium text-sm line-clamp-2 leading-tight mb-1">{post.title}</h3>
+            <h3 className="font-medium text-sm line-clamp-2 leading-tight mb-1 break-all">{post.title}</h3>
             <div className="flex justify-between items-center text-xs text-gray-500 mt-auto">
               <div className="flex items-center gap-1.5 min-w-0">
                 <div className="w-5 h-5 bg-gray-200 rounded-full flex-shrink-0 relative overflow-hidden">
@@ -118,7 +118,7 @@ export default function PostCard({ post, variant = 'default', priority = false, 
 
           {/* Bottom: Content */}
           <div className="flex-1 p-4 flex flex-col">
-            <h3 className="font-bold text-gray-800 mb-2 line-clamp-2 overflow-hidden hover:text-[#2FA3E3] transition-colors break-words">
+            <h3 className="font-bold text-gray-800 mb-2 line-clamp-2 overflow-hidden hover:text-[#2FA3E3] transition-colors break-all">
               {post.title}
             </h3>
 
@@ -185,7 +185,7 @@ export default function PostCard({ post, variant = 'default', priority = false, 
         {/* Right Side: Content */}
         <div className="flex-1 p-4 sm:p-5 flex flex-col min-w-0">
           {/* Title */}
-          <h3 className="font-bold text-base sm:text-lg md:text-xl text-gray-800 mb-2 line-clamp-2 hover:text-[#2FA3E3] transition-colors">
+          <h3 className="font-bold text-base sm:text-lg md:text-xl text-gray-800 mb-2 line-clamp-2 hover:text-[#2FA3E3] transition-colors break-all">
             {post.title}
           </h3>
 

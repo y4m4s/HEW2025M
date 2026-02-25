@@ -319,9 +319,9 @@ export default function PurchaseHistory({ onCountChange }: PurchaseHistoryProps)
                         )}
                       </div>
                       <div className="p-3">
-                        <p className="text-sm font-medium text-gray-900 line-clamp-2 mb-1 h-10">
+                        <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1 h-10">
                           {item.productName}
-                        </p>
+                        </h3>
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-lg font-bold text-[#2FA3E3]">
                             ¥{item.price.toLocaleString()}

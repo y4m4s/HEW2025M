@@ -1,6 +1,6 @@
 "use client";
 import Link from 'next/link';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ChevronLeft } from 'lucide-react';
 import { Button, LoadingScreen, FormField } from "@/components";
 import { auth } from "@/lib/firebase";
 import {
@@ -221,24 +221,36 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-80px)] flex items-center justify-center p-2 sm:p-4 font-sans text-gray-800 bg-[#f0f4f8]">
-      {/* メインカード */}
-      <div className="w-full max-w-5xl h-fit max-h-[calc(100vh-96px)] bg-white rounded-2xl sm:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row">
+    <div className="min-h-screen flex flex-col lg:flex-row lg:items-center lg:justify-center font-sans text-gray-800 bg-[#f0f4f8] relative">
+      {/* 戻るボタン */}
+      <div className="absolute top-4 left-4 z-10">
+        <Button
+          variant="ghost"
+          href="/"
+          icon={<ChevronLeft size={18} />}
+          className="text-gray-600 hover:text-gray-900"
+        >
+          戻る
+        </Button>
+      </div>
 
-        {/* 左側：ブランディングセクション */}
-        <div className="lg:w-5/12 bg-gradient-to-br from-[#2FA3E3] to-[#1d7bb8] relative overflow-hidden flex flex-col justify-center items-center text-white p-4 sm:p-6 lg:p-10">
+      {/* メインカード */}
+      <div className="w-full lg:max-w-5xl lg:mx-auto lg:my-8 bg-white lg:rounded-[2rem] lg:shadow-2xl flex flex-col lg:flex-row lg:overflow-hidden">
+
+        {/* 左側：ブランディングセクション（モバイルでは上部・コンパクト、PCでは左側） */}
+        <div className="lg:w-5/12 bg-gradient-to-br from-[#2FA3E3] to-[#1d7bb8] relative overflow-hidden flex flex-col justify-center items-center text-white py-10 px-6 lg:p-10">
           {/* 背景装飾 */}
           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-white/10 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
 
           <div className="relative z-10 text-center">
-            <Link href="/" className="inline-block mb-3 sm:mb-4 lg:mb-6 transition-transform hover:scale-105">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight drop-shadow-md">
+            <Link href="/" className="inline-block mb-3 lg:mb-6 transition-transform hover:scale-105">
+              <h1 className="text-5xl lg:text-6xl font-bold tracking-tight drop-shadow-md">
                 ツリマチ
               </h1>
             </Link>
-            <div className="h-1 w-12 sm:w-16 bg-white/50 mx-auto rounded-full mb-3 sm:mb-4 lg:mb-6"></div>
-            <p className="text-base sm:text-lg lg:text-xl leading-relaxed font-light opacity-95 tracking-wide">
+            <div className="h-1 w-16 bg-white/50 mx-auto rounded-full mb-3 lg:mb-6"></div>
+            <p className="text-lg lg:text-xl leading-relaxed font-light opacity-95 tracking-wide">
               おかえりなさい。<br />
               今日も素敵な釣り人ライフを。
             </p>
@@ -246,7 +258,7 @@ export default function LoginPage() {
         </div>
 
         {/* 右側：フォームセクション */}
-        <div className="w-full lg:w-7/12 p-4 sm:p-6 lg:p-8 bg-white flex flex-col justify-center overflow-y-auto">
+        <div className="w-full lg:w-7/12 p-6 sm:p-8 lg:p-10 bg-white flex flex-col justify-center">
           <div className="max-w-md mx-auto w-full my-auto">
             <div className="text-center mb-3 sm:mb-4">
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-1.5">ログイン</h2>
@@ -383,7 +395,7 @@ export default function LoginPage() {
 
               {/* 新規登録リンク */}
               <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-gray-100 flex flex-col items-center gap-1.5 sm:gap-2">
-                <p className="text-xs sm:text-sm text-gray-500">アカウントをお持ちでないですか？</p>
+                <p className="text-xs sm:text-sm text-gray-500">アカウントをお持ちでない場合はこちらから。</p>
                 <Button
                   variant="ghost"
                   href="/register"

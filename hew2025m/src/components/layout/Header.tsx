@@ -15,7 +15,7 @@ import {
   Menu,
   X
 } from "lucide-react";
-import { GiFishingPole, GiFishingHook, GiFishingLure, GiEarthWorm, GiSpanner } from "react-icons/gi";
+import { GiFishingPole, GiFishingHook, GiFishingLure } from "react-icons/gi";
 import { FaTape, FaTshirt, FaBox } from "react-icons/fa";
 import { SiHelix } from "react-icons/si";
 import { Users, Puzzle } from "lucide-react";
@@ -38,10 +38,8 @@ const categories = [
   { name: "ルアー", href: "/product-list?category=lure", Icon: GiFishingLure },
   { name: "ライン/糸", href: "/product-list?category=line", Icon: SiHelix },
   { name: "ハリ/針", href: "/product-list?category=hook", Icon: GiFishingHook },
-  { name: "餌", href: "/product-list?category=bait", Icon: GiEarthWorm },
   { name: "ウェア", href: "/product-list?category=wear", Icon: FaTshirt },
   { name: "セット用品", href: "/product-list?category=set", Icon: FaBox },
-  { name: "サービス", href: "/product-list?category=service", Icon: GiSpanner },
   { name: "その他", href: "/product-list?category=other", Icon: Puzzle },
 ];
 

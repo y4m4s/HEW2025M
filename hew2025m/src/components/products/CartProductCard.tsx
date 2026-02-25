@@ -34,10 +34,8 @@ export default function CartProductCard({ product }: CartProductCardProps) {
       'lure': 'ルアー',
       'line': 'ライン/糸',
       'hook': 'ハリ/針',
-      'bait': '餌',
       'wear': 'ウェア',
       'set': 'セット用品',
-      'service': 'サービス',
       'other': 'その他'
     };
     return category ? categoryMap[category] || category : '';
@@ -128,7 +126,7 @@ export default function CartProductCard({ product }: CartProductCardProps) {
           {/* 商品情報 */}
           <div className="flex-1 p-4 flex flex-col min-w-0">
             {/* 商品名 */}
-            <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">
+            <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2 break-all">
               {product.name}
             </h3>
 

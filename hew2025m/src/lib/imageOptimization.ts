@@ -44,12 +44,12 @@ export function generateBlurDataURL(color: string = '#e5e7eb'): string {
 export const BLUR_COLORS = {
   /** デフォルト - グレー */
   default: '#e5e7eb',
-  /** 商品画像 - ライトブルー */
-  product: '#dbeafe',
-  /** 投稿画像 - ライトグリーン */
-  post: '#dcfce7',
-  /** ユーザー画像 - ライトパープル */
-  user: '#f3e8ff',
+  /** 商品画像 - グレー */
+  product: '#e5e7eb',
+  /** 投稿画像 - グレー */
+  post: '#e5e7eb',
+  /** ユーザー画像 - グレー */
+  user: '#e5e7eb',
 } as const;
 
 /**

@@ -90,10 +90,8 @@ const CATEGORY_MAP: Record<string, string> = {
   'lure': 'ルアー',
   'line': 'ライン/糸',
   'hook': 'ハリ/針',
-  'bait': '餌',
   'wear': 'ウェア',
   'set': 'セット用品',
-  'service': 'サービス',
   'other': 'その他'
 };
 

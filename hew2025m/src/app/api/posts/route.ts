@@ -43,14 +43,14 @@ export async function GET(request: NextRequest) {
     }
 
     const allTags = [
-      '釣り情報',
-      '釣果共有',
-      '初心者',
-      'レビュー',
+      '釣行記',
+      '情報共有',
       '質問',
-      'おすすめ',
-      'トラブル注意',
-      '釣魚料理',
+      'レビュー',
+      '雑談',
+      '初心者向け',
+      'トラブル相談',
+      '釣果報告',
     ];
 
     const [total, posts, totalPostCount, tagCountsResult] = await Promise.all([

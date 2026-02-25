@@ -44,7 +44,8 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
   const [totalRatings, setTotalRatings] = useState<number>(0);
   const [selectedRating, setSelectedRating] = useState<number>(0);
   const [comment, setComment] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [fetchLoading, setFetchLoading] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
   const [showForm, setShowForm] = useState<boolean>(false);
   const [hasRated, setHasRated] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -57,7 +58,7 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
 
   // 評価データの取得
   const fetchRatings = async () => {
-    setLoading(true);
+    setFetchLoading(true);
     try {
       const response = await fetch(`/api/users/${targetUserId}/ratings`);
       if (!response.ok) {
@@ -107,6 +108,8 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
       }
     } catch (error) {
       console.error(error);
+    } finally {
+      setFetchLoading(false);
     }
   };
 
@@ -138,7 +141,7 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
       return;
     }
 
-    setLoading(true);
+    setSubmitting(true);
     try {
       const ratingData = {
         ratedUserId: targetUserId,
@@ -200,7 +203,7 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
       console.error("評価の投稿エラー:", error);
       toast.error("評価の投稿に失敗しました");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -271,7 +274,7 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#2FA3E3]"
+              className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#2FA3E3] resize-none"
               rows={4}
               placeholder="取引の感想や評価を入力してください"
             />
@@ -282,10 +285,10 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
 
           <button
             onClick={handleSubmitRating}
-            disabled={loading || selectedRating === 0 || !comment.trim() || isOverLimit}
+            disabled={submitting || selectedRating === 0 || !comment.trim() || isOverLimit}
             className="w-full bg-[#2FA3E3] text-white py-2 rounded-lg hover:bg-[#1d7bb8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? (existingRatingId ? "更新中..." : "投稿中...") : (existingRatingId ? "評価を更新" : "評価を投稿")}
+            {submitting ? (existingRatingId ? "更新中..." : "投稿中...") : (existingRatingId ? "評価を更新" : "評価を投稿")}
           </button>
         </div>
       )}
