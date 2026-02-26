@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // isomorphic-dompurify → jsdom → html-encoding-sniffer → @exodus/bytes (ESM-only)
+  // この依存チェーンをバンドルに含めないようにする（サーバー側では使用しない）
+  serverExternalPackages: ['isomorphic-dompurify', 'jsdom'],
+
   turbopack: {},
 
   images: {

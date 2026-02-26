@@ -1,9 +1,22 @@
-import DOMPurify from 'isomorphic-dompurify';
-
 /**
  * ユーザー入力のサニタイゼーション
  * XSS/インジェクション対策
+ *
+ * isomorphic-dompurify は jsdom 経由で ESM-only モジュールに依存するため、
+ * サーバーサイド（SSR・API Routes）では require() 禁止。
+ * typeof window チェックでクライアントのみロードし、
+ * サーバー側は正規表現によるタグ除去にフォールバックする。
  */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _dompurify: any = null;
+function getDOMPurify() {
+  if (!_dompurify) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    _dompurify = require('isomorphic-dompurify');
+  }
+  return _dompurify;
+}
 
 // URLかどうかをチェック
 function isUrl(str: string): boolean {
@@ -29,7 +42,11 @@ function isSafeDataUrl(str: string): boolean {
  * 危険なタグや属性を除去し、安全なHTMLのみを許可します。
  */
 export function sanitizeHtml(str: string): string {
-  return DOMPurify.sanitize(str, {
+  if (typeof window === 'undefined') {
+    // サーバーサイド: 全タグを除去（安全側に倒す）
+    return str.replace(/<[^>]*>/g, '');
+  }
+  return getDOMPurify().sanitize(str, {
     ALLOWED_TAGS: [
       'b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'span',
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre'
@@ -91,7 +108,11 @@ export function sanitizeUserInput<T>(input: T): T {
     // (例: "Hello <script>..." -> "Hello ...")
     // これにより攻撃コードが混入しても無効化されます。
 
-    return DOMPurify.sanitize(input.trim()) as T;
+    if (typeof window === 'undefined') {
+      // サーバーサイド: 全タグを除去
+      return input.trim().replace(/<[^>]*>/g, '') as T;
+    }
+    return getDOMPurify().sanitize(input.trim()) as T;
   }
 
   if (Array.isArray(input)) {
