@@ -39,6 +39,7 @@ export default function CartPage() {
   useEffect(() => {
     const fetchProductDetails = async () => {
       if (!isMounted || items.length === 0) {
+        setProducts([]);
         setLoading(false);
         return;
       }

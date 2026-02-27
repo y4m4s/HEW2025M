@@ -105,21 +105,22 @@ export default function CartProductCard({ product }: CartProductCardProps) {
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer">
         <div className="flex items-stretch">
           {/* 商品画像 */}
-          <div className="w-28 sm:w-40 flex-shrink-0 bg-gray-200 flex items-center justify-center">
+          <div className="w-28 sm:w-40 flex-shrink-0 relative bg-gray-200 overflow-hidden">
             {product.imageUrl ? (
               <Image
                 src={decodeHtmlEntities(product.imageUrl)}
                 alt={product.name}
-                width={160}
-                height={160}
+                fill
                 sizes="(max-width: 640px) 112px, 160px"
                 quality={IMAGE_QUALITY.STANDARD}
                 placeholder="blur"
                 blurDataURL={BLUR_DATA_URLS.product}
-                className="w-full h-full object-cover block"
+                className="object-cover"
               />
             ) : (
-              <Fish size={48} className="text-gray-400" />
+              <div className="w-full h-full flex items-center justify-center">
+                <Fish size={48} className="text-gray-400" />
+              </div>
             )}
           </div>
 
@@ -152,7 +153,7 @@ export default function CartProductCard({ product }: CartProductCardProps) {
             {/* 説明文：2行分の高さを確保し、末尾を「……」で省略 */}
             <div className="mb-2 overflow-hidden">
               {product.description && (
-                <p className="text-xs text-gray-600 line-clamp-2 break-words">
+                <p className="p-1 text-xs text-gray-600 line-clamp-2 break-words">
                   {product.description}
                 </p>
               )}
