@@ -136,10 +136,10 @@ export default function UserInfoCard({
             </div>
           </div>
         ) : userProfile ? (
-          <div className="flex flex-row gap-4 md:gap-6">
+          <div className="flex flex-col sm:flex-row gap-4 md:gap-6">
             {/* 左側: ユーザープロフィールカード */}
             <Link href={`/profile/${userProfile.uid}`} className="flex-1 min-w-0">
-              <div className="flex items-center justify-center sm:justify-start sm:items-start gap-3 md:gap-4 px-4 h-full rounded-lg bg-white hover:bg-gray-50 border border-transparent hover:border-[#2FA3E3] transition-colors cursor-pointer">
+              <div className="flex items-center gap-3 md:gap-4 px-4 py-2 h-full rounded-lg bg-white hover:bg-gray-50 border border-transparent hover:border-[#2FA3E3] transition-colors cursor-pointer">
                 {/* プロフィール画像 */}
                 <div className="p-2 flex-shrink-0 self-center">
                   {userProfile.photoURL ? (
@@ -159,7 +159,7 @@ export default function UserInfoCard({
                 </div>
 
                 {/* 名前とユーザー名 */}
-                <div className="flex-shrink-0 self-center min-w-0 max-w-[200px]">
+                <div className="flex-1 min-w-0 self-center">
                   <p className="font-semibold text-lg md:text-xl truncate">
                     {userProfile.displayName}
                   </p>
@@ -179,12 +179,12 @@ export default function UserInfoCard({
               </div>
             </Link>
 
-            {/* 右側: 評価（showRatingがtrueの場合のみ） */}
+            {/* 下側(モバイル) / 右側(PC): 評価（showRatingがtrueの場合のみ） */}
             {showRating && (
-              <div className="flex items-center">
+              <div className="flex sm:items-center">
                 {/* 評価カード */}
-                <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
-                  <div className="flex items-center gap-4">
+                <div className="w-full sm:w-auto bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+                  <div className="flex items-center justify-center sm:justify-start gap-4">
                     <div className="text-3xl md:text-4xl font-bold text-gray-800">
                       {averageRating > 0 ? averageRating.toFixed(1) : '---'}
                     </div>

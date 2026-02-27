@@ -777,7 +777,7 @@ function MessagePageContent() {
             </div>
 
             {/* 入力エリア */}
-            <div className="p-4 bg-white border-t border-gray-100 flex-shrink-0 shadow-2xl shadow-gray-200/50">
+            <div className="py-4 bg-white border-t border-gray-100 flex-shrink-0 shadow-2xl shadow-gray-200/50">
               <div className="flex justify-center">
                 <div className="w-full flex flex-col gap-3">
                   {/* 画像プレビュー */}
@@ -802,18 +802,20 @@ function MessagePageContent() {
                     </div>
                   )}
 
-                  <div className="flex gap-2 w-full items-end">
-                    {/* 画像添付ボタン */}
-                    <Button
-                      onClick={() => fileInputRef.current?.click()}
-                      variant="ghost"
-                      size="sm"
-                      className="!bg-gradient-to-br !from-gray-100 !to-gray-200 !text-gray-700 !p-3.5 !rounded-xl hover:!from-[#2FA3E3] hover:!to-[#1d88c9] hover:!text-white transition-all duration-300 flex-shrink-0 shadow-sm hover:shadow-md hover:!scale-105 group !min-w-0 !w-auto"
-                      icon={<Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />}
-                      type="button"
-                    >
-                      <span className="sr-only">画像を添付</span>
-                    </Button>
+                  <div className="flex items-center gap-2 w-full px-2">
+                    {/* Plus ボタン: 余白付きコンテナ内で中央揃え */}
+                    <div className="flex-shrink-0 p-1 flex items-center justify-center">
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        variant="ghost"
+                        size="sm"
+                        className="!bg-gradient-to-br !from-gray-100 !to-gray-200 !text-gray-700 !p-3.5 !rounded-xl hover:!from-[#2FA3E3] hover:!to-[#1d88c9] hover:!text-white transition-all duration-300 shadow-sm hover:shadow-md hover:!scale-105 group !min-w-0 !w-auto"
+                        type="button"
+                      >
+                        <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+                        <span className="sr-only">画像を添付</span>
+                      </Button>
+                    </div>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -822,42 +824,47 @@ function MessagePageContent() {
                       className="hidden"
                     />
 
-                    <div className="flex-1 flex flex-col gap-2">
-                      <textarea
-                        placeholder="メッセージを入力..."
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendMessage();
-                          }
-                        }}
-                        rows={2}
-                        className={`w-full p-3.5 border-2 rounded-xl focus:outline-none focus:ring-2 resize-none transition-all duration-300 shadow-sm hover:shadow-md ${inputValue.length > 500
-                          ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
-                          : 'border-gray-200 focus:ring-[#2FA3E3]/30 focus:border-[#2FA3E3]'
-                          }`}
-                      />
-                      <div className={`text-right text-xs font-medium ${inputValue.length > 500 ? 'text-red-600' : 'text-gray-400'}`}>
-                        {inputValue.length}/500文字
+                    {/* テキストエリア */}
+                    <textarea
+                      placeholder="メッセージを入力..."
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                      rows={2}
+                      className={`flex-1 p-3 border-2 rounded-xl focus:outline-none focus:ring-2 resize-none transition-all duration-300 shadow-sm hover:shadow-md ${inputValue.length > 500
+                        ? 'border-red-500 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500/20'
+                        : 'border-gray-200 focus:ring-[#2FA3E3]/30 focus:border-[#2FA3E3]'
+                        }`}
+                    />
+
+                    {/* 送信ボタン + 文字数カウント: 余白付きコンテナ内で縦並び */}
+                    <div className="flex-shrink-0 p-1 flex flex-col items-center gap-1">
+                      <Button
+                        onClick={handleSendMessage}
+                        disabled={(!inputValue.trim() && !selectedImage) || inputValue.length > 500}
+                        variant="primary"
+                        size="sm"
+                        className="!p-3.5 !rounded-xl hover:!shadow-lg hover:!scale-105 disabled:!from-gray-300 disabled:!to-gray-400 !shadow-md shadow-[#2FA3E3]/30 disabled:!shadow-none group !min-w-0 !w-auto"
+                        type="button"
+                      >
+                        <Send size={20} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />
+                        <span className="sr-only">送信</span>
+                      </Button>
+                      {/* 文字数カウント: 送信ボタン直下 */}
+                      <div className="flex flex-col items-center">
+                        <span className={`text-xs font-medium whitespace-nowrap ${inputValue.length > 500 ? 'text-red-600' : 'text-gray-400'}`}>
+                          {inputValue.length}/500文字
+                        </span>
                         {inputValue.length > 500 && (
-                          <span className="ml-1">({inputValue.length - 500}文字超過)</span>
+                          <span className="text-xs font-medium text-red-600 whitespace-nowrap">({inputValue.length - 500}文字超過)</span>
                         )}
                       </div>
                     </div>
-
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={(!inputValue.trim() && !selectedImage) || inputValue.length > 500}
-                      variant="primary"
-                      size="sm"
-                      className="!p-3.5 !rounded-xl hover:!shadow-lg hover:!scale-105 disabled:!from-gray-300 disabled:!to-gray-400 flex-shrink-0 !shadow-md shadow-[#2FA3E3]/30 disabled:!shadow-none group !min-w-0 !w-auto"
-                      icon={<Send size={20} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />}
-                      type="button"
-                    >
-                      <span className="sr-only">送信</span>
-                    </Button>
                   </div>
                 </div>
               </div>
