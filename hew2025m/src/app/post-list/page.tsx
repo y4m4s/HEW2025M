@@ -84,6 +84,7 @@ export default function PostList() {
       if (debouncedKeyword) {
         params.append('keyword', debouncedKeyword);
       }
+      params.append('sort', sortBy);
       params.append('page', pageNum.toString());
       params.append('limit', '12');
 
@@ -166,7 +167,7 @@ export default function PostList() {
     setPosts([]);
     setHasMore(true);
     fetchPostsRef.current?.(1, true);
-  }, [activeFilter, debouncedKeyword]);
+  }, [activeFilter, debouncedKeyword, sortBy]);
 
   // Intersection Observerの設定
   useEffect(() => {

@@ -62,6 +62,12 @@ const nextConfig: NextConfig = {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
           },
+          {
+            // Firebase signInWithPopup がクロスオリジンポップアップの
+            // window.closed を参照できるようにする
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+          },
         ],
       },
     ];

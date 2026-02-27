@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect, useRef, Suspense } from 'react';
-import { Fish, Search, Puzzle } from 'lucide-react';
+import { Fish, Search, Puzzle, Plus, X, Filter } from 'lucide-react';
 import { GiFishingPole, GiFishingHook, GiFishingLure } from 'react-icons/gi';
 import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
 import { SiHelix } from 'react-icons/si';
@@ -135,6 +135,9 @@ function ProductListContent({
   const [keyword, setKeyword] = useState('');
   const debouncedKeyword = useDebounce(keyword, SEARCH_DEBOUNCE_DELAY);
 
+  // モバイル用フィルター表示状態
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+
   // ログインモーダル用の状態
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginRequiredAction, setLoginRequiredAction] = useState('');
@@ -149,7 +152,6 @@ function ProductListContent({
   }, [searchParams]);
 
   // フィルターが変更されたときにURLとstateを更新する関数
-  // useCallbackは不要（イベントハンドラーとして直接使用するため）
   const handleFilterChange = (filterName: string, value: string) => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
 
@@ -162,12 +164,20 @@ function ProductListContent({
     const search = current.toString();
     const query = search ? `?${search}` : "";
 
-    // stateも更新
     if (filterName === 'category') {
       setCategory(value);
     }
 
     router.replace(`${pathname}${query}`);
+  };
+
+  const handleSell = () => {
+    if (!user) {
+      setLoginRequiredAction('出品');
+      setShowLoginModal(true);
+    } else {
+      router.push('/sell');
+    }
   };
 
   // fetchProductsをuseRefで保持（依存配列の循環参照を回避）
@@ -224,7 +234,6 @@ function ProductListContent({
       if (debouncedKeyword) {
         filtered = filterByKeyword(filtered, debouncedKeyword);
       }
-
 
       if (resetProducts) {
         setProducts(filtered);
@@ -284,58 +293,156 @@ function ProductListContent({
     };
   }, [loading, hasMore, products.length]);
 
+  const displayProducts = products.filter((p) => !hideSold || p.status !== 'sold');
+  const hasActiveFilters = !!(category || minPrice || maxPrice || shippingPayer || keyword);
+
   return (
-    <div>
-      <div className="bg-gray-50 min-h-screen">
-        <div className="container mx-auto px-4 sm:px-5 py-4 sm:py-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-              <div className="text-center sm:text-left flex-1">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-                  商品を探す
-                </h1>
-                <p className="text-sm sm:text-base text-gray-600">
-                  あなたが探している釣り用品を見つけましょう
-                </p>
-              </div>
-              <Button
-                onClick={() => {
-                  if (!user) {
-                    setLoginRequiredAction('出品');
-                    setShowLoginModal(true);
-                  } else {
-                    router.push('/sell');
-                  }
-                }}
-                variant="primary"
-                size="lg"
-                className="shadow-lg hover:shadow-xl transition-shadow text-sm sm:text-base w-full sm:w-auto"
-              >
-                出品する
-              </Button>
-            </div>
+    <div className="bg-gray-50 min-h-screen flex flex-col">
+      <div className="flex-1 container mx-auto max-w-7xl px-4 py-8">
+        <main>
 
-            {/* 検索バー */}
-            <div className="flex justify-center mb-6 sm:mb-8">
-              <form className="relative max-w-2xl w-full" onSubmit={(e) => e.preventDefault()}>
-                <div className="absolute left-4 sm:left-5 top-1/2 transform -translate-y-1/2 text-gray-600">
-                  <Search size={16} />
-                </div>
-                <input
-                  type="search"
-                  placeholder="キーワードで検索"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  className="w-full py-3 sm:py-4 px-4 sm:px-5 pl-11 sm:pl-12 border border-gray-200 rounded-xl text-sm sm:text-base outline-none shadow-md focus:shadow-xl [transition:box-shadow_150ms_ease-out] placeholder:text-gray-400"
-                />
-              </form>
-            </div>
+          {/* モバイル用フィルター切り替えボタン */}
+          <div className="lg:hidden mb-6">
+            <Button
+              onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
+              variant="outline"
+              className="w-full flex justify-center items-center gap-2 bg-white"
+            >
+              {isMobileFilterOpen ? (
+                <span className="flex items-center gap-2">
+                  <X size={18} />
+                  検索・絞り込みを閉じる
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Filter size={18} />
+                  検索・絞り込みを表示
+                </span>
+              )}
+            </Button>
+          </div>
 
-            {/* 検索フィルター */}
-            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* 左側: 商品一覧 (メインコンテンツ) */}
+            <div className="lg:col-span-3">
+              {/* ヘッダーエリア */}
+              <div className="flex justify-between items-center mb-8">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">カテゴリー</label>
+                  <h2 className="flex items-center gap-3 text-2xl font-bold mb-2 text-gray-800">
+                    <Fish className="text-[#2FA3E3]" />
+                    商品一覧
+                  </h2>
+                  <p className="hidden sm:block text-gray-600">あなたが探している釣り用品を見つけましょう</p>
+                </div>
+
+                <div className="lg:hidden shrink-0">
+                  <Button
+                    onClick={handleSell}
+                    variant="primary"
+                    size="md"
+                    className="whitespace-nowrap"
+                    icon={<Plus size={16} />}
+                  >
+                    出品する
+                  </Button>
+                </div>
+              </div>
+
+              {/* 件数表示 */}
+              <p className="text-sm text-gray-600 mb-4">
+                {loading && products.length === 0 ? (
+                  <span className="skeleton inline-block w-32 h-5" />
+                ) : (
+                  <>表示中: {displayProducts.length}件{totalCount > displayProducts.length ? ` (全${totalCount}件)` : ''}</>
+                )}
+              </p>
+
+              {/* 商品一覧 */}
+              {loading && products.length === 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 mb-8">
+                  <SkeletonCard variant="product" count={6} />
+                </div>
+              ) : error ? (
+                <div className="text-center py-20 px-4">
+                  <p className="text-red-600 mb-4">{error}</p>
+                  <Button onClick={() => fetchProductsRef.current?.(1, true)} variant="primary" size="md">
+                    再読み込み
+                  </Button>
+                </div>
+              ) : displayProducts.length === 0 ? (
+                <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-gray-100">
+                  <Fish className="mx-auto text-gray-300 mb-4" size={64} />
+                  <p className="text-gray-600 text-lg mb-2">商品が見つかりませんでした</p>
+                  <p className="text-gray-400 text-sm">条件を変えて検索してみてください</p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 mb-8">
+                    {displayProducts.map((product, index) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        priority={index < 4}
+                      />
+                    ))}
+                  </div>
+
+                  {/* 無限スクロール用のローディングインジケーター */}
+                  <div ref={loadMoreRef} className="flex justify-center items-center py-8">
+                    {loading && (
+                      <LoadingSpinner size="sm" message="読み込み中..." />
+                    )}
+                    {!hasMore && products.length > 0 && (
+                      <p className="text-sm text-gray-500">すべての商品を表示しました</p>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* 右側: サイドバー (出品ボタン・検索・フィルタ) */}
+            {/* モバイルではトグル表示、PCでは常時表示 */}
+            <div className={`lg:col-span-1 space-y-6 order-first lg:order-last ${isMobileFilterOpen ? 'block' : 'hidden lg:block'}`}>
+              {/* 出品ボタン (PC表示) */}
+              <div className="hidden lg:block">
+                <Button
+                  onClick={handleSell}
+                  variant="primary"
+                  size="lg"
+                  className="w-full shadow-lg text-base py-4"
+                  icon={<Plus size={22} />}
+                >
+                  出品する
+                </Button>
+              </div>
+
+              {/* 検索・絞り込みパネル */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 sticky top-6">
+                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <Search size={18} className="text-[#2FA3E3]" />
+                  検索・絞り込み
+                </h3>
+
+                {/* キーワード */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">キーワード</label>
+                  <form className="relative w-full" onSubmit={(e) => e.preventDefault()}>
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                      <Search size={16} />
+                    </div>
+                    <input
+                      type="search"
+                      placeholder="キーワードを入力"
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
+                      className="w-full py-2.5 pl-10 pr-4 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white outline-none [transition:background-color_150ms_ease-out,border-color_150ms_ease-out,box-shadow_150ms_ease-out] focus:border-gray-300 focus:shadow-md"
+                    />
+                  </form>
+                </div>
+
+                {/* カテゴリー */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリー</label>
                   <CustomSelect
                     value={category}
                     onChange={(value) => handleFilterChange('category', value)}
@@ -343,28 +450,34 @@ function ProductListContent({
                     placeholder="すべて"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">価格 (下限 〜 上限)</label>
+
+                {/* 価格 */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">価格 (下限 〜 上限)</label>
                   <div className="flex items-center gap-2">
                     <CustomSelect
                       value={minPrice}
                       onChange={setMinPrice}
                       options={PRICE_OPTIONS}
                       placeholder="指定なし"
-                      className="flex-1"
+                      className="flex-1 min-w-0"
+                      size="sm"
                     />
-                    <span className="text-gray-400">〜</span>
+                    <span className="text-gray-400 text-sm shrink-0">〜</span>
                     <CustomSelect
                       value={maxPrice}
                       onChange={setMaxPrice}
                       options={PRICE_OPTIONS}
                       placeholder="指定なし"
-                      className="flex-1"
+                      className="flex-1 min-w-0"
+                      size="sm"
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">配送料の負担</label>
+
+                {/* 配送料の負担 */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">配送料の負担</label>
                   <CustomSelect
                     value={shippingPayer}
                     onChange={setShippingPayer}
@@ -372,21 +485,24 @@ function ProductListContent({
                     placeholder="指定なし"
                   />
                 </div>
-              </div>
-            </div>
 
-            {/* フィルターリセット・SOLD非表示 */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-              <p className="text-sm sm:text-base text-gray-600">
-                {loading && products.length === 0 ? (
-                  <span className="skeleton inline-block w-32 h-5" />
-                ) : (
-                  <>表示中: {products.length}件{totalCount > products.length ? ` (全${totalCount}件)` : ''}</>
-                )}
-              </p>
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                {/* フィルターリセットボタン */}
-                {(category || minPrice || maxPrice || shippingPayer || keyword) && (
+                {/* SOLD非表示トグル */}
+                <div className="mb-4">
+                  <button
+                    onClick={() => setHideSold((prev) => !prev)}
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 shadow-sm ${
+                      hideSold
+                        ? 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
+                        : 'bg-white text-[#2FA3E3] border border-[#2FA3E3] hover:bg-blue-50'
+                    }`}
+                  >
+                    <span className="inline-block w-2 h-2 rounded-full bg-current opacity-70" />
+                    {hideSold ? 'SOLDを表示' : 'SOLDを非表示'}
+                  </button>
+                </div>
+
+                {/* フィルターリセット */}
+                {hasActiveFilters && (
                   <button
                     onClick={() => {
                       setKeyword('');
@@ -395,71 +511,15 @@ function ProductListContent({
                       setShippingPayer('');
                       router.replace(pathname);
                     }}
-                    className="text-xs sm:text-sm text-[#2FA3E3] hover:text-[#1d7bb8] underline whitespace-nowrap"
+                    className="w-full text-sm text-[#2FA3E3] hover:text-[#1d7bb8] underline"
                   >
                     フィルターをリセット
                   </button>
                 )}
-                {/* SOLD表示/非表示トグル */}
-                <button
-                  onClick={() => setHideSold((prev) => !prev)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-150 whitespace-nowrap shadow-sm ${
-                    hideSold
-                      ? 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
-                      : 'bg-white text-[#2FA3E3] border border-[#2FA3E3] hover:bg-blue-50'
-                  }`}
-                >
-                  <span className="inline-block w-2 h-2 rounded-full bg-current opacity-70" />
-                  {hideSold ? 'SOLDを表示' : 'SOLDを非表示'}
-                </button>
               </div>
             </div>
-
-            {/* 商品一覧 */}
-            {loading && products.length === 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8">
-                <SkeletonCard variant="product" count={8} />
-              </div>
-            ) : error ? (
-              <div className="text-center py-12 sm:py-20 px-4">
-                <p className="text-red-600 mb-4 text-sm sm:text-base">{error}</p>
-                <Button onClick={() => fetchProductsRef.current?.(1, true)} variant="primary" size="md">
-                  再読み込み
-                </Button>
-              </div>
-            ) : products.length === 0 ? (
-              <div className="text-center py-12 sm:py-20 px-4">
-                <Fish className="mx-auto text-gray-400 mb-4" size={48} />
-                <p className="text-gray-600 text-base sm:text-lg mb-2">商品が見つかりませんでした</p>
-                <p className="text-gray-500 text-xs sm:text-sm">条件を変えて検索してみてください</p>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8">
-                  {products
-                    .filter((product) => !hideSold || product.status !== 'sold')
-                    .map((product, index) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        priority={index < 4}
-                      />
-                    ))}
-                </div>
-
-                {/* 無限スクロール用のローディングインジケーター */}
-                <div ref={loadMoreRef} className="flex justify-center items-center py-6 sm:py-8">
-                  {loading && (
-                    <LoadingSpinner size="sm" message="読み込み中..." />
-                  )}
-                  {!hasMore && products.length > 0 && (
-                    <p className="text-xs sm:text-sm text-gray-500">すべての商品を表示しました</p>
-                  )}
-                </div>
-              </>
-            )}
           </div>
-        </div>
+        </main>
       </div>
 
       {/* ログイン必須モーダル */}

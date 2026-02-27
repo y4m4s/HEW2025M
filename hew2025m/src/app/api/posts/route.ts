@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const authorId = searchParams.get('authorId');
     const keyword = searchParams.get('keyword');
     const tag = searchParams.get('tag');
+    const sort = searchParams.get('sort') || 'latest';
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = Math.min(parseInt(searchParams.get('limit') || '12', 10), 50);
     const skip = (page - 1) * limit;
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     const [total, posts, totalPostCount, tagCountsResult] = await Promise.all([
       Post.countDocuments(query),
-      Post.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Post.find(query).sort(sort === 'popular' ? { likes: -1, createdAt: -1 } : { createdAt: -1 }).skip(skip).limit(limit),
       Post.countDocuments({}),
       Post.aggregate([
         { $unwind: '$tags' },
