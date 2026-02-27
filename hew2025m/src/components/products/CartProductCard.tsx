@@ -153,7 +153,7 @@ export default function CartProductCard({ product }: CartProductCardProps) {
             {/* 説明文：2行分の高さを確保し、末尾を「……」で省略 */}
             <div className="mb-2 overflow-hidden">
               {product.description && (
-                <p className="p-1 text-xs text-gray-600 line-clamp-2 break-words">
+                <p className="m-1 text-xs text-gray-600 line-clamp-2 break-words">
                   {product.description}
                 </p>
               )}
