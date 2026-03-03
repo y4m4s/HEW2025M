@@ -12,8 +12,8 @@ if (!admin.apps.length) {
         privateKey: (env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
       }),
     });
-  } catch (error: any) {
-    console.error("Firebase Admin SDK initialization error:", error.message);
+  } catch (error: unknown) {
+    console.error("Firebase Admin SDK initialization error:", error);
     // サーバー起動時にエラーを明確にするために、より詳細なメッセージをスローする
     throw new Error(
       "Firebase Admin SDKの初期化に失敗しました。環境変数（.env.local）が正しく設定されているか確認してください。"

@@ -65,7 +65,7 @@ export const BLUR_DATA_URLS = {
 /**
  * useDebounce Hook用のユーティリティ型
  */
-export type DebouncedFunction<T extends (...args: any[]) => any> = (
+export type DebouncedFunction<T extends (...args: unknown[]) => unknown> = (
   ...args: Parameters<T>
 ) => void;
 
