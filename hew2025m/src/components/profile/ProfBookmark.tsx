@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { decodeHtmlEntities } from '@/lib/sanitize';
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Fish, ChevronLeft, ChevronRight, User } from "lucide-react";
+import { decodeHtmlEntities } from '@/lib/sanitize';
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
-import { useRouter } from "next/navigation";
 import { Button, LoadingSpinner } from '@/components';
 
 interface Bookmark {

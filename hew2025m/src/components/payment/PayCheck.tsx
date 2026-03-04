@@ -92,7 +92,7 @@ export default function PayCheck() {
     setMessage(null);
 
     try {
-      // Confirm payment
+      // 支払いを確定する
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -110,12 +110,12 @@ export default function PayCheck() {
       }
 
       if (paymentIntent && paymentIntent.status === 'succeeded') {
-        // Fetch user profile for buyer name
+        // 購入者名取得のためユーザープロフィールを取得
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
         const buyerName = userDoc.exists() ? userDoc.data().displayName : user.email || 'User';
 
-        // Prepare order items from cart
+        // カートから注文商品を準備する
         const orderItemsWithMeta = await Promise.all(
           items.map(async (cartItem) => {
             try {
@@ -142,7 +142,7 @@ export default function PayCheck() {
                 shippingPayer: product.shippingPayer,
               };
             } catch (err) {
-              console.error(`Error fetching product ${cartItem.id}:`, err);
+              console.error(`商品の取得に失敗しました (${cartItem.id}):`, err);
               return null;
             }
           })
@@ -164,7 +164,7 @@ export default function PayCheck() {
               shippingAddress = JSON.parse(storedAddress) as Address;
             }
           } catch (storageError) {
-            console.warn('Failed to read shipping address from sessionStorage:', storageError);
+            console.warn('sessionStorageから配送先住所の読み込みに失敗しました:', storageError);
           }
         }
 
@@ -176,12 +176,12 @@ export default function PayCheck() {
               shippingAddress = addressDoc.data() as Address;
             }
           } catch (addressError) {
-            console.error('Failed to fetch shipping address:', addressError);
+            console.error('配送先住所の取得に失敗しました:', addressError);
           }
         }
 
         if (hasBuyerPaysItem && !shippingAddress?.prefecture) {
-          toast.error('Please enter a shipping address.');
+          toast.error('配送先住所を入力してください。');
           setIsLoading(false);
           return;
         }
@@ -198,7 +198,7 @@ export default function PayCheck() {
             }
           : undefined;
 
-        // Detect payment method
+        // 支払い方法を検出する
         let detectedPaymentMethod: 'card' | 'paypay' | 'applepay' | 'rakuten' | 'au' = 'card';
         if (paymentIntent.payment_method) {
           // payment_method_typesはStripeのPaymentIntent型には含まれていないため、型アサーションを使用
@@ -210,7 +210,7 @@ export default function PayCheck() {
           else if (pmType === 'au_pay') detectedPaymentMethod = 'au';
         }
 
-        // Create order
+        // 注文を作成する
         // Firebaseトークンを取得
         const token = await user?.getIdToken();
         if (!token) {
@@ -242,11 +242,11 @@ export default function PayCheck() {
 
         const orderData = await orderResponse.json();
 
-        // Clear cart and redirect
+        // カートをクリアしてリダイレクト
         clearCart();
         toast.success('注文が完了しました！');
 
-        // Redirect to success page
+        // 注文完了ページへリダイレクト
         setTimeout(() => {
           router.push(`/order-success?orderId=${orderData.orderId}`);
         }, 1000);

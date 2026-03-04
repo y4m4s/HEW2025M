@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import Post, { IPost } from '@/models/Post';
-import Comment from '@/models/Comment';
 import { requireAuth } from '@/lib/simpleAuth';
 import { getCachedUserInfo, getCachedUserInfoBatch } from '@/lib/userCache';
 import { ensureUserIdPrefix } from '@/lib/utils';
+import Post, { IPost } from '@/models/Post';
+import Comment from '@/models/Comment';
 
 function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, X, Loader } from 'lucide-react';
 import { decodeHtmlEntities } from '@/lib/sanitize';
 

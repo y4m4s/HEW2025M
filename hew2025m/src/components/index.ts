@@ -1,29 +1,26 @@
-// Re-export all components for backward compatibility
-// Import from specific directories for better tree-shaking
-
-// UI
+// UIコンポーネント
 export * from './ui';
 
-// Layout
+// レイアウト
 export * from './layout';
 
-// Comments
+// コメント
 export * from './comments';
 
-// Products
+// 商品
 export * from './products';
 
-// Posts
+// 投稿
 export * from './posts';
 
-// Profile
+// プロフィール
 export * from './profile';
 
-// User
+// ユーザー
 export * from './user';
 
-// Map
+// マップ
 export * from './map';
 
-// Payment
+// 支払い
 export * from './payment';

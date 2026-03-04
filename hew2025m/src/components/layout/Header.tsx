@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { decodeHtmlEntities } from '@/lib/sanitize';
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
   Bell,
@@ -19,17 +19,16 @@ import { GiFishingPole, GiFishingHook, GiFishingLure } from "react-icons/gi";
 import { FaTape, FaTshirt, FaBox } from "react-icons/fa";
 import { SiHelix } from "react-icons/si";
 import { Users, Puzzle } from "lucide-react";
-
+import { decodeHtmlEntities } from '@/lib/sanitize';
+import { useAuth } from "@/lib/useAuth";
+import { db } from "@/lib/firebase";
+import { useProfileStore } from "@/stores/useProfileStore";
+import { useCartStore } from "@/stores/useCartStore";
 import Button from '@/components/ui/Button';
 import DropdownMenu from '@/components/ui/DropdownMenu';
 import HoverCard from '@/components/ui/HoverCard';
 import LoginRequiredModal from '@/components/user/LoginRequiredModal';
-import { useAuth } from "@/lib/useAuth";
-import { useProfileStore } from "@/stores/useProfileStore";
-import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { useCartStore } from "@/stores/useCartStore";
-import { useRouter } from "next/navigation";
 
 // カテゴリーリストを釣り関連のアイテムに修正（DBの保存値と一致させる）
 const categories = [

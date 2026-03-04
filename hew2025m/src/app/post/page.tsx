@@ -6,14 +6,13 @@ import { useState, useRef, useEffect, Suspense } from 'react';
 import { Upload, MapPin, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { PostFormSchema } from '@/lib/schemas';
-import { z } from 'zod';
-import { useAuth } from '@/lib/useAuth';
-
-import { Button, MapModal, type LocationData, ImageModal, SubmittingOverlay } from '@/components';
-import { useProfileStore } from '@/stores/useProfileStore';
 import { uploadFileToFirebase } from '@/lib/firebaseUtils';
+import { useAuth } from '@/lib/useAuth';
+import { useProfileStore } from '@/stores/useProfileStore';
+import { Button, MapModal, type LocationData, ImageModal, SubmittingOverlay } from '@/components';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 type PostFormData = z.infer<typeof PostFormSchema>;
 

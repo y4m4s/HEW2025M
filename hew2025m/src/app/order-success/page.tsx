@@ -2,16 +2,16 @@
 
 import { useRouter } from 'next/navigation';
 import { CheckCircle } from 'lucide-react';
-import { Button, LoadingSpinner } from '@/components';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/useAuth';
+import { Button, LoadingSpinner } from '@/components';
 
 export default function OrderSuccessPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
 
-  // Client-side only rendering
+  // クライアントサイドのみでレンダリング
   useEffect(() => {
     setIsMounted(true);
   }, []);

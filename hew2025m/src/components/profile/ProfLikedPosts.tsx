@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Fish, ChevronLeft, ChevronRight } from "lucide-react";
-import { PostCard, type Post, Button, LoadingSpinner } from "@/components";
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { PostCard, type Post, Button, LoadingSpinner } from "@/components";
 
 interface LikedPost {
   _id: string;

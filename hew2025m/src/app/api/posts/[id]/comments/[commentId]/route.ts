@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import Comment from '@/models/Comment';
 import { requireAuth } from '@/lib/simpleAuth';
 import { extractUid } from '@/lib/utils';
+import Comment from '@/models/Comment';
 
 const POST_COMMENT_FILTER = {
   $or: [{ itemType: 'post' }, { itemType: { $exists: false } }],

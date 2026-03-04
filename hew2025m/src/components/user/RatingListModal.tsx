@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import { X, Star, User } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { X, Star, User } from "lucide-react";
 
 interface RatingWithUser {
   id: string;

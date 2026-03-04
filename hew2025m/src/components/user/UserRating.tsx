@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Star } from "lucide-react";
+import toast from "react-hot-toast";
 import { db } from "@/lib/firebase";
+import { createRatingNotification } from "@/lib/notifications";
+import { useAuth } from "@/lib/useAuth";
 import {
   collection,
   addDoc,
@@ -12,11 +15,8 @@ import {
   updateDoc,
   increment,
 } from "firebase/firestore";
-import { useAuth } from "@/lib/useAuth";
-import toast from "react-hot-toast";
 import RatingListModal from "./RatingListModal";
 import LoginRequiredModal from "./LoginRequiredModal";
-import { createRatingNotification } from "@/lib/notifications";
 
 interface Rating {
   id: string;
@@ -44,7 +44,6 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
   const [totalRatings, setTotalRatings] = useState<number>(0);
   const [selectedRating, setSelectedRating] = useState<number>(0);
   const [comment, setComment] = useState<string>("");
-  const [fetchLoading, setFetchLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [showForm, setShowForm] = useState<boolean>(false);
   const [hasRated, setHasRated] = useState<boolean>(false);
@@ -58,7 +57,6 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
 
   // 評価データの取得
   const fetchRatings = async () => {
-    setFetchLoading(true);
     try {
       const response = await fetch(`/api/users/${targetUserId}/ratings`);
       if (!response.ok) {
@@ -108,8 +106,6 @@ export default function UserRating({ targetUserId, isOwnProfile }: UserRatingPro
       }
     } catch (error) {
       console.error(error);
-    } finally {
-      setFetchLoading(false);
     }
   };
 

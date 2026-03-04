@@ -1,8 +1,11 @@
 "use client";
 import Link from 'next/link';
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Eye, EyeOff, ChevronLeft } from 'lucide-react';
-import { Button, LoadingScreen, FormField } from "@/components";
 import { auth } from "@/lib/firebase";
+import { useAuth } from "@/lib/useAuth";
+import { Button, LoadingScreen, FormField } from "@/components";
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -11,9 +14,6 @@ import {
   OAuthProvider,
   AuthProvider
 } from "firebase/auth";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/useAuth";
 
 // 通知トーストコンポーネント
 function NotificationToast({ message, isError }: { message: string, isError?: boolean }) {
@@ -100,7 +100,7 @@ export default function LoginPage() {
       }
 
       showNotification("ログインに成功しました！");
-      setTimeout(() => router.push("/"), 1800); // Redireciona para a página principal
+      setTimeout(() => router.push("/"), 1800); // メインページへリダイレクト
     } catch (error: unknown) {
       const firebaseError = error as { code?: string };
       let errorMessage = "ログインに失敗しました。もう一度お試しください。";

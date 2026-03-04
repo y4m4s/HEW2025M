@@ -1,16 +1,16 @@
 import { Star, StarHalf } from 'lucide-react';
 
 interface StarRatingProps {
-  rating?: number; // Nota de 0 a 5. Se não passar, gera aleatório
-  showCount?: boolean; // Mostrar o número de avaliações? (ex: 120 reviews)
+  rating?: number; // 0〜5の評価値。未指定の場合はランダム生成
+  showCount?: boolean; // レビュー件数を表示するか（例: 120件）
 }
 
 export default function StarRating({ rating, showCount = true }: StarRatingProps) {
-  // Se não tiver nota, finge uma nota alta (entre 3.5 e 5.0) para ficar bonito
+  // 評価値がない場合は見栄えのよい高めの値（3.5〜5.0）をダミーとして使用
   const displayRating = rating || (Math.floor(Math.random() * (50 - 35) + 35) / 10);
-  const reviewCount = rating ? 15 : Math.floor(Math.random() * 200) + 10; // Número fake de reviews
+  const reviewCount = rating ? 15 : Math.floor(Math.random() * 200) + 10; // ダミーのレビュー件数
 
-  // Lógica para desenhar as estrelas
+  // 星のアイコンを描画するロジック
   const renderStars = () => {
     const stars = [];
     const fullStars = Math.floor(displayRating);
@@ -18,15 +18,13 @@ export default function StarRating({ rating, showCount = true }: StarRatingProps
 
     for (let i = 0; i < 5; i++) {
       if (i < fullStars) {
-        // Estrela Cheia
+        // 塗りつぶし星
         stars.push(<Star key={i} size={16} className="text-yellow-400 fill-yellow-400" />);
       } else if (i === fullStars && hasHalfStar) {
-        // Meia Estrela (Simulada visualmente ou usando ícone específico se tiver)
-        // O lucide-react padrão as vezes não tem StarHalf preenchido perfeito, então usamos Star com cor parcial se necessário
-        // Aqui vou usar StarHalf se disponível ou Star com cor diferente
+        // 半星（lucide-reactのStarHalfを使用）
         stars.push(<StarHalf key={i} size={16} className="text-yellow-400 fill-yellow-400" />);
       } else {
-        // Estrela Vazia
+        // 空星
         stars.push(<Star key={i} size={16} className="text-gray-300" />);
       }
     }

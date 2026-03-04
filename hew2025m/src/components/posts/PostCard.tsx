@@ -31,11 +31,6 @@ interface PostCardProps {
 }
 
 export default function PostCard({ post, variant = 'default', priority = false, showExcerpt = true }: PostCardProps) {
-  // Simple variant (Sidebar/Small list) - Keep existing or slight adjust?
-  // User asked for specific design "Image on left, Title/Body/Tags/Date/Author on right".
-  // This sounds like the new 'default' or a new 'horizontal' variant.
-  // Given "PostCard is imported in various places", I should probably keep 'simple' for sidebar small items,
-  // but update 'default' to be this new rich horizontal card.
 
   if (variant === 'simple') {
     return (
@@ -89,7 +84,7 @@ export default function PostCard({ post, variant = 'default', priority = false, 
     );
   }
 
-  // Grid/Vertical Design (for Profile page grids etc)
+  // グリッド・縦並びデザイン（プロフィールページのグリッド表示など）
   if (variant === 'grid') {
     return (
       <Link href={`/post-detail/${post.id}`} className="block h-full">
@@ -155,8 +150,7 @@ export default function PostCard({ post, variant = 'default', priority = false, 
     );
   }
 
-  // New Standard Horizontal Design (requested by user)
-  // Used for default locatons (Post List etc)
+  // 標準の横並びデザイン（デフォルト：投稿一覧など）
   return (
     <Link href={`/post-detail/${post.id}`} className="block">
       <article className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-1 flex flex-col sm:flex-row min-h-[200px] sm:h-56">

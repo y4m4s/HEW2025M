@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
 import { Sun, Cloud, CloudRain, CloudSnow, Zap, Loader2, Droplets, Wind, Gauge } from 'lucide-react';
 import { FaThermometerHalf } from "react-icons/fa";
 

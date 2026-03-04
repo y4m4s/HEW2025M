@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useState, useEffect } from "react";
 import { Fish, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
-import { useRouter } from "next/navigation";
-import { Button, LoadingSpinner } from '@/components';
 import { decodeHtmlEntities } from "@/lib/sanitize";
+import { Button, LoadingSpinner } from '@/components';
 
 interface Product {
   _id: string;

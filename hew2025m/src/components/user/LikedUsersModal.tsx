@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { decodeHtmlEntities } from '@/lib/sanitize';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useEffect, useState, useCallback } from 'react';
 import { X, User as UserIcon } from 'lucide-react';
+import { decodeHtmlEntities } from '@/lib/sanitize';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 

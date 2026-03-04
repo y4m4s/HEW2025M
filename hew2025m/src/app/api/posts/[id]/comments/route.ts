@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import Comment from '@/models/Comment';
-import Post from '@/models/Post';
 import { requireAuth } from '@/lib/simpleAuth';
 import { getCachedUserInfo } from '@/lib/userCache';
-import {
-  createOwnerCommentNotificationServer,
-  createReplyNotificationServer,
-} from '@/lib/serverNotifications';
+import { createOwnerCommentNotificationServer, createReplyNotificationServer } from '@/lib/serverNotifications';
 import { extractUid } from '@/lib/utils';
+import Comment from '@/models/Comment';
+import Post from '@/models/Post';
 
 interface CommentDocument {
   _id: { toString(): string };

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import Comment from '@/models/Comment';
-import Product from '@/models/Product';
 import { requireAuth } from '@/lib/simpleAuth';
 import { getCachedUserInfo } from '@/lib/userCache';
+import Comment from '@/models/Comment';
+import Product from '@/models/Product';
 import {
   createOwnerCommentNotificationServer,
   createReplyNotificationServer,

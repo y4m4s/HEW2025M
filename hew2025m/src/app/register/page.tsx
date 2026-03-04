@@ -1,12 +1,13 @@
 "use client";
+
 import Link from 'next/link';
-import { ChevronLeft } from 'lucide-react';
-import { Button, LoadingScreen } from "@/components";
-import { auth } from "@/lib/firebase";
-import { createUserWithEmailAndPassword, signInWithPopup, TwitterAuthProvider, OAuthProvider, GoogleAuthProvider, fetchSignInMethodsForEmail, AuthProvider } from "firebase/auth";
-import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
+import { ChevronLeft } from 'lucide-react';
+import { auth } from "@/lib/firebase";
 import { useAuth } from "@/lib/useAuth";
+import { createUserWithEmailAndPassword, signInWithPopup, TwitterAuthProvider, OAuthProvider, GoogleAuthProvider, fetchSignInMethodsForEmail, AuthProvider } from "firebase/auth";
+import { Button, LoadingScreen } from "@/components";
 
 function SuccessToast({ message }: { message: string }) {
   return (

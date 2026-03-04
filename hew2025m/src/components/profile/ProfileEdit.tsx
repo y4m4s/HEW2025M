@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { User, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/lib/useAuth";

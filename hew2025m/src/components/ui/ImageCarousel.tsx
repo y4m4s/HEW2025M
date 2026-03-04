@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useCallback } from 'react';
 import Image from 'next/image';
+import { useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Fish } from 'lucide-react';
-import ImageModal from './ImageModal';
 import { IMAGE_QUALITY, BLUR_DATA_URLS } from '@/lib/imageOptimization';
 import { decodeHtmlEntities } from '@/lib/sanitize';
+import ImageModal from './ImageModal';
 
 export interface CarouselImage {
   url: string;

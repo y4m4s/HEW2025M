@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { OrderItem } from '@/types/order';
 import dbConnect from '@/lib/mongodb';
-import Product from '@/models/Product';
 import { requireAuth } from '@/lib/simpleAuth';
 import { calculateShippingFee } from '@/lib/shipping';
 import { ensureUserIdPrefix } from '@/lib/utils';
+import Product from '@/models/Product';
+import { OrderItem } from '@/types/order';
 
 interface CreateOrderRequest {
   buyerId?: string;

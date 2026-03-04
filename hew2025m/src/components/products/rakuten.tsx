@@ -1,8 +1,8 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { Star, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
-import Image from 'next/image';
 
 // 楽天APIの型定義 (formatVersion=2)
 interface RakutenItem {

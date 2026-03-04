@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
 import { X, MapPin, Navigation, Search } from 'lucide-react';
 import { Button, LoadingSpinner } from '@/components';
-import toast from 'react-hot-toast';
 
 const getContainerStyle = () => ({
   width: '100%',

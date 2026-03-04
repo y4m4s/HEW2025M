@@ -8,11 +8,10 @@ import { ChevronLeft, ChevronRight, ArrowLeft, Calendar, Bookmark, Fish } from '
 import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { decodeHtmlEntities } from '@/lib/sanitize';
-
-import { Button, ProductCard, UserInfoCard, RelatedProducts } from '@/components';
 import { useCartStore } from '@/stores/useCartStore';
+import { Button, ProductCard, UserInfoCard, RelatedProducts } from '@/components';
+import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 
 // 動的import - モーダルとコメントは必要時のみロード
 const Comment = dynamic(() => import('@/components').then(mod => mod.Comment), {

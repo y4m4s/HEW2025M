@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { decodeHtmlEntities } from '@/lib/sanitize';
-import { X, User } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { X, User } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/useAuth';
-import { collection, query, where, getDocs, doc, getDoc, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { decodeHtmlEntities } from '@/lib/sanitize';
 import { createFollowNotification } from '@/lib/notifications';
-import toast from 'react-hot-toast';
+import { collection, query, where, getDocs, doc, getDoc, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 
 interface UserInfo {
   uid: string;

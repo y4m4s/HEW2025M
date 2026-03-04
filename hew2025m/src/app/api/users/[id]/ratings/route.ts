@@ -1,4 +1,3 @@
-// src/app/api/users/[id]/ratings/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';

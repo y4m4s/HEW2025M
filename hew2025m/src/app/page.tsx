@@ -1,9 +1,9 @@
 import dbConnect from '@/lib/mongodb';
-import Product from '@/models/Product';
+import { formatCondition, formatRelativeDate } from '@/lib/utils';
 import { getCachedUserInfoBatch } from '@/lib/userCache';
+import Product from '@/models/Product';
 import HomeClient from './HomeClient';
 import type { Product as ProductType } from '@/components/products/ProductCard';
-import { formatCondition, formatRelativeDate } from '@/lib/utils';
 
 // ISR: 5分ごとに再生成
 export const revalidate = 300;

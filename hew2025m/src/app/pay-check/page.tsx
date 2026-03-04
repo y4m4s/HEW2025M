@@ -1,16 +1,13 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { Lock, CreditCard, Smartphone } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-import { useRouter } from 'next/navigation';
-
 import { useAuth } from '@/lib/useAuth';
-
-import { Button, type CartProduct, LoadingSpinner } from '@/components';
-import { useCartStore } from '@/stores/useCartStore';
 import { calculateShippingFee } from '@/lib/shipping';
+import { useCartStore } from '@/stores/useCartStore';
+import { Button, type CartProduct, LoadingSpinner } from '@/components';
 
 // アイコンコンポーネント
 const ApplePayIcon = () => (

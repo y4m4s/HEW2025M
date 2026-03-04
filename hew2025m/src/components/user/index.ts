@@ -1,4 +1,3 @@
-// User Components
 export { default as UserHoverCard } from './UserHoverCard';
 export { default as UserInfoCard } from './UserInfoCard';
 export { default as UserRating } from './UserRating';

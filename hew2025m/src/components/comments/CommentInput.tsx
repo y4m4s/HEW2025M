@@ -29,7 +29,7 @@ export default function CommentInput({
         setCommentText('');
       }
     } catch {
-      // Keep input text on failure.
+      // 失敗時は入力テキストを保持する
     }
   };
 

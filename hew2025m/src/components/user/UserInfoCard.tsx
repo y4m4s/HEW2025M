@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { decodeHtmlEntities } from '@/lib/sanitize';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
 import { User, Star } from 'lucide-react';
 import { db } from '@/lib/firebase';
+import { decodeHtmlEntities } from '@/lib/sanitize';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import RatingListModal from './RatingListModal';
 import { Button } from '@/components';
+import RatingListModal from './RatingListModal';
 
 interface UserProfile {
   uid: string;

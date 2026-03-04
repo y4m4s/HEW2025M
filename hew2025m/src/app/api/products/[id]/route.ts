@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
+import { requireAuth } from '@/lib/simpleAuth';
 import Product from '@/models/Product';
 import Comment from '@/models/Comment';
-import { requireAuth } from '@/lib/simpleAuth';
 
 // 個別商品を取得
 export async function GET(

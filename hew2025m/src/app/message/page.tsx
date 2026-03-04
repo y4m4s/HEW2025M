@@ -1,7 +1,6 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { decodeHtmlEntities } from '@/lib/sanitize';
 import Image from 'next/image';
 import { useState, useEffect, useLayoutEffect, useRef, useMemo, Suspense } from 'react';
 import { User, Send, Search, Menu, X, Plus } from 'lucide-react';
@@ -9,6 +8,7 @@ import toast from 'react-hot-toast';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/useAuth';
 import { uploadFileToFirebase } from '@/lib/firebaseUtils';
+import { decodeHtmlEntities } from '@/lib/sanitize';
 
 import { ImageModal, LoadingSpinner, Button } from '@/components';
 

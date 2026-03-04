@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import dbConnect from '@/lib/mongodb';
-import Product from '@/models/Product';
 import { requireAuth } from '@/lib/simpleAuth';
+import Product from '@/models/Product';
+import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2025-12-15.clover',

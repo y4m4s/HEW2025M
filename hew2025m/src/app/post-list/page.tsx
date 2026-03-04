@@ -5,9 +5,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Fish, Plus, Filter, X } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { useAuth } from "@/lib/useAuth";
+import { SEARCH_DEBOUNCE_DELAY } from '@/lib/imageOptimization';
 import { doc, getDoc } from 'firebase/firestore';
 import { useDebounce } from '@/hooks/useDebounce';
-import { SEARCH_DEBOUNCE_DELAY } from '@/lib/imageOptimization';
 
 import LoginRequiredModal from '@/components/user/LoginRequiredModal';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';

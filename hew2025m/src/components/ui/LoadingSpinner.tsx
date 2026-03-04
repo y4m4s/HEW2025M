@@ -55,7 +55,7 @@ export default function LoadingSpinner({
     );
   }
 
-  // If there is a message, wrap in a flex column
+  // メッセージがある場合はflex縦並びでラップする
   if (message) {
     return (
       <div className="flex flex-col items-center justify-center gap-2">

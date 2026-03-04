@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
+import { ensureUserIdPrefix } from '@/lib/utils';
 import Post from '@/models/Post';
 import Comment from '@/models/Comment';
 import Product from '@/models/Product';
 import { IPost } from '@/models/Post';
 import { IProduct } from '@/models/Product';
 import { IComment } from '@/models/Comment';
-import { ensureUserIdPrefix } from '@/lib/utils';
 
 type ActivityItem = {
   type: 'post' | 'comment';

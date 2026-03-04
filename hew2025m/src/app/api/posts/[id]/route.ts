@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
+import { requireAuth } from '@/lib/simpleAuth';
 import Post from '@/models/Post';
 import Comment from '@/models/Comment';
-import { requireAuth } from '@/lib/simpleAuth';
 
 // 個別投稿を取得
 export async function GET(

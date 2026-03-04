@@ -1,18 +1,17 @@
 'use client';
-import dynamicImport from 'next/dynamic';
-import { decodeHtmlEntities } from '@/lib/sanitize';
-import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
-import { MapPin, Navigation, ExternalLink, User, Fish, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { doc, getDoc } from 'firebase/firestore';
+import dynamicImport from 'next/dynamic';
+import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
+import { MapPin, Navigation, ExternalLink, User, Fish, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { decodeHtmlEntities } from '@/lib/sanitize';
 import { useAuth } from '@/lib/useAuth';
-
-// 直接インポート（軽量コンポーネント）
 import Button from '@/components/ui/Button';
 import LoginRequiredModal from '@/components/user/LoginRequiredModal';
+import { doc, getDoc } from 'firebase/firestore';
 
 // 動的インポート（重いコンポーネント - Google Maps API等）
 const Map = dynamicImport(() => import('@/components/map/Map'), {

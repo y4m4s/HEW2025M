@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { decodeHtmlEntities } from '@/lib/sanitize';
 import Link from "next/link";
 import Image from "next/image";
+import { useState, useEffect } from "react";
 import { User as UserIcon } from "lucide-react";
-import { HoverCard } from "@/components";
+import { decodeHtmlEntities } from '@/lib/sanitize';
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { HoverCard } from "@/components";
 
 interface UserHoverCardProps {
   userId: string;

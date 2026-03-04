@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/useAuth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/lib/useAuth';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface Address {
   postalCode: string;

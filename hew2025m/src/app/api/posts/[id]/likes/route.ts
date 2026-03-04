@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import PostLike from '@/models/PostLike';
-import Post from '@/models/Post';
 import { requireAuth } from '@/lib/simpleAuth';
 import { getCachedUserInfo } from '@/lib/userCache';
+import PostLike from '@/models/PostLike';
+import Post from '@/models/Post';
 
 // いいね一覧取得
 export async function GET(

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import { User, Trash2, MessageCircle } from 'lucide-react';
 import { Comment } from '@/types/comment';
 import CommentInput from './CommentInput';

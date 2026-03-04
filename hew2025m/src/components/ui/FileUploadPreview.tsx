@@ -2,8 +2,8 @@
 
 import Image from 'next/image';
 import { Camera, X, ImagePlus } from 'lucide-react';
-import ImageModal from './ImageModal';
 import { useState } from 'react';
+import ImageModal from './ImageModal';
 
 interface FileUploadPreviewProps {
   /** プレビュー用URL配列 */

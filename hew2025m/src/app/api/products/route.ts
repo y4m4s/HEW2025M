@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import Product from '@/models/Product';
 import { requireAuth } from '@/lib/simpleAuth';
 import { ProductPostSchema } from '@/lib/schemas';
 import { sanitizeUserInput } from '@/lib/sanitize';
 import { getCachedUserInfoBatch, getCachedUserInfo } from '@/lib/userCache';
 import { ensureUserIdPrefix } from '@/lib/utils';
+import Product from '@/models/Product';
 
 // 商品一覧を取得
 export async function GET(request: NextRequest) {

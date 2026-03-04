@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { env } from '@/lib/env';
 import dbConnect from '@/lib/mongodb';
-import Product from '@/models/Product';
 import { requireAuth } from '@/lib/simpleAuth';
 import { calculateShippingFee } from '@/lib/shipping';
+import Product from '@/models/Product';
+import Stripe from 'stripe';
 
 if (!env.STRIPE_SECRET_KEY) {
   console.error('Stripe Secret Key is missing');

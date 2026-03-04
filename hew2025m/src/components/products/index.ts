@@ -1,4 +1,3 @@
-// Product Components
 export { default as ProductCard, type Product } from './ProductCard';
 export { default as CartProductCard, type CartProduct } from './CartProductCard';
 export { default as PriceAdvisor } from './PriceAdvisor';

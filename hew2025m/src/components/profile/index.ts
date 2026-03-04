@@ -1,4 +1,3 @@
-// Profile Components
 export { default as ProfileEdit } from './ProfileEdit';
 export { default as ProfBookmark } from './ProfBookmark';
 export { default as ProfHistory } from './ProfHistory';

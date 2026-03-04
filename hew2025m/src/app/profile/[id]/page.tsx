@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { decodeHtmlEntities } from '@/lib/sanitize';
 import { useRouter, useParams } from "next/navigation";
+import { decodeHtmlEntities } from '@/lib/sanitize';
 import { useState, useEffect, useCallback } from "react";
 import { User, LogOut, Home } from "lucide-react";
 import toast from "react-hot-toast";

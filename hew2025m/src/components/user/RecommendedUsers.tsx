@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { decodeHtmlEntities } from '@/lib/sanitize';
 import Image from "next/image";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { Star, User as UserIcon } from "lucide-react";
+import { decodeHtmlEntities } from '@/lib/sanitize';
 import { db } from "@/lib/firebase";
-import { collection, query, getDocs } from "firebase/firestore";
 import { useAuth } from "@/lib/useAuth";
+import { collection, query, getDocs } from "firebase/firestore";
 
 interface RecommendedUser {
   uid: string;

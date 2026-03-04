@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
+import { db } from '@/lib/firebase';
+import { extractUid } from '@/lib/utils';
 import PostLike from '@/models/PostLike';
 import Post from '@/models/Post';
 import Comment from '@/models/Comment';
-import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { extractUid } from '@/lib/utils';
 
 // ユーザーがいいねした投稿一覧を取得
 export async function GET(

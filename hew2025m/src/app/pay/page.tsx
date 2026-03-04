@@ -9,10 +9,10 @@ import { CreditCard, Loader2, Home, Fish } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { db } from '@/lib/firebase';
 import { calculateShippingFee } from '@/lib/shipping';
-import { doc, getDoc } from 'firebase/firestore';
 import { decodeHtmlEntities } from '@/lib/sanitize';
 import { useCartStore } from '@/stores/useCartStore';
 import { Button, type CartProduct } from '@/components';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface Address {
   postalCode: string;

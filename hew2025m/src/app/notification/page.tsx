@@ -24,7 +24,7 @@ interface NotificationItem {
   iconBgColor: string;
   title: string;
   description: string;
-  timestamp: Timestamp | string; // FirestoreはTimestampを送信します
+  timestamp: Timestamp | string; // FirestoreはTimestamp型で送信する
   tag: string;
   isUnread: boolean;
   link?: string; // 遷移先URL（オプション）
@@ -142,7 +142,7 @@ export default function NotificationPage() {
         minute: '2-digit'
       }); // 日付/時刻のフォーマット（秒なし）
     }
-    return 'Data inválida';
+    return '無効な日付';
   };
 
   // 既読にする処理（Firestoreと連携）
@@ -154,7 +154,7 @@ export default function NotificationPage() {
         isUnread: false,
       });
     } catch (error) {
-      console.error("Erro ao marcar como lida: ", error);
+      console.error("既読への更新に失敗しました: ", error);
     }
   };
 
@@ -165,7 +165,7 @@ export default function NotificationPage() {
     try {
       await deleteDoc(docRef);
     } catch (error) {
-      console.error("Erro ao deletar: ", error);
+      console.error("通知の削除に失敗しました: ", error);
     }
   };
 

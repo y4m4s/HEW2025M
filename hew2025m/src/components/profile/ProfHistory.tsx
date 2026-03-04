@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { decodeHtmlEntities } from '@/lib/sanitize';
 import Image from "next/image";
-import { Fish, ChevronLeft, ChevronRight } from "lucide-react";
-import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { Fish, ChevronLeft, ChevronRight } from "lucide-react";
+import { decodeHtmlEntities } from '@/lib/sanitize';
+import { useAuth } from "@/lib/useAuth";
 import { Button, LoadingSpinner } from '@/components';
 
 

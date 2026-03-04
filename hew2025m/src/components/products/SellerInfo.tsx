@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { User, Star, MessageCircle } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { db } from "@/lib/firebase";

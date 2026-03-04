@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
+import { adminAuth } from '@/lib/firebase-admin';
 
 /**
  * セッションCookieを作成するAPIエンドポイント
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     // Cookieを設定
     const cookieStore = await cookies();
     cookieStore.set('__session', sessionCookie, {
-      maxAge: expiresIn / 1000, // seconds
+      maxAge: expiresIn / 1000, // 秒単位
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
