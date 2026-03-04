@@ -2,10 +2,7 @@
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect, useRef, Suspense } from 'react';
-import { Fish, Search, Puzzle, Plus, X, Filter } from 'lucide-react';
-import { GiFishingPole, GiFishingHook, GiFishingLure } from 'react-icons/gi';
-import { FaTape, FaTshirt, FaBox } from 'react-icons/fa';
-import { SiHelix } from 'react-icons/si';
+import { Fish, Plus, X, Filter } from 'lucide-react';
 import { useAuth } from '@/lib/useAuth';
 import { useDebounce } from '@/hooks/useDebounce';
 import { SEARCH_DEBOUNCE_DELAY } from '@/lib/imageOptimization';
@@ -13,39 +10,10 @@ import { SEARCH_DEBOUNCE_DELAY } from '@/lib/imageOptimization';
 import ProductCard from '@/components/products/ProductCard';
 import type { Product } from '@/components/products/ProductCard';
 import Button from '@/components/ui/Button';
-import CustomSelect from '@/components/ui/CustomSelect';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import SkeletonCard from '@/components/ui/SkeletonCard';
 import LoginRequiredModal from '@/components/user/LoginRequiredModal';
-
-const CATEGORY_OPTIONS = [
-  { label: 'すべて', value: '' },
-  { label: 'ロッド/竿', value: 'rod', icon: GiFishingPole },
-  { label: 'リール', value: 'reel', icon: FaTape },
-  { label: 'ルアー', value: 'lure', icon: GiFishingLure },
-  { label: 'ライン/糸', value: 'line', icon: SiHelix },
-  { label: 'ハリ/針', value: 'hook', icon: GiFishingHook },
-  { label: 'ウェア', value: 'wear', icon: FaTshirt },
-  { label: 'セット用品', value: 'set', icon: FaBox },
-  { label: 'その他', value: 'other', icon: Puzzle },
-];
-
-const PRICE_OPTIONS = [
-  { label: '指定なし', value: '' },
-  { label: '500円', value: '500' },
-  { label: '1,000円', value: '1000' },
-  { label: '2,000円', value: '2000' },
-  { label: '3,000円', value: '3000' },
-  { label: '4,000円', value: '4000' },
-  { label: '5,000円', value: '5000' },
-  { label: '10,000円', value: '10000' },
-];
-
-const SHIPPING_PAYER_OPTIONS = [
-  { label: '指定なし', value: '' },
-  { label: '出品者負担', value: 'seller' },
-  { label: '購入者負担', value: 'buyer' },
-];
+import FilterSidebar from './FilterSidebar';
 
 // 状態を日本語に変換
 const formatCondition = (cond: string): string => {
@@ -87,7 +55,6 @@ const filterByKeyword = (items: Product[], searchKeyword: string): Product[] => 
     p.condition.toLowerCase().includes(lowerKeyword)
   );
 };
-
 
 interface ProductListClientProps {
   initialProducts: Product[];
@@ -152,23 +119,16 @@ function ProductListContent({
   }, [searchParams]);
 
   // フィルターが変更されたときにURLとstateを更新する関数
-  const handleFilterChange = (filterName: string, value: string) => {
+  const handleCategoryChange = (value: string) => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
-
     if (!value) {
-      current.delete(filterName);
+      current.delete('category');
     } else {
-      current.set(filterName, value);
+      current.set('category', value);
     }
-
-    const search = current.toString();
-    const query = search ? `?${search}` : "";
-
-    if (filterName === 'category') {
-      setCategory(value);
-    }
-
-    router.replace(`${pathname}${query}`);
+    const query = current.toString();
+    setCategory(value);
+    router.replace(`${pathname}${query ? `?${query}` : ''}`);
   };
 
   const handleSell = () => {
@@ -178,6 +138,14 @@ function ProductListContent({
     } else {
       router.push('/sell');
     }
+  };
+
+  const handleReset = () => {
+    setKeyword('');
+    setMinPrice('');
+    setMaxPrice('');
+    setShippingPayer('');
+    router.replace(pathname);
   };
 
   // fetchProductsをuseRefで保持（依存配列の循環参照を回避）
@@ -297,8 +265,8 @@ function ProductListContent({
   const hasActiveFilters = !!(category || minPrice || maxPrice || shippingPayer || keyword);
 
   return (
-    <div className="bg-gray-50 min-h-screen flex flex-col">
-      <div className="flex-1 container mx-auto max-w-7xl px-4 py-8">
+    <div className="bg-gray-50 min-h-screen">
+      <div className="container mx-auto max-w-7xl px-4 py-8">
         <main>
 
           {/* モバイル用フィルター切り替えボタン */}
@@ -322,9 +290,9 @@ function ProductListContent({
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="flex flex-col lg:flex-row gap-8">
             {/* 左側: 商品一覧 (メインコンテンツ) */}
-            <div className="lg:col-span-3">
+            <div className="flex-1 min-w-0">
               {/* ヘッダーエリア */}
               <div className="flex justify-between items-center mb-8">
                 <div>
@@ -335,7 +303,7 @@ function ProductListContent({
                   <p className="hidden sm:block text-gray-600">あなたが探している釣り用品を見つけましょう</p>
                 </div>
 
-                <div className="lg:hidden shrink-0">
+                <div className="shrink-0">
                   <Button
                     onClick={handleSell}
                     variant="primary"
@@ -400,124 +368,24 @@ function ProductListContent({
               )}
             </div>
 
-            {/* 右側: サイドバー (出品ボタン・検索・フィルタ) */}
-            {/* モバイルではトグル表示、PCでは常時表示 */}
-            <div className={`lg:col-span-1 space-y-6 order-first lg:order-last ${isMobileFilterOpen ? 'block' : 'hidden lg:block'}`}>
-              {/* 出品ボタン (PC表示) */}
-              <div className="hidden lg:block">
-                <Button
-                  onClick={handleSell}
-                  variant="primary"
-                  size="lg"
-                  className="w-full shadow-lg text-base py-4"
-                  icon={<Plus size={22} />}
-                >
-                  出品する
-                </Button>
-              </div>
-
-              {/* 検索・絞り込みパネル */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 sticky top-6">
-                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Search size={18} className="text-[#2FA3E3]" />
-                  検索・絞り込み
-                </h3>
-
-                {/* キーワード */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">キーワード</label>
-                  <form className="relative w-full" onSubmit={(e) => e.preventDefault()}>
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                      <Search size={16} />
-                    </div>
-                    <input
-                      type="search"
-                      placeholder="キーワードを入力"
-                      value={keyword}
-                      onChange={(e) => setKeyword(e.target.value)}
-                      className="w-full py-2.5 pl-10 pr-4 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white outline-none [transition:background-color_150ms_ease-out,border-color_150ms_ease-out,box-shadow_150ms_ease-out] focus:border-gray-300 focus:shadow-md"
-                    />
-                  </form>
-                </div>
-
-                {/* カテゴリー */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリー</label>
-                  <CustomSelect
-                    value={category}
-                    onChange={(value) => handleFilterChange('category', value)}
-                    options={CATEGORY_OPTIONS}
-                    placeholder="すべて"
-                  />
-                </div>
-
-                {/* 価格 */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">価格 (下限 〜 上限)</label>
-                  <div className="flex items-center gap-2">
-                    <CustomSelect
-                      value={minPrice}
-                      onChange={setMinPrice}
-                      options={PRICE_OPTIONS}
-                      placeholder="指定なし"
-                      className="flex-1 min-w-0"
-                      size="sm"
-                    />
-                    <span className="text-gray-400 text-sm shrink-0">〜</span>
-                    <CustomSelect
-                      value={maxPrice}
-                      onChange={setMaxPrice}
-                      options={PRICE_OPTIONS}
-                      placeholder="指定なし"
-                      className="flex-1 min-w-0"
-                      size="sm"
-                    />
-                  </div>
-                </div>
-
-                {/* 配送料の負担 */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">配送料の負担</label>
-                  <CustomSelect
-                    value={shippingPayer}
-                    onChange={setShippingPayer}
-                    options={SHIPPING_PAYER_OPTIONS}
-                    placeholder="指定なし"
-                  />
-                </div>
-
-                {/* SOLD非表示トグル */}
-                <div className="mb-4">
-                  <button
-                    onClick={() => setHideSold((prev) => !prev)}
-                    className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 shadow-sm ${
-                      hideSold
-                        ? 'bg-[#2FA3E3] text-white hover:bg-[#1d7bb8]'
-                        : 'bg-white text-[#2FA3E3] border border-[#2FA3E3] hover:bg-blue-50'
-                    }`}
-                  >
-                    <span className="inline-block w-2 h-2 rounded-full bg-current opacity-70" />
-                    {hideSold ? 'SOLDを表示' : 'SOLDを非表示'}
-                  </button>
-                </div>
-
-                {/* フィルターリセット */}
-                {hasActiveFilters && (
-                  <button
-                    onClick={() => {
-                      setKeyword('');
-                      setMinPrice('');
-                      setMaxPrice('');
-                      setShippingPayer('');
-                      router.replace(pathname);
-                    }}
-                    className="w-full text-sm text-[#2FA3E3] hover:text-[#1d7bb8] underline"
-                  >
-                    フィルターをリセット
-                  </button>
-                )}
-              </div>
-            </div>
+            {/* 右側: フィルターサイドバー */}
+            <FilterSidebar
+              category={category}
+              minPrice={minPrice}
+              maxPrice={maxPrice}
+              shippingPayer={shippingPayer}
+              keyword={keyword}
+              hideSold={hideSold}
+              hasActiveFilters={hasActiveFilters}
+              isMobileFilterOpen={isMobileFilterOpen}
+              onCategoryChange={handleCategoryChange}
+              onMinPriceChange={setMinPrice}
+              onMaxPriceChange={setMaxPrice}
+              onShippingPayerChange={setShippingPayer}
+              onKeywordChange={setKeyword}
+              onHideSoldToggle={() => setHideSold((prev) => !prev)}
+              onReset={handleReset}
+            />
           </div>
         </main>
       </div>

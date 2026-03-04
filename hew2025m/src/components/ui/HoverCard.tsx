@@ -10,6 +10,7 @@ interface HoverCardProps {
   align?: "start" | "center" | "end";
   openDelay?: number;
   closeDelay?: number;
+  disabled?: boolean;
 }
 
 export default function HoverCard({
@@ -19,36 +20,71 @@ export default function HoverCard({
   align = "center",
   openDelay = 300,
   closeDelay = 200,
+  disabled = false,
 }: HoverCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
   const openTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
 
-  const updatePosition = () => {
-    if (triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      setPosition({
-        top: rect.top + window.scrollY,
-        left: rect.left + window.scrollX,
-      });
+  const applyPosition = () => {
+    if (!triggerRef.current || !contentRef.current) return;
+
+    const rect = triggerRef.current.getBoundingClientRect();
+    let top = rect.top;
+    let left = rect.left;
+
+    if (side === "bottom") {
+      top += rect.height + 8;
+    } else if (side === "top") {
+      top -= 8;
+    } else if (side === "right") {
+      left += rect.width + 8;
+    } else if (side === "left") {
+      left -= 8;
     }
+
+    if (side === "top" || side === "bottom") {
+      if (align === "center") {
+        left += rect.width / 2;
+      } else if (align === "end") {
+        left += rect.width;
+      }
+    } else {
+      if (align === "center") {
+        top += rect.height / 2;
+      } else if (align === "end") {
+        top += rect.height;
+      }
+    }
+
+    contentRef.current.style.top = `${top}px`;
+    contentRef.current.style.left = `${left}px`;
   };
 
+  useEffect(() => {
+    if (disabled && isOpen) {
+      setIsVisible(false);
+      setTimeout(() => setIsOpen(false), 150);
+    }
+  }, [disabled, isOpen]);
+
   const handleMouseEnter = () => {
+    if (disabled) return;
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
     }
 
     openTimeoutRef.current = setTimeout(() => {
-      updatePosition();
       setIsOpen(true);
-      setTimeout(() => setIsVisible(true), 10);
+      setTimeout(() => {
+        applyPosition();
+        setIsVisible(true);
+      }, 10);
     }, openDelay);
   };
 
@@ -67,86 +103,60 @@ export default function HoverCard({
   useEffect(() => {
     setMounted(true);
     return () => {
-      if (openTimeoutRef.current) {
-        clearTimeout(openTimeoutRef.current);
-      }
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-      }
+      if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
     };
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      updatePosition();
-      const handleScroll = () => updatePosition();
-      const handleResize = () => updatePosition();
+    if (!isOpen) return;
 
-      window.addEventListener('scroll', handleScroll, true);
-      window.addEventListener('resize', handleResize);
+    applyPosition();
 
-      return () => {
-        window.removeEventListener('scroll', handleScroll, true);
-        window.removeEventListener('resize', handleResize);
-      };
-    }
+    const handleScroll = () => applyPosition();
+    const handleResize = () => applyPosition();
+
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  const getPositionStyles = () => {
-    if (!triggerRef.current) return {};
+  const transformValue =
+    side === "top" || side === "bottom"
+      ? align === "center"
+        ? "translateX(-50%)"
+        : align === "end"
+        ? "translateX(-100%)"
+        : "none"
+      : align === "center"
+      ? "translateY(-50%)"
+      : align === "end"
+      ? "translateY(-100%)"
+      : "none";
 
-    const rect = triggerRef.current.getBoundingClientRect();
-    let top = position.top;
-    let left = position.left;
-
-    // 位置計算
-    if (side === "bottom") {
-      top += rect.height + 8;
-    } else if (side === "top") {
-      top -= 8;
-    } else if (side === "right") {
-      left += rect.width + 8;
-    } else if (side === "left") {
-      left -= 8;
-    }
-
-    // 配置計算
-    if (side === "top" || side === "bottom") {
-      if (align === "start") {
-        left += 0;
-      } else if (align === "center") {
-        left += rect.width / 2;
-      } else if (align === "end") {
-        left += rect.width;
-      }
-    } else {
-      if (align === "start") {
-        top += 0;
-      } else if (align === "center") {
-        top += rect.height / 2;
-      } else if (align === "end") {
-        top += rect.height;
-      }
-    }
-
-    return {
-      position: 'fixed' as const,
-      top: `${top}px`,
-      left: `${left}px`,
-      transform: side === "top" || side === "bottom"
-        ? align === "center" ? "translateX(-50%)" : align === "end" ? "translateX(-100%)" : "none"
-        : align === "center" ? "translateY(-50%)" : align === "end" ? "translateY(-100%)" : "none",
-    };
-  };
+  const scaleValue = isVisible ? "scale(1)" : "scale(0.95)";
+  const combinedTransform = transformValue !== "none"
+    ? `${transformValue} ${scaleValue}`
+    : scaleValue;
 
   const portalContent = isOpen && mounted ? (
     <div
       ref={contentRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      style={getPositionStyles()}
-      className={`z-[9999] transition-all duration-150 ${
-        isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        transform: combinedTransform,
+      }}
+      className={`z-[9999] transition-[opacity,transform] duration-150 ${
+        isVisible ? "opacity-100" : "opacity-0"
       }`}
     >
       <div className="bg-white rounded-lg shadow-2xl border border-gray-200 hover:border-[#2FA3E3] p-4 min-w-[280px] transition-colors duration-200">

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from 'react';
-import { Fish, Plus, Search, Filter, X } from 'lucide-react';
+import { Fish, Plus, Filter, X } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { useAuth } from "@/lib/useAuth";
 import { doc, getDoc } from 'firebase/firestore';
@@ -15,7 +15,7 @@ import SkeletonCard from '@/components/ui/SkeletonCard';
 import PostCard from '@/components/posts/PostCard';
 import type { Post } from '@/components/posts/PostCard';
 import Button from '@/components/ui/Button';
-import CustomSelect from '@/components/ui/CustomSelect';
+import PostFilterSidebar from './PostFilterSidebar';
 
 export default function PostList() {
   const { user } = useAuth();
@@ -217,22 +217,6 @@ export default function PostList() {
     }
   };
 
-  const filterTabs = [
-    { key: 'all', label: 'すべて' },
-    { key: '釣行記', label: '釣行記' },
-    { key: '情報共有', label: '情報共有' },
-    { key: '質問', label: '質問' },
-    { key: 'レビュー', label: 'レビュー' },
-    { key: '雑談', label: '雑談' },
-    { key: '初心者向け', label: '初心者向け' },
-    { key: '釣果報告', label: '釣果報告' }
-  ];
-
-  const SORT_OPTIONS = [
-    { label: '新着順', value: 'latest' },
-    { label: 'おすすめ順', value: 'popular' },
-  ];
-
   const handleNewPost = () => {
     if (!user) {
       setLoginRequiredAction('投稿');
@@ -283,12 +267,13 @@ export default function PostList() {
                   <p className="text-gray-600">みんなの釣果や釣り場情報をチェック</p>
                 </div>
 
-                <div className="lg:hidden">
+                <div className="shrink-0">
                   <Button
                     onClick={handleNewPost}
                     variant="primary"
-                    size="lg"
-                    icon={<Plus size={20} />}
+                    size="md"
+                    className="whitespace-nowrap"
+                    icon={<Plus size={16} />}
                   >
                     投稿する
                   </Button>
@@ -331,95 +316,19 @@ export default function PostList() {
               )}
             </div>
 
-            {/* 右側: サイドバー (検索・フィルタ・投稿ボタン) */}
+            {/* 右側: サイドバー (検索・フィルタ) */}
             {/* モバイルではトグル表示、PCでは常時表示 */}
-            <div className={`lg:col-span-1 space-y-6 order-first lg:order-last ${isMobileFilterOpen ? 'block' : 'hidden lg:block'}`}>
-              {/* 新規投稿ボタン (PC表示) */}
-              <div className="hidden lg:block">
-                <Button
-                  onClick={handleNewPost}
-                  variant="primary"
-                  size="lg"
-                  className="w-full shadow-lg text-base py-4"
-                  icon={<Plus size={22} />}
-                >
-                  新規投稿を作成
-                </Button>
-              </div>
-
-              {/* 検索・絞り込みパネル */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 sticky top-6">
-                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Search size={18} className="text-[#2FA3E3]" />
-                  検索・絞り込み
-                </h3>
-
-                {/* 検索バー */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">キーワード</label>
-                  <form className="relative w-full" onSubmit={(e) => e.preventDefault()}>
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                      <Search size={16} />
-                    </div>
-                    <input
-                      type="search"
-                      placeholder="キーワードを入力"
-                      value={keyword}
-                      onChange={(e) => setKeyword(e.target.value)}
-                      className="w-full py-2.5 pl-10 pr-4 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white outline-none [transition:background-color_150ms_ease-out,border-color_150ms_ease-out,box-shadow_150ms_ease-out] focus:border-gray-300 focus:shadow-md"
-                    />
-                  </form>
-                </div>
-
-                {/* 並び替え */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">並び替え</label>
-                  <CustomSelect
-                    value={sortBy}
-                    onChange={setSortBy}
-                    options={SORT_OPTIONS}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* タグフィルター */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">タグで探す</label>
-                  <div className="flex flex-col space-y-1">
-                    {filterTabs.map((tab) => {
-                      // 'all'の場合は全投稿数（フィルター無し）、それ以外はAPIから取得したタグ別投稿数
-                      const count = tab.key === 'all'
-                        ? totalPostCount
-                        : tagCounts[tab.key] || 0;
-
-                      return (
-                        <button
-                          key={tab.key}
-                          onClick={() => {
-                            setActiveFilter(tab.key);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          className={`flex justify-between items-center w-full px-3 py-2 text-sm rounded-lg transition-all duration-200 group ${activeFilter === tab.key
-                            ? 'bg-[#2FA3E3]/10 text-[#2FA3E3] font-bold'
-                            : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                        >
-                          <span className="flex items-center gap-2">
-                            {tab.label}
-                          </span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${activeFilter === tab.key
-                            ? 'bg-[#2FA3E3] text-white'
-                            : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
-                            }`}>
-                            {count}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <PostFilterSidebar
+              keyword={keyword}
+              sortBy={sortBy}
+              activeFilter={activeFilter}
+              totalPostCount={totalPostCount}
+              tagCounts={tagCounts}
+              isMobileFilterOpen={isMobileFilterOpen}
+              onKeywordChange={setKeyword}
+              onSortChange={setSortBy}
+              onFilterChange={setActiveFilter}
+            />
           </div>
         </main>
       </div>

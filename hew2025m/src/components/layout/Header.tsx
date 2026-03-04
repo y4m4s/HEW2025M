@@ -212,6 +212,7 @@ export default function Header() {
               </Link>
 
               <HoverCard
+                disabled={profileLoading}
                 trigger={
                   <Link
                     href={user?.uid ? `/profile/${user.uid}` : "/profile"}

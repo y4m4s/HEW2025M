@@ -17,7 +17,7 @@ const PROTECTED_PATHS = [
 const AUTH_PATHS = ['/login', '/register'];
 
 // username設定が必須でないページ（認証済みでもアクセス可能）
-const ALLOWED_WITHOUT_USERNAME = ['/setup-username', '/login', '/register', '/api'];
+const ALLOWED_WITHOUT_USERNAME = ['/setup-username', '/login', '/register', '/api', '/profile'];
 
 /**
  * セッションCookieをAPIで検証（EdgeではAdmin SDKが使えないため）
